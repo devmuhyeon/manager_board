@@ -1,0 +1,150 @@
+/* Shared controls, type hierarchy, neutral rules and scrollbars for all layouts. */
+:root{
+ --control-radius:8px;--control-height:36px;
+ --type-title:28px;--type-section:16px;--type-group:14px;
+ --type-body:13px;--type-meta:12px;
+ --scroll-track:var(--surface-soft);--scroll-thumb:#a3aab5;--scroll-thumb-hover:#7e8794;
+}
+:root[data-theme="dark"]{--scroll-thumb:#626a76;--scroll-thumb-hover:#8b939e}
+/* Color belongs to fills, labels and focus indicators; structure uses one neutral line. */
+:root[data-style] :is(.card,.home-panel,.memo-card,.board-post,.connect-card,.settings-card,
+ .table-wrap,.task-form,.notice,.retention-options,.origin-label,.revision-marker,
+ .kanban-lane article,.timeline-day article,.style-choice,.avatar-choice,
+ .sectionhead,.table-toolbar,.filters,.modal-head,.modal-foot,.agenda-item,.log){border-color:var(--border)}
+:root[data-style] :is(.briefing-news,.memo-card,.home-panel,.timeline-day article){border-width:1px}
+:root[data-style] .sidebar .user{border-color:var(--border)}
+:root[data-style] .customer-card.active{border-color:var(--border);background:var(--accent-soft);box-shadow:none}
+:root[data-style] .avatar-choice[aria-pressed="true"]{border-color:var(--border);background:var(--accent-soft)}
+:root[data-style] .style-choice.is-selected{border:1px solid var(--border);padding:12px;background:var(--accent-soft)}
+:root[data-style] .overview-counts>span{border-bottom:0}
+:root[data-style] .notice{border:0;background:var(--surface-soft);color:var(--text);border-radius:8px}
+:root[data-style] .cell-note p{border:0;border-radius:6px}
+/* One border owner for nested cards, joined rows and section boundaries. */
+:root[data-style] .home-panel>.card{border:0;border-radius:0;box-shadow:none}
+:root[data-style] .sectionhead,:root[data-style] .home-panel>.card .sectionhead{border-bottom:1px solid var(--border)}
+:root[data-style] .content>.heading{padding-bottom:var(--space-4);border-bottom:1px solid var(--border)}
+:root[data-style] .board-post header{padding-bottom:var(--space-3);border-bottom:1px solid var(--border)}
+:root[data-style] .memo-title{padding-bottom:var(--space-3);border-bottom:1px solid var(--border)}
+:root[data-style] .briefing-posts h3,:root[data-style] .modal-body>h3{padding-bottom:var(--space-2);border-bottom:1px solid var(--border)}
+:root[data-style] .home-panel .section-link{border:0;border-top:1px solid var(--border);border-radius:0}
+:root[data-style] .work-table .project-start td{border-top:0}
+:root[data-style] .work-table tbody td{border-color:var(--border)}
+:root[data-style] .work-table .task-title-cell{box-shadow:1px 0 0 var(--border)}
+:root[data-style] .work-table tbody:has(+ tbody) tr:last-child td{border-bottom:1px solid var(--border)}
+:root[data-style] .work-table tbody:last-child .task-title-cell{border-bottom:0}
+:root[data-style] .table-wrap table{border:0;border-radius:0}
+:root[data-style] .sectionhead+.table-wrap{border-top:0;border-left:0;border-right:0;border-radius:0}
+:root[data-style] .table-wrap thead th{border-top:0;border-left:0;border-right:0;border-bottom:1px solid var(--border)}
+:root[data-style] .table-wrap tbody tr:last-child td{border-bottom:0}
+:root[data-style] .modal-foot{border-bottom:0}
+/* Action buttons share dimensions. Navigation, text actions and cards keep their roles. */
+:root[data-style] button:not(:where(.sidebar button,.tabs button,.project-button,.table-sort,
+ .section-link,.character-avatar,.avatar-choice,.style-choice,.customer-card,.folder-icon,.preview-button)),
+:root[data-style] .topbar .topright button{
+ min-height:var(--control-height);padding:8px 12px;border:1px solid var(--border);
+ border-radius:var(--control-radius);background:var(--surface);color:var(--text);
+ font-family:inherit;font-size:var(--type-meta);font-weight:600;line-height:1.5;
+ box-shadow:none;cursor:pointer;
+}
+:root[data-style] button:not(:where(.sidebar button,.tabs button,.project-button,.table-sort,
+ .section-link,.character-avatar,.avatar-choice,.style-choice,.customer-card,.preview-button)):hover{background:var(--surface-soft);border-color:var(--border)}
+:root[data-style] button.primary,:root[data-style] .topbar .topright button.primary,
+:root[data-style] button.black-button{background:var(--accent);color:var(--gray_0);border-color:transparent;box-shadow:none}
+:root[data-style] button.primary:hover,:root[data-style] .topbar .topright button.primary:hover,
+:root[data-style] button.black-button:hover{background:var(--primary_blue_60);border-color:transparent}
+:root[data-style] button.danger{color:var(--danger)}
+:root[data-style] button:disabled{opacity:.5;cursor:not-allowed}
+:root[data-style] .tabs{gap:4px;padding:4px;border:0;border-radius:var(--control-radius);background:var(--surface-soft)}
+:root[data-style] .tabs button{min-height:32px;padding:6px 12px;border:0;border-radius:6px;box-shadow:none;font-size:12px;font-weight:500;color:var(--muted);background:transparent}
+:root[data-style] .tabs button.active{background:var(--surface);color:var(--text);font-weight:650;box-shadow:0 1px 3px #0000000d}
+:root[data-style] .tabs button:hover{background:var(--surface);color:var(--text)}
+:root[data-style] .project-button,:root[data-style] .table-sort{border:0;box-shadow:none;border-radius:4px;background:transparent;color:var(--text)}
+:root[data-style] .project-button{font-size:14px;font-weight:600;line-height:1.6}
+:root[data-style] .project-button:hover{background:transparent;color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
+:root[data-style] .table-sort:hover{background:transparent;color:var(--accent-text)}
+:root[data-style] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){border:1px solid var(--border);border-radius:var(--control-radius);font-size:var(--type-body);background:var(--surface);box-shadow:none}
+:root[data-style] :is(input:not([type="checkbox"]):not([type="radio"]),select){min-height:var(--control-height)}
+:root[data-style] textarea{min-height:96px}
+:root[data-style] :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Titles, reading text and metadata are intentionally different levels. */
+:root[data-style] .heading h1{font-size:var(--type-title);font-weight:750;line-height:1.3;color:var(--text);letter-spacing:-.04em}
+:root[data-style] .content>.heading h1:before{display:none}
+:root[data-style] :is(.sectionhead h2,.table-toolbar h2,.report-intro h2,.settings-card>h2,.modal-head h2,.connect-card h2){font-size:var(--type-section);font-weight:700;line-height:1.45;color:var(--text);letter-spacing:-.02em}
+:root[data-style] :is(.category-group>h3,.user-work-section>h3,.modal-body>h3,.briefing-posts h3,.board-post h3){font-size:var(--type-group);font-weight:650;line-height:1.5;color:var(--text)}
+:root[data-style] :is(.board-post p,.memo-card p,.settings-card p,.briefing-posts p,.connect-card p,.modal-body p){font-size:var(--type-body);font-weight:400;line-height:1.8}
+:root[data-style] :is(.sectionhead p,.cell-secondary,.work-classification,.briefing-posts small,.board-post small,.panel-note,.memo-date){font-size:var(--type-meta);font-weight:400;line-height:1.65;color:var(--muted)}
+:root[data-style] .work-table th{font-size:var(--type-meta);font-weight:600}
+/* Connection labels are the controls; no separate icon or unsaved-status dot. */
+.topbar .workspace-tools.connection-statuses{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex:none;padding:0;border:0;background:transparent}
+:root[data-style] .topbar .connection-status,
+:root[data-style] .topbar .connection-status:hover{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border:0}
+:root[data-style] .topbar .connection-status.is-connected{color:var(--good);background:var(--surface)}
+:root[data-style] .topbar .connection-status.needs-connection{color:var(--danger);background:var(--red_5)}
+:root[data-theme="dark"] .topbar .connection-status.needs-connection{background:var(--red_90)}
+.connection-status .status-circle.offline{background:currentColor}
+/* Thin neutral scrollbars, with a rounded thumb and a visible hover state. */
+html,body,:where(.main,.content,.table-wrap,.work-table-scroll,.agenda-list,.memo-card p,
+ .live-kanban,.live-timeline,.modal-body,dialog,textarea,.topbar,#large){scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:var(--scroll-track);border-radius:999px}
+*::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:3px solid var(--scroll-track);border-radius:999px;min-height:36px}
+*::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover)}
+*::-webkit-scrollbar-corner{background:var(--scroll-track)}
+.table-wrap::-webkit-scrollbar-track,.table-wrap::-webkit-scrollbar-corner{background:var(--scroll-track)}
+:root[data-style] .table-wrap{scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+/* Navigation stays scrollable without a visible scrollbar, as requested. */
+.sidebar,.sidebar .nav{scrollbar-width:none}
+.sidebar::-webkit-scrollbar,.sidebar .nav::-webkit-scrollbar{display:none;width:0;height:0}
+/* Empty states occupy the whole available body, rather than a small text-height row. */
+:root{--empty-state-min-height:192px}
+:root[data-style] .home-panel:has(.illustrated-hint){display:flex;flex-direction:column}
+:root[data-style] .home-panel:has(.illustrated-hint)>.card{display:flex;flex-direction:column;flex:1;height:auto;min-height:0}
+:root[data-style] .card:has(> :is(.agenda-list,.memo-grid,.board-posts,.briefing-posts)>.illustrated-hint){display:flex;flex-direction:column;min-height:280px}
+:root[data-style] :is(.agenda-list,.memo-grid,.board-posts,.briefing-posts):has(>.illustrated-hint){display:flex;flex-direction:column;flex:1;align-self:stretch;width:100%;min-height:var(--empty-state-min-height);max-height:none;padding:0}
+:root[data-style] .illustrated-hint{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;align-self:stretch;box-sizing:border-box;width:100%;height:100%;min-height:var(--empty-state-min-height);margin:0;padding:var(--panel-inset);text-align:center}
+:root[data-style] .illustrated-hint>div{max-width:100%;min-width:0;overflow-wrap:anywhere}
+:root[data-style] .illustrated-hint p{margin:var(--space-2) auto 0;max-width:340px}
+:root[data-style] .card:has(.illustrated-hint)>.sectionhead,
+:root[data-style] .home-panel:has(.illustrated-hint)>.section-link{flex-shrink:0}
+/* Explicit countdown states take precedence over shared strong/title colors. */
+:root[data-style] .week-countdown.upcoming strong,
+:root[data-style] .week-countdown.due-today strong{color:var(--accent-text)}
+:root[data-style] .week-countdown.overdue strong{color:var(--danger)}
+:root[data-style] .week-countdown.is-complete strong{color:var(--muted)}
+:root[data-style] .sidebar [data-action="avatarSettings"]{margin-left:0}
+:root[data-style] .sidebar .user{display:flex;align-items:center;flex-wrap:nowrap;gap:var(--space-2)}
+:root[data-style] .sidebar .user>[data-action="avatarSettings"]{flex:none;margin-left:0;margin-right:0}
+:root[data-style] .sidebar .user>div{flex:1;min-width:0}
+:root[data-style] .sidebar .user>[data-action="logout"]{flex:none;margin-left:auto;white-space:nowrap}
+/* The icon rail keeps its compact profile presentation. */
+:root[data-style="rail"] .sidebar .user{flex-wrap:wrap;justify-content:center}
+:root[data-style="rail"] .sidebar .user>[data-action="logout"]{margin-left:0}
+@media(max-width:760px){:root{--type-title:24px}}
+@media(forced-colors:active){*{scrollbar-color:auto}*::-webkit-scrollbar-thumb{background:ButtonText;border-color:Canvas}}
+
+:root[data-style] button:is([data-action="save"],[data-action="preferences"]){display:inline-flex;align-items:center;justify-content:center;gap:8px}
+:root[data-style] .button-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:18px;height:18px;font-size:18px;line-height:1;font-weight:400}
+:root[data-style] [data-action="save"] .button-icon{width:22px;height:22px;font-size:22px;filter:brightness(0) invert(1)}
+
+:root[data-style] .week-countdown.overdue .week-blocks .filled{background:var(--danger);border-color:var(--border)}
+
+:root[data-style] .home-panel .sectionhead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3)}
+:root[data-style] .home-panel-heading{flex:1 1 auto;min-width:0}
+:root[data-style] .home-panel-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:var(--space-2);margin-left:auto;flex:0 0 auto}
+:root[data-style] .home-panel-actions .home-detail-button{white-space:nowrap}
+
+/* Four memo columns share one horizontal track; controls live beside the title. */
+:root[data-style] .memo-carousel{min-width:0;margin:var(--space-4) var(--panel-inset) var(--panel-inset)}
+:root[data-style] .memo-carousel-track{--memo-columns:4;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - (var(--memo-columns) - 1)*var(--space-4))/var(--memo-columns));grid-template-rows:1fr;gap:var(--space-4);align-items:stretch;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:0;overscroll-behavior-x:contain;scrollbar-width:none;min-width:0;padding:0}
+.memo-carousel-track::-webkit-scrollbar{display:none;width:0;height:0}
+:root[data-style] .memo-carousel-track>:is(.memo-card,.agenda-item){display:block;min-width:0;height:auto;margin:0;padding:var(--space-4);border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);scroll-snap-align:start;overflow-wrap:anywhere}
+:root[data-style] .memo-carousel-track .agenda-item small{display:block;margin-top:var(--space-3)}
+:root[data-style] .memo-carousel-track .memo-card p{max-height:160px}
+:root[data-style] .memo-carousel-controls{display:flex;align-items:center;gap:var(--space-2)}
+:root[data-style] .memo-carousel-controls[hidden]{display:none}
+:root[data-style] .memo-carousel-controls button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;font-size:22px;line-height:1}
+:root[data-style] .memo-carousel-track:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+@media(max-width:1100px){:root[data-style] .memo-carousel-track{--memo-columns:2}}
+@media(max-width:600px){:root[data-style] .memo-carousel-track{--memo-columns:1}}
+
+

@@ -1,0 +1,9 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),C=require('../js/core.js'),W=require('../js/workspace.js');
+const root=path.resolve(__dirname,'../samples/2026-10-26'),read=rel=>JSON.parse(fs.readFileSync(path.join(root,rel),'utf8'));
+let count=0;function walk(dir){for(const item of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,item.name);if(item.isDirectory())walk(p);else if(p.endsWith('.json')){JSON.parse(fs.readFileSync(p,'utf8'));count++;}}}walk(root);
+const state=C.validateState(read('통합저장/통합관리 대시보드.json')),source=read('원본자료/요청관리.json'),before=JSON.stringify(source);
+assert.equal(state.projects.length,26);assert.equal(Object.keys(state.accounts).length,0);
+for(const row of source.요청목록){const base=path.join(root,'원본자료',row.폴더명);assert.ok(fs.existsSync(path.join(base,row.폴더명+'.json')));assert.ok(fs.existsSync(path.join(base,'처리결과.json')));}
+const refresh=C.importRows(state,read('새로고침확인/요청관리.json'));C.validateState(refresh.state);assert.equal(refresh.added,1);assert.equal(refresh.updated,24);assert.equal(refresh.state.projects.length,27);assert.equal(C.effective(refresh.state.projects.find(p=>p.id==='source:fixture-004')).status,'검토중');assert.equal(C.effective(refresh.state.projects.find(p=>p.id==='source:fixture-004')).due,'2026-11-02');assert.deepEqual(refresh.state.personal,state.personal);assert.deepEqual(refresh.state.leaves,state.leaves);assert.equal(JSON.stringify(source),before);
+const christmas=W.leaveLedger({...state,leaves:state.leaves.filter(l=>l.start==='2026-12-24')},'김무현','2026','2026-10-26');assert.equal(christmas.planned,2);
+console.log(JSON.stringify({validJsonFiles:count,projects:26,refreshAdded:refresh.added,refreshUpdated:refresh.updated,preservedNotesAndLeaves:true,christmasLeaveDays:christmas.planned}));

@@ -1,0 +1,6 @@
+토스페이스 © 토스팀(비바리퍼블리카)
+Copyright (c) 2022, 2023 Viva Republica, with Reserved Font Name Tossface.
+https://github.com/toss/tossface
+https://toss.im/tossface/copyright
+공식 배포본 원본 WOFF2 및 CSS를 수정하지 않고 포함합니다.
+라이선스 전문: 이 폴더의 LICENSE.txt

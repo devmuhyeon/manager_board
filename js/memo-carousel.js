@@ -1,0 +1,11 @@
+(function(root){
+ 'use strict';
+ let observer;
+ const controls=(id,count)=>count>1?'<div class="memo-carousel-controls" data-memo-controls="'+id+'" role="group" aria-label="메모 넘기기"'+(count<=4?' hidden':'')+'><button type="button" data-action="memoSlide" data-target="'+id+'" data-direction="-1" aria-label="이전 메모" aria-controls="'+id+'" disabled>‹</button><button type="button" data-action="memoSlide" data-target="'+id+'" data-direction="1" aria-label="다음 메모" aria-controls="'+id+'">›</button></div>':'';
+ function render(id,body,empty){return body?'<div class="memo-carousel"><div class="memo-carousel-track" id="'+id+'" tabindex="0" role="region" aria-label="메모 목록, 좌우 버튼으로 이동">'+body+'</div></div>':empty;}
+ function update(track){const controls=track.ownerDocument.querySelector('[data-memo-controls="'+track.id+'"]');if(!controls)return;const max=Math.max(0,track.scrollWidth-track.clientWidth),at=Math.max(0,track.scrollLeft);controls.hidden=max<=2;controls.querySelector('[data-direction="-1"]').disabled=at<=2;controls.querySelector('[data-direction="1"]').disabled=at>=max-2;}
+ function init(doc){observer?.disconnect();const tracks=Array.from(doc.querySelectorAll('.memo-carousel-track'));for(const track of tracks){track.addEventListener('scroll',()=>update(track),{passive:true});track.addEventListener('keydown',e=>{if(e.target!==track||!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();scroll(track,e.key==='ArrowLeft'?-1:1);});update(track);}if(typeof root.ResizeObserver==='function'){observer=new root.ResizeObserver(entries=>entries.forEach(e=>update(e.target)));tracks.forEach(t=>observer.observe(t));}}
+ function scroll(track,direction){const gap=parseFloat(root.getComputedStyle?.(track).columnGap)||16;track.scrollBy({left:direction*(track.clientWidth+gap),behavior:root.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+ function move(button){const track=button.ownerDocument.getElementById(button.dataset.target);if(track)scroll(track,Number(button.dataset.direction));}
+ const api={controls,render,init,move};if(typeof module!=='undefined')module.exports=api;else root.BoardMemoCarousel=api;
+})(typeof window!=='undefined'?window:globalThis);

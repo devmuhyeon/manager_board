@@ -1,0 +1,112 @@
+/* Shared spacing scale across every selectable style. Keep single-topbar.css last. */
+:root{
+ --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+ --space-6:24px;--space-8:32px;
+ --page-inset:var(--space-8);--panel-inset:var(--space-6);
+ --section-inset:var(--space-4);--layout-gap:var(--space-6);
+ --cell-inset:var(--space-4);--row-inset:var(--space-4);
+}
+:root[data-style="compact"]{--row-inset:var(--space-3)}
+/* Hide only the navigation scrollbars; wheel, touch and keyboard scrolling remain. */
+.sidebar,.sidebar .nav{scrollbar-width:none;-ms-overflow-style:none}
+.sidebar::-webkit-scrollbar,.sidebar .nav::-webkit-scrollbar{display:none;width:0;height:0}
+:root[data-style] .sidebar{padding:var(--space-6) var(--space-4)}
+:root[data-style] .sidebar .brand{padding:0 var(--space-2)}
+:root[data-style] .sidebar .subbrand{padding:0 var(--space-2);margin:var(--space-3) 0 var(--space-6)}
+:root[data-style] .sidebar .nav{gap:var(--space-1)}
+:root[data-style] .sidebar .nav-group{margin:var(--space-4) var(--space-3) var(--space-2)}
+:root[data-style] .sidebar .nav button{padding:var(--space-3);min-height:40px}
+:root[data-style] .sidebar .nav button[data-page="revisions"]{padding-left:var(--space-3)}
+:root[data-style] .sidebar .nav button .tossface{margin-right:var(--space-3)}
+:root[data-style] .sidebar .sidebar-bottom{padding-top:var(--space-4)}
+:root[data-style] .sidebar .user{padding:var(--space-4) var(--space-2) 0;margin-top:var(--space-4);gap:var(--space-2)}
+:root[data-style="rail"] .sidebar{padding:var(--space-6) var(--space-2)}
+:root[data-style="rail"] .sidebar .nav button .tossface{margin:0}
+:root[data-style="rail"] .sidebar .user{padding:var(--space-4) 0 0}
+/* Page and card edges share the same horizontal alignment. */
+:root[data-style] .main .content{padding:var(--page-inset);max-width:1800px}
+:root[data-style] .content>.heading{margin-bottom:var(--layout-gap);gap:var(--space-4)}
+:root[data-style] .home-layout-tools{margin:0 0 var(--space-4);gap:var(--space-4)}
+:root[data-style] .home-panels,:root[data-style] .settings-grid,
+:root[data-style] .customer-grid,:root[data-style] .agenda-grid,
+:root[data-style] .summary,:root[data-style] .two-col{gap:var(--layout-gap)}
+:root[data-style] .agenda-grid,:root[data-style] .customer-grid,
+:root[data-style] .annual-panel,:root[data-style] .personal-panel{margin-bottom:var(--layout-gap)}
+:root[data-style] .content>.settings-card{margin-top:var(--layout-gap)}
+:root[data-style] .sectionhead,:root[data-style] .home-panel .sectionhead,
+:root[data-style] .table-toolbar,:root[data-style] .report-intro,
+:root[data-style] .filters{padding:var(--section-inset) var(--panel-inset);gap:var(--space-4)}
+:root[data-style] .sectionhead h2,:root[data-style] .table-toolbar h2,
+:root[data-style] .report-intro h2{margin:0}
+:root[data-style] .table-toolbar h2,:root[data-style] .report-intro h2{margin-right:auto}
+:root[data-style] .sectionhead p{margin:var(--space-2) 0 0}
+:root[data-style] .filters,:root[data-style] .actions,
+:root[data-style] .date-filter{gap:var(--space-2)}
+:root[data-style] .category-group{padding:0 var(--panel-inset) var(--panel-inset)}
+:root[data-style] .category-group>h3{margin:0;padding:var(--space-4) 0 var(--space-3);gap:var(--space-2)}
+:root[data-style] .user-work-section{padding:0 var(--panel-inset) var(--panel-inset);margin-top:var(--space-4)}
+:root[data-style] .user-work-section>h3{margin:0;padding:var(--space-4) 0}
+:root[data-style] .card>.work-table-scroll{margin:var(--space-4) var(--panel-inset) var(--panel-inset);width:calc(100% - var(--panel-inset) - var(--panel-inset))}
+:root[data-style] .agenda-list,:root[data-style] .home-panel .agenda-list{padding:0 var(--panel-inset) var(--space-4)}
+:root[data-style] .agenda-item{padding:var(--row-inset) 0;gap:var(--space-2) var(--space-3)}
+:root[data-style] .home-panel[data-home-section="memo"] .agenda-list{gap:var(--space-4)}
+:root[data-style] .home-panel[data-home-section="memo"] .agenda-item{padding:var(--space-4)}
+:root[data-style] .home-panel .section-link,:root[data-style] .footer{padding:var(--space-3) var(--panel-inset)}
+:root[data-style] .overview-counts{padding:var(--space-4) var(--panel-inset) var(--panel-inset);gap:var(--space-4)}
+:root[data-style] .overview-counts strong{margin-top:var(--space-3)}
+:root[data-style] .home-panel[data-home-section="work"] .card>button{margin:0 var(--panel-inset) var(--panel-inset)}
+:root[data-style] .memo-grid,:root[data-style] .board-posts,
+:root[data-style] .annual-totals{padding:var(--panel-inset);gap:var(--space-4)}
+:root[data-style] .memo-card,:root[data-style] .board-post,
+:root[data-style] .customer-card,:root[data-style] .settings-card{padding:var(--panel-inset)}
+:root[data-style] .annual-totals>div{padding:var(--space-4)}
+:root[data-style] .allowance-form{padding:0 var(--panel-inset);gap:var(--space-2)}
+:root[data-style] .panel-note{padding:0 var(--panel-inset)}
+:root[data-style] .annual-panel details{padding:var(--space-4) var(--panel-inset)}
+:root[data-style] .settings-card .sectionhead{padding:0 0 var(--space-4)}
+:root[data-style] .briefing-posts{padding:0 var(--panel-inset) var(--space-4)}
+:root[data-style] .briefing-posts article{padding:var(--space-4) 0}
+:root[data-style] .briefing-posts h3{margin:var(--space-3) 0 var(--space-2)}
+:root[data-style] .live-kanban,:root[data-style] .live-timeline{padding:var(--panel-inset);gap:var(--space-4)}
+:root[data-style] .kanban-lane{padding:var(--space-3)}
+:root[data-style] .kanban-lane article,:root[data-style] .timeline-day article{padding:var(--space-4);margin-top:var(--space-3)}
+:root[data-style] .timeline-day{padding:0 var(--space-3) var(--space-3)}
+:root[data-style] .modal-head,:root[data-style] .modal-foot{padding:var(--space-4) var(--panel-inset)}
+:root[data-style] .modal-body,:root[data-style] .task-form{padding:var(--panel-inset)}
+:root[data-style] .field{gap:var(--space-2);margin-bottom:var(--space-4)}
+:root[data-style] .form-grid{gap:0 var(--space-4)}
+:root[data-style] .style-picker{gap:var(--space-3);margin:var(--space-4) 0 var(--space-6)}
+:root[data-style] .stat,:root[data-style] .connect-card{padding:var(--panel-inset)}
+:root[data-style] .login{padding:var(--page-inset)}
+:root[data-style] .login-box,:root[data-style] .setup-box{padding:var(--page-inset)}
+:root[data-style] .login-box .field{margin-bottom:var(--space-4)}
+:root[data-style] .illustrated-hint{padding:var(--space-4);gap:var(--space-4)}
+:root[data-style] .illustrated-hint p{margin:var(--space-2) 0 0}
+:root[data-style] .notice,:root[data-style] .login-note{padding:var(--space-4)}
+/* Paint the full table, including empty cells and the scroll container edges. */
+.table-wrap{background:var(--surface)}
+.table-wrap table{width:100%;background:var(--surface)}
+.table-wrap thead,.table-wrap thead tr,.table-wrap th{background:var(--table-head)}
+.table-wrap tbody,.table-wrap tbody tr,.table-wrap td{background:var(--surface)}
+.work-table-scroll{scrollbar-gutter:auto;background:var(--surface);background-clip:padding-box}
+:root[data-style] .work-table thead th{height:44px;padding:var(--space-3) var(--cell-inset)}
+:root[data-style] .work-table tbody td{padding:var(--row-inset) var(--cell-inset)}
+:root[data-style] .work-table .task-title-cell{padding:var(--row-inset) var(--cell-inset);background:var(--table-group)}
+:root[data-style] .work-table tbody tr:hover td,
+:root[data-style] .work-table tbody tr:focus-within td{background:var(--table-hover)}
+:root[data-style] .category-group>.table-wrap:not(.work-table-scroll) th,
+:root[data-style] .category-group>.table-wrap:not(.work-table-scroll) td,
+:root[data-style] .leave-table th,:root[data-style] .leave-table td{padding:var(--row-inset) var(--cell-inset)}
+.table-wrap tbody tr:hover td,.table-wrap tbody tr:focus-within td{background:var(--table-hover)}
+.table-wrap::-webkit-scrollbar-track,.table-wrap::-webkit-scrollbar-corner{background:var(--surface-soft)}
+@media(max-width:1150px){:root{--page-inset:var(--space-6)}}
+@media(max-width:760px){
+ :root{--page-inset:var(--space-4);--panel-inset:var(--space-4);--layout-gap:var(--space-4);--cell-inset:var(--space-3)}
+ :root[data-style] .sidebar{padding:var(--space-4)}
+ :root[data-style] .sidebar .nav{margin-top:var(--space-3)}
+ :root[data-style] .sidebar .nav button{padding:var(--space-2) var(--space-3);min-height:36px}
+ :root[data-style] .sidebar .nav button .tossface{margin-right:var(--space-2)}
+ :root[data-style="rail"] .sidebar .nav button .tossface{margin-right:0}
+ :root[data-style] .sidebar .sidebar-bottom{padding-top:0}
+ :root[data-style] .style-picker{grid-template-columns:1fr}
+}

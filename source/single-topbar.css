@@ -1,0 +1,17 @@
+/* Keep one top bar in one row, including on narrow screens. */
+.topbar .workspace-tools.connection-icons{display:flex;align-items:center;flex-wrap:nowrap;gap:12px;padding:0;border:0;background:transparent;flex-shrink:0}
+.topbar .folder-status-text{display:flex;gap:var(--space-4,16px);font-size:12px;flex:none}
+.topbar .connection-icons .folder-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;margin:0;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.main .topbar{height:64px;min-height:64px;flex-wrap:nowrap;gap:var(--space-4,16px);overflow-x:auto;white-space:nowrap;padding:0 var(--panel-inset,24px)}
+.main .topbar .breadcrumb{display:none}
+.main .topbar .quick-links{flex-wrap:nowrap;padding:0;border:0;background:transparent;gap:14px;flex-shrink:0}
+.main .topbar .topright{flex-wrap:nowrap;flex-shrink:0;margin-left:auto;gap:var(--space-2,8px)}
+.main .topbar .topright>*{white-space:nowrap}
+.top aside{height:68px;padding:0 18px;gap:14px;flex-wrap:nowrap}
+.top aside nav{margin:0;gap:0;flex-shrink:0}
+.top aside nav>div{padding:9px 7px;font-size:10px}
+.top aside nav .tf{font-size:14px}
+.top aside .wordmark{font-size:13px}
+.top aside .profile{display:none}
+.top aside .mock-top{border:0;padding:0;gap:14px;height:auto;flex:1;white-space:nowrap;font-size:8px}
+.top aside .mock-top>span:first-child{font-size:8px}

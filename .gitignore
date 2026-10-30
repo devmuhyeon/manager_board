@@ -1,0 +1,20 @@
+# Local runtime data and generated sample workspaces
+통합관리 대시보드.json
+samples/
+
+# Credentials, local settings and dependencies
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+node_modules/
+.codex/
+.agents/
+
+# Temporary output
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
