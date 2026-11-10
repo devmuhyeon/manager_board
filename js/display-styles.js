@@ -23,6 +23,22 @@
   function picker(esc){return '<div class="style-picker" role="group" aria-label="화면 스타일">'+catalog.map(s=>'<button type="button" data-action="displayStyle" data-style="'+s.id+'" aria-pressed="'+(selected===s.id)+'" class="style-choice '+(selected===s.id?'is-selected':'')+'"><span class="style-swatch swatch-'+s.id+'" aria-hidden="true"><i></i><b></b><em></em></span><span><strong>'+esc(s.name)+(s.id===DEFAULT?' · 기본':'')+'</strong><small>'+esc(s.description)+'</small></span><span class="style-check" aria-hidden="true">'+(selected===s.id?'✓':'')+'</span></button>').join('')+'</div>';}
   restore();return {restore,select,setTheme,picker,current:()=>selected};
  }
+ function overview({rows,user,C,N,esc,button}){
+  const today=C.today();
+  const active=rows.filter(project=>project.status!=='완료');
+  const metrics=[
+   ['전체 과업',rows.length,'all'],
+   ['미완료',active.length,'active'],
+   ['마감일 경과',active.filter(project=>project.due&&project.due<today).length,'overdue']
+  ];
+  return '<section class="workspace-overview" aria-labelledby="workspace-overview-title">'
+   +'<div class="workspace-overview-intro"><span class="workspace-kicker">'+esc(N.teamLabel(user.team))+' 팀</span>'
+   +'<h2 id="workspace-overview-title">'+esc(user.name)+'님의 업무 브리핑</h2>'
+   +'<p>전체 과업 현황을 보고, 아래에서 팀 소식과 내 일정을 확인하세요.</p>'
+   +button('page','업무 관리 →','primary','data-page="work"')+'</div>'
+   +'<dl class="workspace-metrics">'+metrics.map(([label,value,tone])=>
+    '<div data-tone="'+tone+'"><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('')+'</dl></section>';
+ }
  function home({style,state,user,C,B,N,esc,button,badge,hint,table,orderNames=names=>names}){
   const rows=state.projects.map(C.effective);
   const open=p=>button('edit',esc(p.title),'project-button','data-id="'+esc(p.id)+'"');
@@ -39,5 +55,5 @@
   return '';
  }
  function shell(html,style){if(style!=='top')return html;const sidebar=html.match(/<aside class="sidebar">[\s\S]*?<\/aside>/);if(!sidebar)return html;return html.replace(sidebar[0],'').replace('<header class="topbar">','<header class="topbar"><details class="top-navigation"><summary aria-label="주 메뉴 열기">☰ 메뉴</summary>'+sidebar[0]+'</details>');}
- const api={catalog,KEY,DEFAULT,valid,create,home,shell};if(typeof module!=='undefined')module.exports=api;else root.BoardDisplayStyles=api;
+ const api={catalog,KEY,DEFAULT,valid,create,overview,home,shell};if(typeof module!=='undefined')module.exports=api;else root.BoardDisplayStyles=api;
 })(typeof window!=='undefined'?window:globalThis);

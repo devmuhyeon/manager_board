@@ -11,6 +11,7 @@
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
+  let boardName='',boardShowDone=false;
   let boardTeam='',userWork='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
@@ -83,11 +84,27 @@
         return start+'<div class="home-panel-heading">'+heading+'</div><div class="home-panel-actions">'+(key==='memo'?BoardMemoCarousel.controls('home-memos',memoItems.length):'')+actions.join('')+detail+'</div>'+end;
       });
     }
-    return '<div class="home-layout-tools"><span class="muted">나의 일정 한눈에 보기</span>'+button('homeLayout','홈 배치 순서 설정')+'</div><div class="home-panels">'+BoardDisplayStyles.home({style:styles.current(),state,user,C,B,N,esc,button,badge,hint:D.illustratedHint,table:projectTable,orderNames:names=>P.orderNames(state,names)})+P.homeOrder(state,user.name).map(key=>'<div class="home-panel '+(['memo','work'].includes(key)?'home-wide':'')+'" data-home-section="'+key+'" data-home-target="'+destinations[key]+'">'+homePanel(key)+'</div>').join('')+'</div>';
+    return BoardDisplayStyles.overview({rows,user,C,N,esc,button})+'<div class="home-layout-tools"><span class="muted">나의 일정 한눈에 보기</span>'+button('homeLayout','홈 배치 순서 설정')+'</div><div class="home-panels">'+BoardDisplayStyles.home({style:styles.current(),state,user,C,B,N,esc,button,badge,hint:D.illustratedHint,table:projectTable,orderNames:names=>P.orderNames(state,names)})+P.homeOrder(state,user.name).map(key=>'<div class="home-panel '+(['memo','work'].includes(key)?'home-wide':'')+'" data-home-section="'+key+'" data-home-target="'+destinations[key]+'">'+homePanel(key)+'</div>').join('')+'</div>';
   }
-  function viewTabs(){return '<div class="tabs" role="group" aria-label="표 배치">'+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
+  function viewTabs(){return '<div class="tabs" role="group" aria-label="업무 보기">'+(page==='work'?button('view','보드',view==='board'?'active':'','data-view="board"'):'')+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
   function categorizedTable(rows){return W.group(rows).map(([label,group])=>'<section class="category-group"><h3>'+esc(label.replace(/^퍼블(?= >|$)/,'퍼블리싱'))+' <span class="count">'+group.length+'</span></h3>'+sheetTable(group)+'</section>').join('')||'<p class="empty">조회 조건에 맞는 과업이 없습니다.</p>';}
-  function dashboardContent(){const rows=projects();return (page==='customers'?customerCards():'')+'<section class="card"><div class="table-toolbar"><h2>업무 목록 <span class="count">'+rows.length+'</span></h2>'+scopeTabs()+viewTabs()+'</div>'+filterBar()+(view==='category'?categorizedTable(rows):projectTable(rows))+'</section>';}
+  const boardAssignee=()=>boardName||(scope==='personal'?user.name:'');
+  const boardIncludesDone=()=>boardShowDone||filters.status==='완료';
+  function dashboardContent(){
+    const rows=projects();
+    const isBoard=page==='work'&&view==='board';
+    const showDone=boardIncludesDone();
+    const boardControls=isBoard?'<div class="task-board-controls">'
+      +'<label for="boardName">담당자 이름</label><input type="search" id="boardName" list="boardPeople" placeholder="이름으로 남은 과업 찾기" value="'+esc(boardName)+'">'
+      +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
+      +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
+      +'<label class="task-board-completed"><input type="checkbox" id="boardShowDone"'+(showDone?' checked':'')+(filters.status==='완료'?' disabled':'')+'> 완료 포함</label></div>':'';
+    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
+      :view==='category'?categorizedTable(rows):projectTable(rows);
+    return (page==='customers'?customerCards():'')+'<section class="card"><div class="table-toolbar"><h2>'
+      +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+scopeTabs()+viewTabs()
+      +'</div>'+boardControls+filterBar()+content+'</section>';
+  }
   
   function projectTable(rows){return T.projects(rows);}
   function taskRows(rows){const tf=f();if(!tf.taskMode){tf.status='';tf.from='';tf.to='';}return rows.flatMap(p=>(p.tasks?.length?p.tasks:[{role:'기타',assignees:p.assignees,started:p.started,due:p.due,status:p.status,notes:p.description}]).filter(t=>C.matchesTask(t,tf)).map(t=>({p,t})));}
@@ -124,7 +141,13 @@
       if(taskDraft.some(t=>t.started&&t.due&&t.started>t.due))throw new Error('마감일은 시작일보다 빠를 수 없습니다.');
       if(data.get('logContent').trim()&&!data.get('logDate'))throw new Error('작업 내역의 작업일을 입력해 주세요.');
       if(values.link && !/^(https?:\/\/|file:\/\/)/i.test(values.link))throw new Error('작업 링크는 http://, https:// 또는 file://로 입력해 주세요.');
-      values.tasks=structuredClone(taskDraft);values.assignees=[...new Set(taskDraft.flatMap(t=>t.assignees))];values.status=C.effective({...editing,...values,overrides:{}}).status;
+      values.tasks=taskDraft.map(task=>{
+        const previous=editing.tasks?.find(item=>item.id===task.id)||(!editing.tasks?.length?editing:null);
+        if(previous?.status===task.status&&!previous.completedOn)return {...task};
+        return {...task,...BoardTaskBoard.completion(previous,task.status,C.today())};
+      });
+      values.assignees=[...new Set(taskDraft.flatMap(t=>t.assignees))];
+      values.status=C.effective({...editing,...values,overrides:{}}).status;
       const i=state.projects.findIndex(p=>p.id===editing.id),logs=structuredClone(editing.logs);
       if(data.get('logContent').trim())logs.push({id:C.uid(),date:data.get('logDate'),author:user.name,content:data.get('logContent').trim()});
       if(i<0)state.projects.push({...editing,...values,logs,updatedAt:new Date().toISOString()});
@@ -153,9 +176,12 @@
   }
   function pickFile(mode){const picker=$('#jsonPicker');picker.value='';picker.dataset.mode=mode;picker.click();}
   async function exportXlsx(){
-    const ps=page==='report'?C.filterProjects(state.projects,{...f(),from:'',to:''}):page==='revisions'?projects().filter(p=>p.parentProjectId):projects();
+    let ps=page==='report'?C.filterProjects(state.projects,{...f(),from:'',to:''}):page==='revisions'?projects().filter(p=>p.parentProjectId):projects();
+    const boardCards=page==='work'&&view==='board'?BoardTaskBoard.cards(ps,boardAssignee(),boardIncludesDone(),C):null;
+    if(boardCards)ps=boardCards.map(card=>card.project);
     const logs=C.reportRows(state.projects,f());const ids=new Set(logs.map(l=>l.project.id));
-    const rows=taskRows(page==='report'?ps.filter(p=>ids.has(p.id)):ps).sort((a,b)=>(view==='category'?W.classificationKey(a.p):a.p.title).localeCompare(view==='category'?W.classificationKey(b.p):b.p.title,'ko'));
+    const rows=boardCards?boardCards.flatMap(card=>card.tasks.map(t=>({p:card.project,t})))
+      :taskRows(page==='report'?ps.filter(p=>ids.has(p.id)):ps).sort((a,b)=>(view==='category'?W.classificationKey(a.p):a.p.title).localeCompare(view==='category'?W.classificationKey(b.p):b.p.title,'ko'));
     const sheets=[{name:'업무 목록',headers:['분류 1','분류 2','분류 3','과업명','세부유형','담당자','고객명','요청완료일','시작일','마감일','진행상태','비고','고객팀','요청일','담당팀','작업 링크'],widths:[18,20,14,50,14,24,18,16,16,16,14,75,23,16,18,45],rows:rows.map(({p,t})=>[N.teamLabel(C.classification(p).level1),C.classification(p).level2,C.classification(p).level3,p.title,N.teamLabel(t.role),t.assignees.join(', '),p.requester,p.requestedDue,t.started,t.due,t.status,t.notes,p.customer,p.requested,[...new Set(t.assignees.map(n=>N.teamLabel(member(n)?.team)).filter(Boolean))].join(', '),p.link])},{name:'날짜별 작업 내역',headers:['작업일','과업명','작업자','담당팀','작업 내용','고객팀','고객명'],widths:[16,50,16,16,75,23,18],rows:logs.filter(l=>page==='report'||ps.some(p=>p.id===l.project.id)).map(l=>[l.date,l.project.title,l.author,N.teamLabel(member(l.author)?.team),l.content,l.project.customer,l.project.requester])}];
     download(BoardXlsx.workbook(sheets),`통합관리_${page==='report'?'주간업무':'업무목록'}_${C.today()}.xlsx`);toast(`엑셀을 내보냈습니다. 담당 업무 ${rows.length}개`);
   }
@@ -171,13 +197,26 @@
     if(a==='layoutSave'){state=P.saveHomeOrder(state,user.name,layoutDraft);changed();$('#editor').close();render();toast('나의 홈 배치 순서를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');return;}
     if(['manageMembers','addMember','rehire','removeMember','leaderSettings','passwords','resetPassword'].includes(a)&&!P.canManage(state,user?.name))throw new Error('전체관리자와 팀관리자만 사용할 수 있습니다.');
     if(['adminSettings','transferAdmin','editQuickLinks'].includes(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('전체관리자만 사용할 수 있습니다.');
-    if(a==='page'){if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view='category';scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();}
+    if(a==='page'){if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();}
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
+    else if(a==='boardMine'){boardName=boardName===user.name?'':user.name;render();}
+    else if(a==='toggleBoardTask'){
+      if(!user)throw new Error('로그인이 필요합니다.');
+      const index=state.projects.findIndex(project=>project.id===el.dataset.id);
+      if(index<0)throw new Error('과업을 찾을 수 없습니다.');
+      state.projects[index]=BoardTaskBoard.toggle(state.projects[index],el.dataset.taskId,C);
+      changed();
+      render();
+      const matching=Array.from(document.querySelectorAll('[data-action="toggleBoardTask"]')).find(
+        item=>item.dataset.id===el.dataset.id&&item.dataset.taskId===el.dataset.taskId
+      );
+      (matching||$('#boardName'))?.focus?.();
+    }
     else if(a==='customerMode'){customerMode=el.dataset.mode;filters.customer='';filters.requester='';render();}
     else if(a==='customer'){filters[customerMode==='team'?'customer':'requester']=el.dataset.value;render();}
     else if(a==='allCustomers'){filters.customer='';filters.requester='';render();}
-    else if(a==='logout'){user=null;demoSession=false;render();}
+    else if(a==='logout'){user=null;demoSession=false;boardName='';boardShowDone=false;render();}
     else if(a==='new')openEditor();
     else if(a==='edit')openEditor(el.dataset.id);
     else if(a==='close')$('#editor').close();
@@ -185,7 +224,7 @@
     else if(a==='removeTask'){collectTasks();taskDraft.splice(Number(el.dataset.index),1);$('#taskList').innerHTML=taskForms();}
     else if(a==='week'){setWeek();render();}
     else if(a==='sortWork'){T.toggleSort(el.dataset.sortKey);render();document.querySelector('[data-sort-key="'+el.dataset.sortKey+'"]')?.focus?.();}
-    else if(a==='clearFilters'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};render();}
+    else if(a==='clearFilters'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};if(page==='work'&&view==='board'){boardName='';boardShowDone=false;}render();}
     else if(a==='export')await exportXlsx();
     else if(a==='connect')await connect();
     else if(a==='reload')await reload();
@@ -375,6 +414,7 @@
   });
   document.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.id==='boardShowDone'){boardShowDone=el.checked;render();$('#boardShowDone')?.focus?.();return;}
     if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;render();}return;}
     if(el.id==='leaveOwner'){leaveOwner=el.value;render();return;}
     if(el.id==='p-taskCategory'){const isContent=el.value==='콘텐츠';for(const [container,input,show] of [['contentCategoryField','p-contentCategory',isContent],['contentTypeField','p-contentType',isContent],['platformField','p-platform',!isContent]]){$('#'+container).hidden=!show;$('#'+input).disabled=!show;$('#'+input).required=show;}}
@@ -389,7 +429,22 @@
       else{const loaded=C.validateState(JSON.parse(raw));if(dirty&&!confirm('현재 임시 변경사항을 선택한 JSON 자료로 바꾸시겠습니까?'))return;state=P.upgrade(loaded);syncRoster();targetHandle=null;targetDir=null;sourceHandle=null;sourceDir=null;setupDone=false;health={source:false,target:false};diskText=null;dirty=false;user=null;demoSession=false;cacheError='';persist();render();toast('자료를 불러왔습니다. 폴더를 다시 연결해 주세요.');}
     }catch(err){toast('불러오기 실패: '+err.message);}
   });
-  let searchTimer;document.addEventListener('input',e=>{if(e.target.dataset.filter==='search'){filters.search=e.target.value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>{const pos=e.target.selectionStart;render();const field=$('[data-filter="search"]');if(field){field.focus();field.setSelectionRange(pos,pos);}},250);}});
+  let searchTimer;
+  document.addEventListener('input',e=>{
+    const input=e.target;
+    const isName=input.id==='boardName';
+    if(!isName&&input.dataset.filter!=='search')return;
+    if(isName)boardName=input.value;else filters.search=input.value;
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(()=>{
+      if(!input.isConnected)return;
+      const focused=document.activeElement===input;
+      const pos=input.selectionStart;
+      render();
+      const field=$(isName?'#boardName':'[data-filter="search"]');
+      if(field&&focused){field.focus();field.setSelectionRange(pos,pos);}
+    },250);
+  });
   window.addEventListener('beforeunload',e=>{if(dirty&&targetHandle){e.preventDefault();e.returnValue='';}});
   $('#editor').addEventListener('close',()=>{if(dialogOpener?.isConnected)dialogOpener.focus();else $('.heading h1')?.focus();});
   window.addEventListener('focus',()=>{if(user)checkConnections().then(()=>{const bar=$('.workspace-tools');if(bar)bar.outerHTML=connectionBar();});});
