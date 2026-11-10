@@ -41,3 +41,15 @@ test('잘못된 날짜와 여러 날에 걸친 반차를 거절한다',()=>{
  assert.throws(()=>P.saveLeave(base(),'김다솔',{...leave('김다솔','2026-10-23','2026-10-24'),type:'오전 반차'}));
  assert.throws(()=>P.saveLeave(base(),'김다솔',leave('김다솔','2026-10-24','2026-10-23')));
 });
+
+test('주간 일정은 담당 업무별 기간과 최신 보드 상태를 직접 읽는다',()=>{
+ const Board=require('../js/task-board.js');const s=base();
+ s.projects=[{id:'linked',source:'import',title:'연동 과업',tasks:[{id:'mine',role:'퍼블',assignees:['김무현'],started:'2026-10-16',due:'2026-10-27',status:'진행중',progress:40},{id:'other',role:'기획',assignees:['성아미'],due:'2026-10-23',status:'접수'}]}];
+ const range=P.weekRanges('2026-10-23')[0];let rows=P.schedule(s,'김무현',range);
+ assert.equal(rows.length,1);assert.equal(rows[0].progress,40);assert.equal(rows[0].projectId,'linked');
+ assert.equal(P.schedule(s,'김무현',P.weekRanges('2026-10-23')[1]).length,1);
+ s.projects[0]=Board.setProgress(s.projects[0],'mine',100,C,'김무현');
+ rows=P.schedule(s,'김무현',range);assert.equal(rows[0].progress,100);assert.equal(rows[0].done,true);
+ s.projects[0].overrides.tasks[0].started='2026-11-01';s.projects[0].overrides.tasks[0].due='2026-11-02';
+ assert.equal(P.schedule(s,'김무현',range).length,0);
+});

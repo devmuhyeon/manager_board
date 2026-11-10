@@ -106,6 +106,19 @@
   function schedule(s,actor,range){const me=s.members.find(m=>m.name===actor),names=s.members.filter(m=>m.active!==false&&(m.name===actor||(isLeader(s,actor)&&m.team===me.team))).map(m=>m.name);const rows=[];
     for(const name of names)for(const i of s.personal[name]||[])if(i.date>=range.start&&i.date<=range.end)rows.push({owner:name,date:i.date,title:i.title,time:i.time,done:i.done,kind:'일정'});
     for(const l of s.leaves)if(names.includes(l.owner)&&l.start<=range.end&&l.end>=range.start)rows.push({owner:l.owner,date:l.start,end:l.end,title:l.type,kind:'휴가'});
+    for(const raw of s.projects||[]){
+      if(s.hiddenProjects?.includes(raw.id))continue;
+      const project=C.effective(raw);
+      const tasks=project.tasks?.length?project.tasks:[{...project,id:''}];
+      for(const task of tasks){
+        const owners=orderNames(s,(task.assignees||[]).filter(name=>names.includes(name)));
+        if(!owners.length)continue;
+        const start=task.started||task.due||'',end=task.due||task.started||'';
+        if(!start||!end||start>range.end||end<range.start)continue;
+        const done=C.isComplete(task.status),progress=done?100:Math.max(0,Math.min(99,Number.isFinite(task.progress)?task.progress:0));
+        rows.push({projectId:project.id,taskId:task.id,title:project.title,owner:owners.join(', '),role:task.role||'과업',date:start,end,due:task.due||'',status:task.status,progress,done,kind:'업무보드'});
+      }
+    }
     return rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||compareNames(s,a.owner,b.owner)||a.owner.localeCompare(b.owner));
   }
   function dday(date,today=C.today()){const n=Math.round((Date.parse(date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000);return n===0?'D-day':n>0?'D-'+n:'D+'+Math.abs(n);}
