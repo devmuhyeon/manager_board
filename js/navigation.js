@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- const groups=[{items:[['dashboard','🏠','대시보드 홈']]},{label:'메모',items:[['memo','📝','개인 메모'],['board','📌','팀 게시판']]},{label:'일정관리',items:[['today','📅','오늘 일정'],['schedule','📆','주간 일정'],['deadlines','⏰','마감 일정'],['leaves','🌴','휴가 일정']]},{label:'업무 관리',items:[['work','📁','과업별'],['revisions','🔁','과업 완료 후 수정사항'],['users','👤','사용자별'],['customers','🏢','고객별'],['report','📊','주간 업무보고']]},{items:[['people','👥','인원관리'],['settings','🔗','데이터 연결']]}];
+ const groups=[{items:[['work','📁','업무 보드'],['dashboard','🏠','대시보드 홈']]},{label:'메모',items:[['memo','📝','개인 메모'],['board','📌','팀 게시판']]},{label:'일정관리',items:[['today','📅','오늘 일정'],['schedule','📆','주간 일정'],['deadlines','⏰','마감 일정'],['leaves','🌴','휴가 일정']]},{label:'업무 관리',items:[['revisions','🔁','과업 완료 후 수정사항'],['users','👤','사용자별'],['customers','🏢','고객별'],['report','📊','주간 업무보고']]},{items:[['people','👥','인원관리'],['settings','🔗','데이터 연결']]}];
  const titles=Object.fromEntries(groups.flatMap(g=>g.items.map(([key,,name])=>[key,name])));
  const teamLabel=value=>value==='퍼블'?'퍼블리싱':value;
  const defaults=[{label:'W24DG',url:''},{label:'고용24 테스트서버',url:''},{label:'퍼블리셔 작업문서',url:''}];

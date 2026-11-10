@@ -51,18 +51,28 @@
    : {...raw,...changes};
   return {...next,updatedAt:new Date().toISOString()};
  }
+ function move(raw,laneId,name,C){
+  const lane=lanes.find(item=>item.id===laneId);
+  if(!lane)throw new Error('목록을 찾을 수 없습니다.');
+  const project=C.effective(raw),query=name.trim().toLocaleLowerCase('ko'),status=lane.statuses[0];
+  const update=task=>(!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))
+   ? {...task,status,...completion(task,status,C.today())}:task;
+  const changes=project.tasks?.length?{tasks:project.tasks.map(update)}:update(project);
+  return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
+ }
  function render({rows,name,showDone,C,N,esc,button,dday,orderNames}){
   const list=cards(rows,name,showDone,C);
   const remaining=list.reduce((total,card)=>total+card.remaining,0);
   const today=C.today();
-  function renderCard({project,tasks,nextDue,completedOn,remaining}){
+  function renderCard({project,tasks,status,nextDue,completedOn,remaining}){
    const complete=tasks.length-remaining;
    const dueLabel=completedOn?'완료 '+completedOn
     : !remaining?'완료 · 날짜 기록 없음'
     : nextDue?'마감 '+nextDue+' · '+dday(nextDue,today):'마감일 미정';
    const people=orderNames([...new Set(tasks.flatMap(task=>task.assignees))]);
-   return '<article class="task-board-card">'
-    +button('edit',esc(project.title),'task-board-title','data-id="'+esc(project.id)+'"')
+   return '<article class="task-board-card" draggable="true" data-card-id="'+esc(project.id)+'">'
+    +'<span class="board-card-label">'+esc(project.customer||project.taskCategory||'팀 과업')+'</span>'
+    +button('boardDetail',esc(project.title),'task-board-title','data-id="'+esc(project.id)+'"')
     +'<p class="task-board-assignees">'+esc(people.join(', ')||'담당자 미지정')+'</p>'
     +'<span class="task-board-due'+(remaining&&nextDue&&nextDue<today?' is-overdue':'')+'">'+esc(dueLabel)+'</span>'
     +'<div class="task-board-progress"><span>담당 업무 완료</span><strong>'+complete+'/'+tasks.length+'</strong></div>'
@@ -73,21 +83,21 @@
      const names=orderNames(task.assignees).join(', ');
      return '<li>'+button('toggleBoardTask',
       '<span class="task-check-mark" aria-hidden="true">'+(checked?'✓':'')+'</span><span>'+esc(label)
-       +(names?'<small>'+esc(names)+'</small>':'')+'</span>',
+       +(names?'<small>'+esc(names)+'</small>':'')+'<small>'+esc(checked?(task.completedOn?'완료 '+task.completedOn:'완료'):(task.due?'마감 '+task.due:'마감일 미정'))+'</small></span>',
       'task-check','data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-pressed="'+checked
        +'" aria-label="'+esc(project.title+' · '+label+(names?' · '+names:''))+'"')+'</li>';
-    }).join('')+'</ul></article>';
+    }).join('')+'</ul><label class="board-move-label">목록 이동<select data-board-move="'+esc(project.id)+'" aria-label="'+esc(project.title)+' 목록 이동">'+lanes.map(lane=>'<option value="'+lane.id+'"'+(lane.statuses.includes(status)?' selected':'')+'>'+lane.label+'</option>').join('')+'</select></label></article>';
   }
   return '<div class="task-board-wrap">'
    +'<p class="task-board-total" role="status"><strong>남은 과업 '+list.filter(card=>card.remaining).length+'개</strong>'
    +'<span>미완료 담당 업무 '+remaining+'개 · 마감일 가까운 순</span></p>'
    +'<div class="task-board" tabindex="0" role="region" aria-label="상태별 과업 보드">'
-   +lanes.filter(lane=>lane.id!=='done'||showDone).map(lane=>{
+   +lanes.map(lane=>{
     const entries=list.filter(card=>lane.statuses.includes(card.status));
     return '<section class="task-board-lane" data-lane="'+lane.id+'"><h3><span>'+lane.label+'</span><span class="count">'+entries.length+'</span></h3>'
-     +(entries.map(renderCard).join('')||'<p class="task-board-empty">표시할 과업이 없습니다.</p>')+'</section>';
+     +(entries.map(renderCard).join('')||'<p class="task-board-empty">'+(lane.id==='done'&&!showDone?'완료 포함을 켜면 완료 카드가 표시됩니다.':'카드를 이곳으로 옮겨 보세요.')+'</p>')+button('boardAdd','＋ 카드 추가','board-add','data-lane="'+lane.id+'"')+'</section>';
    }).join('')+'</div></div>';
  }
- const api={cards,toggle,completion,render};
+ const api={cards,toggle,completion,render,move,lanes};
  if(typeof module!=='undefined')module.exports=api;else root.BoardTaskBoard=api;
 })(typeof window!=='undefined'?window:globalThis);

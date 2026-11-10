@@ -8,7 +8,7 @@ function harness(){
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
- const instrumented=source.replace(/\}\)\(\);\s*$/,`globalThis.testApp={weekBlocks,render,login,act,saveProject,exportXlsx,updateLogin,refreshAll,saveDisk,restoreFolders,setupExtras,read:()=>({state,dirty,setupDone,health}),seed:s=>{state=P.upgrade(s);syncRoster();},session:n=>{user=member(n);setupDone=true;},connect:(src,out,text)=>{sourceHandle=src;targetHandle=out;sourceDir=targetDir={queryPermission:async()=> 'granted'};diskText=text;},markDirty:()=>changed()};})();`);
+ const instrumented=source.replace(/\}\)\(\);\s*$/,`globalThis.testApp={weekBlocks,render,login,act,saveProject,exportXlsx,updateLogin,refreshAll,saveDisk,restoreFolders,setupExtras,read:()=>({state,dirty,setupDone,health}),seed:s=>{state=P.upgrade(s);syncRoster();},session:(n,startPage="dashboard")=>{user=member(n);setupDone=true;if(startPage){page=startPage;view=startPage==="work"?"board":"category";}},connect:(src,out,text)=>{sourceHandle=src;targetHandle=out;sourceDir=targetDir={queryPermission:async()=> 'granted'};diskText=text;},markDirty:()=>changed()};})();`);
  vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
@@ -130,4 +130,19 @@ test('테리어몬은 사용자가 지정한 original 경로로 선택·프로�
  await h.api.act({dataset:{action:'setAvatar',avatar:'terriermon'}});
  const html=h.element('#app').innerHTML;assert.match(html,/내 캐릭터 변경: 테리어몬/);assert.match(html,/terriermon-original.jpg/);assert.ok(!html.includes('terriermon-3d.png'));
  assert.doesNotThrow(()=>C.validateState(JSON.parse(JSON.stringify(h.api.read().state))));
+});
+
+test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 연결된다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현',null);h.api.render();
+ assert.equal(h.context.document.documentElement.dataset.boardView,'true');
+ assert.match(h.element('#app').innerHTML,/draggable="true"/);
+ const p=h.api.read().state.projects.find(p=>p.tasks?.length);
+ await h.api.act({dataset:{action:'boardDetail',id:p.id}});
+ assert.equal(h.element('#editor').open,true);
+ assert.match(h.element('#editor').innerHTML,/활동 기록/);
+ await h.api.act({dataset:{action:'toggleBoardTask',id:p.id,taskId:p.tasks[0].id}});
+ assert.equal(h.element('#editor').open,true);
+ assert.match(h.element('#editor').innerHTML,/담당자 · 마감일 · 내용 편집/);
+ await h.api.act({dataset:{action:'edit',id:p.id}});
+ assert.match(h.element('#editor').innerHTML,/projectForm/);
 });

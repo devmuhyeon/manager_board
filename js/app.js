@@ -7,7 +7,7 @@
   let state,cacheError='';
   const emptyState=()=>({...C.sampleState(),projects:[],demo:false});
   try{const raw=localStorage.getItem(CACHE);state=raw?C.validateState(JSON.parse(raw)):emptyState();}catch(e){state=emptyState();cacheError='저장된 임시 데이터를 읽지 못했습니다. 원래 임시 데이터는 덮어쓰지 않습니다. JSON 백업을 불러와 주세요.';}
-  let user=null,demoSession=false,page='dashboard',scope='all',customerMode='team',view='category',sourceHandle=null,targetHandle=null,diskText=null,dirty=false,saving=false;
+  let user=null,demoSession=false,page='work',scope='all',customerMode='team',view='board',sourceHandle=null,targetHandle=null,diskText=null,dirty=false,saving=false;
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
@@ -69,6 +69,7 @@
     if(!B.canRead(state,user.name,boardTeam))boardTeam=user.team;
     let body=page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam):page==='today'?D.today(state,user):page==='report'?report():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?'<div class="home-panels">'+schedulePanel().thisWeek+schedulePanel().nextWeek+'</div>':page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
     $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+nav.map(g=>(g.label?'<div class="nav-group">'+g.label+'</div>':'')+g.items.filter(([key])=>key!=='people'||W.canPersonnel(state,user.name)).map(([key,icon,title])=>button('page','<span class="tossface" aria-hidden="true">'+icon+'</span>'+title,page===key?'active':'','data-page="'+key+'" aria-label="'+esc(title)+'" title="'+esc(title)+'" '+(page===key?'aria-current="page"':''))).join('')).join('')+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(user)+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">워크 플레이스 / <strong>'+titles[page]+'</strong></div><div class="topright"><span class="muted">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll','↻ 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content"><div class="heading"><h1 tabindex="-1">'+titles[page]+'</h1><div class="actions">'+(['work','customers','report','revisions'].includes(page)?button('export','↓ 엑셀 내보내기')+button('new','＋ 새 과업 등록','primary'):'')+'</div></div>'+body+'</div></main></div>',styles.current());
+    document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(C.TEAMS,selectedTeam)}</select>`:''}</div>`;}
@@ -101,9 +102,9 @@
       +'<label class="task-board-completed"><input type="checkbox" id="boardShowDone"'+(showDone?' checked':'')+(filters.status==='완료'?' disabled':'')+'> 완료 포함</label></div>':'';
     const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
-    return (page==='customers'?customerCards():'')+'<section class="card"><div class="table-toolbar"><h2>'
+    return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
       +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+scopeTabs()+viewTabs()
-      +'</div>'+boardControls+filterBar()+content+'</section>';
+      +'</div>'+boardControls+(isBoard?'<details class="board-filters"><summary>상세 필터 · 기간 / 팀 / 검색</summary>'+filterBar()+'</details>':filterBar())+content+'</section>';
   }
   
   function projectTable(rows){return T.projects(rows);}
@@ -119,6 +120,17 @@
   function settings(){return `<div class="settings-grid"><section class="card settings-card"><h2>원본과 저장 폴더</h2><p>원본 기준 폴더는 Z:\\고용24 디자인파트 요청관리\\디자인파트요청관리\\입니다. 요청관리 JSON의 정확한 위치는 직접 선택합니다. 원본의 프로젝트 자료와 팀관리 JSON도 변경하지 않습니다.</p>${connectionCards()}<div class="actions">${button('refreshAll','최신 자료 새로고침')}${button('reload','저장된 통합관리 파일 다시 읽기')}</div><p>최근 가져오기: ${state.importedAt?new Date(state.importedAt).toLocaleString('ko-KR'):'아직 없음'}</p></section><section class="card settings-card"><h2>저장 및 백업</h2><p>과업·인원·메모 변경사항은 현재 브라우저에 임시 저장됩니다. 내용 저장을 누르면 선택한 Y 폴더의 <strong>${BOARD_FILE}</strong>에만 반영합니다.</p><div class="actions">${button('save','내용 저장','primary')}${button('backup','통합관리 JSON 내려받기')}${button('restore','통합관리 JSON 복원')}</div><p>다른 사용자가 파일을 변경한 경우 덮어쓰기를 중단합니다. 여러 사람이 동시에 쓰는 순간까지 잠그는 기능은 없으므로 작업 전 새로고침 후 저장하세요.</p></section></div>`;}
   function classificationFields(project){const c=C.classification(project),content=c.taskCategory==='콘텐츠',lists=W.contentOptions(state);return '<fieldset class="full classification-fields"><legend>과업 분류</legend><div class="classification-grid"><div class="field"><label for="p-taskCategory">분류 1</label><select id="p-taskCategory" name="taskCategory" required>'+options(['UX','UI','기획','디자인','퍼블','콘텐츠'],c.taskCategory,'선택하세요')+'</select></div><div class="field" id="contentCategoryField" '+(content?'':'hidden')+'><label for="p-contentCategory">분류 2</label><input id="p-contentCategory" name="contentCategory" list="contentCategories" maxlength="100" value="'+esc(c.contentCategory)+'" '+(content?'required':'disabled')+' placeholder="예: 10월 뉴스레터"><datalist id="contentCategories">'+options(lists.level2,c.contentCategory)+'</datalist></div><div class="field" id="platformField" '+(content?'hidden':'')+'><label for="p-platform">분류 2</label><select id="p-platform" name="platform" '+(content?'disabled':'required')+'>'+options(['PC&MO','PC','MO'],c.platform,'선택하세요')+'</select></div><div class="field" id="contentTypeField" '+(content?'':'hidden')+'><label for="p-contentType">분류 3</label><select id="p-contentType" name="contentType" '+(content?'required':'disabled')+'>'+options([...new Set([...lists.level3,...(c.contentType?[c.contentType]:[])])],c.contentType,'선택하세요')+'</select></div></div><p class="muted">콘텐츠: 월별 주제 → 콘텐츠 유형 · 그 외: PC&MO / PC / MO</p></fieldset>';}
   
+  function moveBoardCard(id,lane,name=boardAssignee()){
+    if(!user)return;
+    const index=state.projects.findIndex(project=>project.id===id);if(index<0)return;
+    state.projects[index]=BoardTaskBoard.move(state.projects[index],lane,name,C);
+    changed();render();toast('목록을 변경했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');
+  }
+  function boardDetail(id){
+    const raw=state.projects.find(project=>project.id===id);if(!raw)return;
+    const project=C.effective(raw);
+    showDialog('<div class="modal-head"><div><small>과업 카드</small><h2>'+esc(project.title)+'</h2></div>'+button('close','닫기')+'</div><div class="modal-body board-detail"><h3>설명</h3><p class="board-description">'+esc(project.description||'등록된 설명이 없습니다.')+'</p><h3>담당자 · 체크리스트 · 마감일</h3>'+BoardTaskBoard.render({rows:[project],name:'',showDone:true,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})+'<h3>활동 기록</h3>'+((project.logs||[]).map(log=>'<article class="log"><small>'+esc(log.date)+' · '+esc(log.author)+'</small><p>'+esc(log.content)+'</p></article>').join('')||'<p class="muted">기록된 작업 내역이 없습니다.</p>')+'</div><div class="modal-foot">'+button('edit','담당자 · 마감일 · 내용 편집','primary','data-id="'+esc(id)+'"')+'</div>');
+  }
   function openEditor(id,parentId){
     dialogOpener=document.activeElement;
     const original=state.projects.find(p=>p.id===id);editing=original?C.effective(original):{id:C.uid(),source:'manual',title:'',customer:'',requester:'',category1:'',category2:'',requested:C.today(),requestedDue:'',description:'',link:'',logs:[],tasks:[]};
@@ -200,25 +212,28 @@
     if(a==='page'){if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();}
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
+    else if(a==='boardDetail')boardDetail(el.dataset.id);
+    else if(a==='boardAdd'){openEditor();const status=BoardTaskBoard.lanes.find(lane=>lane.id===el.dataset.lane)?.statuses[0]||'예정';taskDraft.forEach(task=>task.status=status);$('#taskList').innerHTML=taskForms();}
     else if(a==='boardMine'){boardName=boardName===user.name?'':user.name;render();}
     else if(a==='toggleBoardTask'){
       if(!user)throw new Error('로그인이 필요합니다.');
       const index=state.projects.findIndex(project=>project.id===el.dataset.id);
       if(index<0)throw new Error('과업을 찾을 수 없습니다.');
+      const detailOpen=$('#editor').open;
       state.projects[index]=BoardTaskBoard.toggle(state.projects[index],el.dataset.taskId,C);
       changed();
       render();
       const matching=Array.from(document.querySelectorAll('[data-action="toggleBoardTask"]')).find(
         item=>item.dataset.id===el.dataset.id&&item.dataset.taskId===el.dataset.taskId
       );
-      (matching||$('#boardName'))?.focus?.();
+      if(detailOpen){$('#editor').close();boardDetail(el.dataset.id);}else (matching||$('#boardName'))?.focus?.();
     }
     else if(a==='customerMode'){customerMode=el.dataset.mode;filters.customer='';filters.requester='';render();}
     else if(a==='customer'){filters[customerMode==='team'?'customer':'requester']=el.dataset.value;render();}
     else if(a==='allCustomers'){filters.customer='';filters.requester='';render();}
     else if(a==='logout'){user=null;demoSession=false;boardName='';boardShowDone=false;render();}
     else if(a==='new')openEditor();
-    else if(a==='edit')openEditor(el.dataset.id);
+    else if(a==='edit'){if($('#editor').open)$('#editor').close();openEditor(el.dataset.id);}
     else if(a==='close')$('#editor').close();
     else if(a==='addTask'){collectTasks();taskDraft.push({id:C.uid(),role:'디자인',assignees:[],status:'예정',started:'',due:'',notes:''});$('#taskList').innerHTML=taskForms();}
     else if(a==='removeTask'){collectTasks();taskDraft.splice(Number(el.dataset.index),1);$('#taskList').innerHTML=taskForms();}
@@ -395,6 +410,12 @@
     changed();render();toast('공용 자료와 최신 원본 요청을 새로 읽었습니다. 원본 반영 내용을 파일에 저장하려면 내용 저장을 눌러 주세요.');
   }
   function setWeek(){const d=new Date(),offset=(d.getDay()+6)%7;d.setDate(d.getDate()-offset);const fmt=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;filters.from=fmt(d);d.setDate(d.getDate()+6);filters.to=fmt(d);}
+  let draggedCard='';
+  document.addEventListener('dragstart',e=>{const card=e.target.closest('[data-card-id]');if(!card||card.closest('#editor')||e.target.closest('input,select'))return;draggedCard=card.dataset.cardId;e.dataTransfer.setData('text/plain',draggedCard);e.dataTransfer.effectAllowed='move';card.classList.add('is-dragging');});
+  document.addEventListener('dragover',e=>{const lane=e.target.closest('[data-lane]');if(lane&&draggedCard){e.preventDefault();e.dataTransfer.dropEffect='move';lane.classList.add('is-drop-target');}});
+  document.addEventListener('dragleave',e=>{const lane=e.target.closest('[data-lane]');if(lane&&!lane.contains(e.relatedTarget))lane.classList.remove('is-drop-target');});
+  document.addEventListener('drop',e=>{const lane=e.target.closest('[data-lane]');if(!lane||!draggedCard)return;e.preventDefault();moveBoardCard(draggedCard,lane.dataset.lane);draggedCard='';});
+  document.addEventListener('dragend',()=>{draggedCard='';document.querySelectorAll('.is-dragging,.is-drop-target').forEach(el=>el.classList.remove('is-dragging','is-drop-target'));});
   document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(el)act(el).catch(err=>{if(err.name!=='AbortError')toast(err.message);});else if(!e.target.closest('button,input,select,textarea,a,label')){const card=e.target.closest('[data-home-target]');if(card)act({dataset:{action:'page',page:card.dataset.homeTarget}}).catch(err=>toast(err.message));}});
   document.addEventListener('submit',e=>{
     if(e.target.id==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
@@ -414,6 +435,7 @@
   });
   document.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.dataset.boardMove){const detailOpen=$('#editor').open;moveBoardCard(el.dataset.boardMove,el.value,detailOpen?'':boardAssignee());if(detailOpen){$('#editor').close();boardDetail(el.dataset.boardMove);}return;}
     if(el.id==='boardShowDone'){boardShowDone=el.checked;render();$('#boardShowDone')?.focus?.();return;}
     if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;render();}return;}
     if(el.id==='leaveOwner'){leaveOwner=el.value;render();return;}

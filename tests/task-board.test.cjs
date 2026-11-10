@@ -40,3 +40,24 @@ test('담당 업무가 없는 기존 과업도 완료 체크할 수 있다', () 
   assert.equal(checked.completedOn, '2026-11-10');
   assert.equal(Board.toggle(checked, '', C).status, '대기');
 });
+
+test('카드 이동은 검색된 담당 업무만 변경하고 가져온 원본을 보존한다',()=>{
+ const moved=Board.move(project,'done','김무현',C);
+ assert.deepEqual(moved.tasks,project.tasks);
+ assert.equal(C.effective(moved).tasks[0].completedOn,'2026-11-10');
+ assert.equal(C.effective(moved).tasks[1].status,'진행중');
+ const restored=C.validateState({...C.sampleState(),projects:[moved]}).projects[0];
+ assert.equal(C.effective(restored).tasks[0].status,'완료');
+ const reopened=Board.move(moved,'queue','김무현',C);
+ assert.equal(C.effective(reopened).tasks[0].completedOn,'');
+ assert.equal(C.effective(reopened).tasks[0].status,'예정');
+ assert.throws(()=>Board.move(project,'invalid','',C));
+});
+test('전체 카드의 목록 이동과 완료 체크는 왕복할 수 있다',()=>{
+ const done=Board.move(project,'done','',C);
+ assert.equal(C.effective(done).status,'완료');
+ assert.equal(Board.cards([C.effective(done)],'',true,C)[0].completedOn,C.today());
+ const review=Board.move(done,'review','',C);
+ assert.equal(C.effective(review).status,'검토중');
+ assert.ok(C.effective(review).tasks.every(task=>!task.completedOn));
+});
