@@ -237,3 +237,14 @@ html[data-astryx-theme][data-style] .task-board-card .task-check {flex:1;min-wid
 html[data-astryx-theme][data-style] .board-task-edit {flex:none;font-size:11px;min-height:28px;padding:4px 6px;}
 .board-move-label[hidden] {display:none;}
 .task-board-card[draggable="false"] {cursor:default;}
+/* Essential navigation and progressive disclosure. */
+.nav-more {margin-top:12px;border-top:1px solid var(--color-border);padding-top:8px;}
+.nav-more summary {cursor:pointer;padding:10px 12px;font-size:12px;color:var(--muted);}
+.nav-more>div {display:flex;flex-direction:column;gap:6px;}
+.preference-more {margin-block:20px;border-top:1px solid var(--color-border);padding-top:16px;}
+.preference-more summary {cursor:pointer;font-weight:650;padding-bottom:12px;}
+.board-filters[open] {padding:12px;border:1px solid var(--color-border);border-radius:10px;background:var(--surface);}
+.board-filters>.tabs {margin-block:12px;}
+html[data-astryx-theme][data-style] .board-surface .table-toolbar {display:none;}
+.board-view-tabs {margin-top:0;flex-wrap:nowrap;overflow-x:auto;}
+@media(max-width:760px){.nav-more summary{font-size:10px;padding:8px 2px;text-align:center;}.nav-more>div{gap:4px;}}
