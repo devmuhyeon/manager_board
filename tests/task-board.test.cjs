@@ -61,3 +61,15 @@ test('전체 카드의 목록 이동과 완료 체크는 왕복할 수 있다',(
  assert.equal(C.effective(review).status,'검토중');
  assert.ok(C.effective(review).tasks.every(task=>!task.completedOn));
 });
+
+test('개인별·팀별 보기는 동일 카드의 담당 업무를 나눠 표시한다',()=>{
+ const list=Board.cards([C.effective(project)],'',true,C);
+ const people=Board.groups(list,'person',[],C);
+ assert.deepEqual(people.map(g=>g.label),['김무현','정윤정']);
+ assert.equal(people[0].entries[0].project.id,project.id);
+ assert.deepEqual(people[0].entries[0].tasks.map(t=>t.id),['planning']);
+ const teams=Board.groups(list,'team',[{name:'김무현',team:'퍼블'},{name:'정윤정',team:'디자인'}],C);
+ assert.deepEqual(teams.map(g=>g.label),['퍼블','디자인']);
+ assert.equal(Board.groups(list,'project',[],C).length,1);
+ assert.equal(Board.groups(list,'status',[],C).length,4);
+});

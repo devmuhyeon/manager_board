@@ -229,3 +229,11 @@ html[data-astryx-theme][data-style] .sidebar .nav button.active::after {display:
  html[data-astryx-theme][data-style] .sidebar .user>[data-action="logout"] {margin:0;font-size:10px;padding:6px 2px;}
  html[data-astryx-theme][data-style] .main .content {padding:16px;}
 }
+.board-view-tabs {margin:16px 0 0;gap:6px;}
+.task-board-card {position:relative;}
+html[data-astryx-theme][data-style] .task-board-card .board-edit {float:right;min-height:26px;padding:3px 8px;font-size:11px;}
+.task-board-checklist li {display:flex;align-items:center;gap:4px;}
+html[data-astryx-theme][data-style] .task-board-card .task-check {flex:1;min-width:0;}
+html[data-astryx-theme][data-style] .board-task-edit {flex:none;font-size:11px;min-height:28px;padding:4px 6px;}
+.board-move-label[hidden] {display:none;}
+.task-board-card[draggable="false"] {cursor:default;}

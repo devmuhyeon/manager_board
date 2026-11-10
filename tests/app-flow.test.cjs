@@ -135,6 +135,8 @@ test('테리어몬은 사용자가 지정한 original 경로로 선택·프로�
 test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 연결된다',async()=>{
  const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현',null);h.api.render();
  assert.equal(h.context.document.documentElement.dataset.boardView,'true');
+ assert.match(h.element('#app').innerHTML,/보드 기준/);
+ await h.api.act({dataset:{action:'boardMode',mode:'status'}});
  assert.match(h.element('#app').innerHTML,/draggable="true"/);
  const p=h.api.read().state.projects.find(p=>p.tasks?.length);
  await h.api.act({dataset:{action:'boardDetail',id:p.id}});
@@ -145,4 +147,18 @@ test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 
  assert.match(h.element('#editor').innerHTML,/담당자 · 마감일 · 내용 편집/);
  await h.api.act({dataset:{action:'edit',id:p.id}});
  assert.match(h.element('#editor').innerHTML,/projectForm/);
+});
+
+test('모든 보드 보기에서 카드와 하위 업무 수정이 같은 편집기를 연다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');
+ const p=h.api.read().state.projects.find(p=>p.tasks?.length);
+ for(const mode of ['person','status','team','project']){
+  await h.api.act({dataset:{action:'boardMode',mode}});
+  assert.match(h.element('#app').innerHTML,/data-action="editBoardTask"/);
+  assert.match(h.element('#app').innerHTML,/카드 편집/);
+  await h.api.act({dataset:{action:'editBoardTask',id:p.id,taskId:p.tasks[0].id}});
+  assert.equal(h.element('#editor').open,true);
+  assert.match(h.element('#editor').innerHTML,/projectForm/);
+  await h.api.act({dataset:{action:'close'}});
+ }
 });

@@ -11,7 +11,7 @@
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
-  let boardName='',boardShowDone=false;
+  let boardName='',boardShowDone=false,boardMode='person';
   let boardTeam='',userWork='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
@@ -95,12 +95,12 @@
     const rows=projects();
     const isBoard=page==='work'&&view==='board';
     const showDone=boardIncludesDone();
-    const boardControls=isBoard?'<div class="task-board-controls">'
+    const boardControls=isBoard?'<div class="tabs board-view-tabs" role="group" aria-label="보드 기준">'+[['person','개인별'],['status','진행별'],['team','팀별'],['project','과업별']].map(([mode,label])=>button('boardMode',label,boardMode===mode?'active':'','data-mode="'+mode+'" aria-pressed="'+(boardMode===mode)+'"')).join('')+'</div><div class="task-board-controls">'
       +'<label for="boardName">담당자 이름</label><input type="search" id="boardName" list="boardPeople" placeholder="이름으로 남은 과업 찾기" value="'+esc(boardName)+'">'
       +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
       +'<label class="task-board-completed"><input type="checkbox" id="boardShowDone"'+(showDone?' checked':'')+(filters.status==='완료'?' disabled':'')+'> 완료 포함</label></div>':'';
-    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
+    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,members:state.members,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
       +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+scopeTabs()+viewTabs()
@@ -212,6 +212,8 @@
     if(a==='page'){if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();}
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
+    else if(a==='boardMode'){boardMode=el.dataset.mode;render();}
+    else if(a==='editBoardTask'){if($('#editor').open)$('#editor').close();openEditor(el.dataset.id);const index=taskDraft.findIndex(task=>task.id===el.dataset.taskId);const field=$('#task-status-'+Math.max(0,index));field?.scrollIntoView?.({block:'center'});field?.focus?.();}
     else if(a==='boardDetail')boardDetail(el.dataset.id);
     else if(a==='boardAdd'){openEditor();const status=BoardTaskBoard.lanes.find(lane=>lane.id===el.dataset.lane)?.statuses[0]||'예정';taskDraft.forEach(task=>task.status=status);$('#taskList').innerHTML=taskForms();}
     else if(a==='boardMine'){boardName=boardName===user.name?'':user.name;render();}
@@ -411,7 +413,7 @@
   }
   function setWeek(){const d=new Date(),offset=(d.getDay()+6)%7;d.setDate(d.getDate()-offset);const fmt=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;filters.from=fmt(d);d.setDate(d.getDate()+6);filters.to=fmt(d);}
   let draggedCard='';
-  document.addEventListener('dragstart',e=>{const card=e.target.closest('[data-card-id]');if(!card||card.closest('#editor')||e.target.closest('input,select'))return;draggedCard=card.dataset.cardId;e.dataTransfer.setData('text/plain',draggedCard);e.dataTransfer.effectAllowed='move';card.classList.add('is-dragging');});
+  document.addEventListener('dragstart',e=>{const card=e.target.closest('[data-card-id]');if(!card||card.getAttribute('draggable')!=='true'||card.closest('#editor')||e.target.closest('input,select'))return;draggedCard=card.dataset.cardId;e.dataTransfer.setData('text/plain',draggedCard);e.dataTransfer.effectAllowed='move';card.classList.add('is-dragging');});
   document.addEventListener('dragover',e=>{const lane=e.target.closest('[data-lane]');if(lane&&draggedCard){e.preventDefault();e.dataTransfer.dropEffect='move';lane.classList.add('is-drop-target');}});
   document.addEventListener('dragleave',e=>{const lane=e.target.closest('[data-lane]');if(lane&&!lane.contains(e.relatedTarget))lane.classList.remove('is-drop-target');});
   document.addEventListener('drop',e=>{const lane=e.target.closest('[data-lane]');if(!lane||!draggedCard)return;e.preventDefault();moveBoardCard(draggedCard,lane.dataset.lane);draggedCard='';});
