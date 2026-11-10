@@ -100,7 +100,7 @@
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
       +'<label class="task-board-completed"><input type="checkbox" id="boardShowDone"'+(showDone?' checked':'')+(filters.status==='완료'?' disabled':'')+'> 완료 포함</label></div></div>':'';
-    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,members:state.members,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
+    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,members:state.members,actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
       +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+(isBoard?'':scopeTabs()+viewTabs())
@@ -123,7 +123,7 @@
   function moveBoardCard(id,lane,name=boardAssignee()){
     if(!user)return;
     const index=state.projects.findIndex(project=>project.id===id);if(index<0)return;
-    state.projects[index]=BoardTaskBoard.move(state.projects[index],lane,name,C);
+    state.projects[index]=BoardTaskBoard.move(state.projects[index],lane,name,C,user.name);
     changed();render();toast('목록을 변경했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');
   }
   function boardDetail(id){
@@ -142,7 +142,8 @@
     $('#editor .modal-body').insertAdjacentHTML('beforeend','<details class="editor-extra"><summary>연결된 수정작업</summary>'+revisionLinks(editing)+'</details>');
     $('#editor').showModal();
   }
-  function taskForms(){return taskDraft.map((t,i)=>`<div class="task-form" data-task-index="${i}"><div class="task-top"><strong>담당 업무 ${i+1}</strong>${taskDraft.length>1?button('removeTask','삭제','','data-index="'+i+'"'):''}</div><div class="form-grid"><div class="field"><label for="task-role-${i}">세부유형</label><select id="task-role-${i}" data-task-field="role">${options(['기획','디자인','퍼블','기타'],t.role)}</select></div><details class="field full editor-assignees" ${t.assignees.length?'':'open'}><summary>담당자 · ${esc(t.assignees.join(', ')||'선택하세요')}</summary><div class="assignees">${P.orderedMembers(state).filter(m=>m.active!==false||t.assignees.includes(m.name)).map(m=>`<label class="check"><input type="checkbox" data-task-member="${esc(m.name)}" ${t.assignees.includes(m.name)?'checked':''}>${esc(m.name)}<span class="muted">${esc(N.teamLabel(m.team))}${m.active===false?' · 퇴사':''}</span></label>`).join('')}</div></details><div class="field"><label for="task-progress-${i}">진행률 (%)</label><input id="task-progress-${i}" type="number" min="0" max="100" step="1" data-task-field="progress" value="${BoardTaskBoard.progress(t)}"></div><div class="field"><label for="task-due-${i}">마감일</label><input id="task-due-${i}" type="date" data-task-field="due" value="${esc(t.due)}"></div><details class="full editor-extra"><summary>상태 · 시작일 · 메모</summary><div class="form-grid"><div class="field"><label for="task-status-${i}">진행상태</label><select id="task-status-${i}" data-task-field="status">${options(C.STATUSES,t.status)}</select></div><div class="field"><label for="task-start-${i}">시작일</label><input id="task-start-${i}" type="date" data-task-field="started" value="${esc(t.started)}"></div><div class="field full"><label for="task-notes-${i}">비고 / 진행 메모</label><textarea id="task-notes-${i}" data-task-field="notes" placeholder="기존 시트의 비고처럼 자유롭게 작성하세요.">${esc(t.notes)}</textarea></div></div></details></div></div>`).join('');}
+  const canEditTaskProgress=t=>BoardTaskBoard.canProgress(editing.tasks?.find(old=>old.id===t.id)||t,user.name)&&BoardTaskBoard.canProgress(t,user.name);
+  function taskForms(){return taskDraft.map((t,i)=>`<div class="task-form" data-task-index="${i}"><div class="task-top"><strong>담당 업무 ${i+1}</strong>${taskDraft.length>1&&canEditTaskProgress(t)?button('removeTask','삭제','','data-index="'+i+'"'):''}</div><div class="form-grid"><div class="field"><label for="task-role-${i}">세부유형</label><select id="task-role-${i}" data-task-field="role">${options(['기획','디자인','퍼블','기타'],t.role)}</select></div><details class="field full editor-assignees" ${t.assignees.length?'':'open'}><summary>담당자 · ${esc(t.assignees.join(', ')||'선택하세요')}</summary><div class="assignees">${P.orderedMembers(state).filter(m=>m.active!==false||t.assignees.includes(m.name)).map(m=>`<label class="check"><input type="checkbox" data-task-member="${esc(m.name)}" ${t.assignees.includes(m.name)?'checked':''}>${esc(m.name)}<span class="muted">${esc(N.teamLabel(m.team))}${m.active===false?' · 퇴사':''}</span></label>`).join('')}</div></details><div class="field"><label for="task-progress-${i}">진행률 (%)</label><input id="task-progress-${i}" type="number" min="0" max="100" step="1" data-task-field="progress" ${canEditTaskProgress(t)?'':'disabled title="담당자 본인만 변경 가능"'} value="${BoardTaskBoard.progress(t)}"></div><div class="field"><label for="task-due-${i}">마감일</label><input id="task-due-${i}" type="date" data-task-field="due" value="${esc(t.due)}"></div><details class="full editor-extra"><summary>상태 · 시작일 · 메모</summary><div class="form-grid"><div class="field"><label for="task-status-${i}">진행상태</label><select id="task-status-${i}" data-task-field="status" ${canEditTaskProgress(t)?'':'disabled title="담당자 본인만 변경 가능"'}>${options(C.STATUSES,t.status)}</select></div><div class="field"><label for="task-start-${i}">시작일</label><input id="task-start-${i}" type="date" data-task-field="started" value="${esc(t.started)}"></div><div class="field full"><label for="task-notes-${i}">비고 / 진행 메모</label><textarea id="task-notes-${i}" data-task-field="notes" placeholder="기존 시트의 비고처럼 자유롭게 작성하세요.">${esc(t.notes)}</textarea></div></div></details></div></div>`).join('');}
   function collectTasks(){document.querySelectorAll('[data-task-index]').forEach(el=>{const t=taskDraft[Number(el.dataset.taskIndex)];el.querySelectorAll('[data-task-field]').forEach(input=>t[input.dataset.taskField]=input.dataset.taskField==='progress'?Number(input.value):input.value);t.assignees=[...el.querySelectorAll('[data-task-member]:checked')].map(x=>x.dataset.taskMember);});}
   function saveProject(form){
     collectTasks();const data=new FormData(form),values=Object.fromEntries(['title','taskCategory','contentCategory','contentType','platform','customer','requester','requested','requestedDue','description','link'].map(k=>[k,String(data.get(k)||'').trim()]));
@@ -153,8 +154,13 @@
       if(taskDraft.some(t=>t.started&&t.due&&t.started>t.due))throw new Error('마감일은 시작일보다 빠를 수 없습니다.');
       if(data.get('logContent').trim()&&!data.get('logDate'))throw new Error('작업 내역의 작업일을 입력해 주세요.');
       if(values.link && !/^(https?:\/\/|file:\/\/)/i.test(values.link))throw new Error('작업 링크는 http://, https:// 또는 file://로 입력해 주세요.');
+      const current=state.projects.find(project=>project.id===editing.id);
+      const baseline=current?C.effective(current):null;
+      if(baseline?.tasks?.some(task=>!BoardTaskBoard.canProgress(task,user.name)&&!taskDraft.some(next=>next.id===task.id)))throw new Error('다른 담당자의 업무는 삭제할 수 없습니다.');
       values.tasks=taskDraft.map(task=>{
-        const previous=editing.tasks?.find(item=>item.id===task.id)||(!editing.tasks?.length?editing:null);
+        const previous=baseline?.tasks?.find(item=>item.id===task.id)||(!baseline?.tasks?.length?baseline:null);
+        task=BoardTaskBoard.guardEdit(previous,task,user.name);
+        if(previous&&(!BoardTaskBoard.canProgress(previous,user.name)||!BoardTaskBoard.canProgress(task,user.name)))return task;
         if(previous?.status===task.status&&!previous.completedOn)return {...task};
         return {...task,...BoardTaskBoard.completion(previous,task.status,C.today()),progress:task.status==='완료'?100:BoardTaskBoard.progress(task)};
       });
@@ -222,7 +228,7 @@
       const index=state.projects.findIndex(project=>project.id===el.dataset.id);
       if(index<0)throw new Error('과업을 찾을 수 없습니다.');
       const detailOpen=$('#editor').open;
-      state.projects[index]=BoardTaskBoard.toggle(state.projects[index],el.dataset.taskId,C);
+      state.projects[index]=BoardTaskBoard.toggle(state.projects[index],el.dataset.taskId,C,user.name);
       changed();
       render();
       const matching=Array.from(document.querySelectorAll('[data-action="toggleBoardTask"]')).find(
@@ -451,7 +457,7 @@
         if(!user||index<0)return;
         if(el.value.trim()==='')throw new Error('진행률을 입력해 주세요.');
         const detailOpen=$('#editor').open;
-        state.projects[index]=BoardTaskBoard.setProgress(state.projects[index],el.dataset.progressTask,Number(el.value),C);
+        state.projects[index]=BoardTaskBoard.setProgress(state.projects[index],el.dataset.progressTask,Number(el.value),C,user.name);
         changed();render();
         if(detailOpen){$('#editor').close();boardDetail(el.dataset.progressId);}
         const controls=Array.from(document.querySelectorAll('[data-progress-id]'));

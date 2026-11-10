@@ -142,6 +142,7 @@ test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 
  await h.api.act({dataset:{action:'boardDetail',id:p.id}});
  assert.equal(h.element('#editor').open,true);
  assert.match(h.element('#editor').innerHTML,/활동 기록/);
+ h.api.session(p.tasks[0].assignees[0],'work');
  await h.api.act({dataset:{action:'toggleBoardTask',id:p.id,taskId:p.tasks[0].id}});
  assert.equal(h.element('#editor').open,true);
  assert.match(h.element('#editor').innerHTML,/담당자 · 마감일 · 내용 편집/);
@@ -161,4 +162,13 @@ test('모든 보드 보기에서 카드와 하위 업무 수정이 같은 편집
   assert.match(h.element('#editor').innerHTML,/projectForm/);
   await h.api.act({dataset:{action:'close'}});
  }
+});
+
+test('화면 이벤트에서도 타인의 완료 체크를 차단하고 원본 상태를 유지한다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');
+ const state=h.api.read().state,p=state.projects.find(p=>p.tasks?.some(t=>!t.assignees.includes('김무현')));
+ const task=p.tasks.find(t=>!t.assignees.includes('김무현')),before=JSON.stringify(state.projects);
+ await assert.rejects(h.api.act({dataset:{action:'toggleBoardTask',id:p.id,taskId:task.id}}),/본인이 담당/);
+ assert.equal(JSON.stringify(h.api.read().state.projects),before);
+ h.api.render();assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
 });

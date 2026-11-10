@@ -279,3 +279,4 @@ html[data-astryx-theme][data-style] .task-progress-control input[type="number"] 
 .board-detail .board-edit,.board-detail .board-move-label,.board-detail .task-board-lane>h3,.board-detail .board-card-label {display:none!important;}
 .board-detail .task-board-card {box-shadow:none!important;border:0!important;padding:0!important;}
 @media(max-width:600px){.board-control-row{gap:16px;}#projectForm .task-form>.form-grid{grid-template-columns:1fr 1fr;}}
+html[data-astryx-theme][data-style] .task-progress-control input:disabled,html[data-astryx-theme][data-style] .task-check:disabled {cursor:not-allowed;opacity:.6;}
