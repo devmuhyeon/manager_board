@@ -4,9 +4,10 @@
   const N=BoardNavigation,B=BoardTeamPosts;
   const C=BoardCore, P=BoardPeople, W=BoardWorkspace, V=BoardVault, $=s=>document.querySelector(s), BOARD_FILE='통합관리 대시보드.json', CACHE='manager-board-v1';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const loadState=raw=>{const validated=C.validateState(raw);if(validated.accountResetVersion!==BoardAccountReset.VERSION)V.forget().catch(()=>{});return BoardAccountReset.apply(validated);};
   let state,cacheError='';
-  const emptyState=()=>({...C.sampleState(),projects:[],demo:false});
-  try{const raw=localStorage.getItem(CACHE);state=raw?C.validateState(JSON.parse(raw)):emptyState();}catch(e){state=emptyState();cacheError='저장된 임시 데이터를 읽지 못했습니다. 원래 임시 데이터는 덮어쓰지 않습니다. JSON 백업을 불러와 주세요.';}
+  const emptyState=()=>BoardAccountReset.apply({...C.sampleState(),projects:[],demo:false});
+  try{const raw=localStorage.getItem(CACHE);state=raw?loadState(JSON.parse(raw)):emptyState();}catch(e){state=emptyState();cacheError='저장된 임시 데이터를 읽지 못했습니다. 원래 임시 데이터는 덮어쓰지 않습니다. JSON 백업을 불러와 주세요.';}
   let user=null,demoSession=false,page='work',scope='all',customerMode='team',view='board',sourceHandle=null,targetHandle=null,diskText=null,dirty=false,saving=false;
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
@@ -187,7 +188,7 @@
       state=next;diskText=serialized;dirty=false;persist();await rememberFolders();
     }finally{saving=false;}
   }
-  async function reload(){if(!targetHandle)return;if(dirty&&!confirm('임시 변경사항을 버리고 저장된 파일을 다시 읽으시겠습니까?'))return;const raw=await (await targetHandle.getFile()).text();const loaded=C.validateState(JSON.parse(raw));state=P.upgrade(loaded);syncRoster();diskText=raw;dirty=false;user=null;demoSession=false;persist();render();toast('공용 자료를 다시 읽었습니다. 로그인해 주세요.');}
+  async function reload(){if(!targetHandle)return;if(dirty&&!confirm('임시 변경사항을 버리고 저장된 파일을 다시 읽으시겠습니까?'))return;const raw=await (await targetHandle.getFile()).text();const loaded=loadState(JSON.parse(raw));state=P.upgrade(loaded);syncRoster();diskText=raw;dirty=false;user=null;demoSession=false;persist();render();toast('공용 자료를 다시 읽었습니다. 로그인해 주세요.');}
   async function importData(raw){
     if(demoSession)throw new Error('실제 자료를 불러오려면 로그아웃 후 본인 이름으로 로그인해 주세요.');
     const result=C.importRows(state,JSON.parse(raw));state=P.enforceRemovals(result.state);syncRoster();changed();render();toast(`원본에서 ${result.added}건 추가, ${result.updated}건 갱신했습니다. 통합관리 수정 내용은 유지했습니다.`);
@@ -307,7 +308,7 @@
     if(await checkConnections()){
       const raw=await (await targetHandle.getFile()).text();
       if(dirty&&diskText!==raw){render();toast('기억된 폴더를 찾았지만 공용 파일이 변경되었습니다. 임시 자료를 백업한 뒤 저장 폴더를 다시 연결해 주세요.');return;}
-      if(!dirty&&raw.trim()){state=P.upgrade(C.validateState(JSON.parse(raw)));syncRoster();}
+      if(!dirty&&raw.trim()){state=P.upgrade(loadState(JSON.parse(raw)));syncRoster();}
       diskText=raw;await finishSetup();toast('이전에 연결한 폴더를 자동으로 연결했습니다.');
     }else render();
   }
@@ -399,7 +400,7 @@
     const directory=await showDirectoryPicker({id:'workplace-output',mode:'readwrite'});
     if(sourceDir&&(await sourceDir.isSameEntry(directory)||await sourceDir.resolve(directory)!==null))throw new Error('원본 폴더와 그 하위 폴더에는 저장할 수 없습니다. Y 드라이브의 별도 폴더를 선택하세요.');
     let handle,existing=null,loaded=null;
-    try{handle=await directory.getFileHandle(BOARD_FILE);existing=await (await handle.getFile()).text();if(existing.trim())loaded=P.upgrade(C.validateState(JSON.parse(existing)));}catch(e){if(e.name!=='NotFoundError')throw e;}
+    try{handle=await directory.getFileHandle(BOARD_FILE);existing=await (await handle.getFile()).text();if(existing.trim())loaded=P.upgrade(loadState(JSON.parse(existing)));}catch(e){if(e.name!=='NotFoundError')throw e;}
     if(loaded&&dirty&&!confirm('현재 임시 변경사항을 연결할 통합관리 파일의 자료로 바꾸시겠습니까? 취소 후 JSON 백업을 받을 수 있습니다.'))return;
     if(loaded){state=loaded;dirty=false;cacheError='';user=null;setupDone=false;}
     if(!handle){handle=await directory.getFileHandle(BOARD_FILE,{create:true});existing='';}
@@ -407,13 +408,13 @@
   }
   async function finishSetup(){
     if(!await checkConnections()){render();throw new Error('연결되지 않은 폴더 또는 JSON을 다시 연결해 주세요.');}
-    const current=await (await targetHandle.getFile()).text();if(current!==diskText){if(dirty)throw new Error('공용 자료가 변경되었습니다. 임시 자료를 백업한 뒤 저장 폴더를 다시 연결하세요.');if(current.trim()){state=P.upgrade(C.validateState(JSON.parse(current)));syncRoster();}diskText=current;}
+    const current=await (await targetHandle.getFile()).text();if(current!==diskText){if(dirty)throw new Error('공용 자료가 변경되었습니다. 임시 자료를 백업한 뒤 저장 폴더를 다시 연결하세요.');if(current.trim()){state=P.upgrade(loadState(JSON.parse(current)));syncRoster();}diskText=current;}
     const raw=await (await sourceHandle.getFile()).text();const result=C.importRows(state,JSON.parse(raw));state=P.enforceRemovals(result.state);if(pendingTeams)state.customerTeams=pendingTeams;pendingSource=null;syncRoster();changed();setupDone=true;deferredConnection=false;user=null;await rememberFolders();render();
   }
   async function refreshAll(){
     if(!await checkConnections()){render();throw new Error('연결이 끊겼습니다. 폴더 재연결에서 다시 연결해 주세요.');}
     const raw=await (await targetHandle.getFile()).text();let base=state;
-    if(raw!==diskText){if(dirty)throw new Error('공용 파일과 현재 변경사항이 모두 있습니다. 현재 자료를 JSON 백업한 후 저장된 파일을 다시 읽어 주세요.');base=P.upgrade(C.validateState(JSON.parse(raw)));}
+    if(raw!==diskText){if(dirty)throw new Error('공용 파일과 현재 변경사항이 모두 있습니다. 현재 자료를 JSON 백업한 후 저장된 파일을 다시 읽어 주세요.');base=P.upgrade(loadState(JSON.parse(raw)));}
     C.setMembers(base.members);let result;try{result=C.importRows(base,JSON.parse(await (await sourceHandle.getFile()).text()));}catch(e){C.setMembers(state.members);throw e;}
     const oldAccount=user&&state.accounts[user.name];state=P.enforceRemovals(result.state);diskText=raw;syncRoster();if(pendingTeams)state.customerTeams=pendingTeams;
     if(user&&(member(user.name)?.active===false||JSON.stringify(oldAccount)!==JSON.stringify(state.accounts[user.name])))user=null;
@@ -481,7 +482,7 @@
     if(el.id==='jsonPicker'&&el.files[0])try{
       const raw=await el.files[0].text();
       if(el.dataset.mode==='import')await importData(raw);
-      else{const loaded=C.validateState(JSON.parse(raw));if(dirty&&!confirm('현재 임시 변경사항을 선택한 JSON 자료로 바꾸시겠습니까?'))return;state=P.upgrade(loaded);syncRoster();targetHandle=null;targetDir=null;sourceHandle=null;sourceDir=null;setupDone=false;health={source:false,target:false};diskText=null;dirty=false;user=null;demoSession=false;cacheError='';persist();render();toast('자료를 불러왔습니다. 폴더를 다시 연결해 주세요.');}
+      else{const loaded=loadState(JSON.parse(raw));if(dirty&&!confirm('현재 임시 변경사항을 선택한 JSON 자료로 바꾸시겠습니까?'))return;state=P.upgrade(loaded);syncRoster();targetHandle=null;targetDir=null;sourceHandle=null;sourceDir=null;setupDone=false;health={source:false,target:false};diskText=null;dirty=false;user=null;demoSession=false;cacheError='';persist();render();toast('자료를 불러왔습니다. 폴더를 다시 연결해 주세요.');}
     }catch(err){toast('불러오기 실패: '+err.message);}
   });
   let searchTimer;
