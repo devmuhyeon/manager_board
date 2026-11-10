@@ -292,3 +292,4 @@ html[data-astryx-theme][data-style] .task-progress-control input:disabled,html[d
 .schedule-task-progress {margin-top:8px;display:grid;gap:6px;color:var(--muted);font-size:12px;}
 .schedule-task-progress progress {width:100%;height:6px;accent-color:var(--color-info);}
 .preview-label {padding:5px 10px;border-radius:6px;background:var(--color-info-muted);color:var(--color-on-info-muted);font-size:11px;white-space:nowrap;}
+.person-team-label {display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:400;}

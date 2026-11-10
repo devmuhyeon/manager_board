@@ -156,3 +156,10 @@ test('여섯 진행 단계와 운영반영완료는 저장 후에도 유지된�
  assert.equal(Board.cards([C.effective(updated)],'김무현',false,C).length,1);
  assert.deepEqual(C.effective(updated).tasks[1],project.tasks[1]);
 });
+
+test('개인별 탭은 본인 팀, 본인, 직급, 가나다 순으로 정렬한다',()=>{
+ const members=[{name:'나팀장',team:'퍼블',rank:'차장'},{name:'가대리',team:'퍼블',rank:'대리'},{name:'나다리',team:'퍼블',rank:'대리'},{name:'본인',team:'퍼블',rank:'사원'},{name:'기획장',team:'기획',rank:'부장'}];
+ const list=Board.cards([{id:'order',title:'순서',tasks:members.slice().reverse().map((m,i)=>({id:String(i),role:'기획',assignees:[m.name],status:'진행중'}))}],'',true,C);
+ assert.deepEqual(Board.groups(list,'person',members,C,'본인').map(group=>group.label),['본인','나팀장','가대리','나다리','기획장']);
+ assert.equal(Board.groups(list,'person',members,C,'기획장')[0].label,'기획장');
+});
