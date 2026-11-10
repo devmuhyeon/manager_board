@@ -1,5 +1,11 @@
 # 워크 플레이스 · 통합 업무관리
 
+## Astryx 디자인 도구
+
+Node.js 22.13 이상에서 `pnpm install --frozen-lockfile`로 개발 도구를 설치합니다. `pnpm astryx component --list`로 컴포넌트를, `pnpm astryx template --list`로 템플릿을 찾아볼 수 있습니다. `pnpm astryx component Button`은 버튼의 사용 예시를 보여줍니다.
+
+공식 React 컴포넌트와 Neutral 테마는 개발 의존성으로 설치했습니다. 현재 배포 화면에 적용하려면 사용할 화면에 React 렌더링을 연결해야 합니다.
+
 ## 웹에서 확인
 
 https://devmuhyeon.github.io/manager_board/
