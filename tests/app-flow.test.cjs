@@ -172,3 +172,16 @@ test('화면 이벤트에서도 타인의 완료 체크를 차단하고 원본 �
  assert.equal(JSON.stringify(h.api.read().state.projects),before);
  h.api.render();assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
 });
+
+test('도표형 전환은 네 탭에서 같은 과업을 표시하고 신규 버튼 왼쪽에 위치한다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');h.api.render();
+ let html=h.element('#app').innerHTML;
+ assert.ok(html.indexOf('data-action="boardLayout"')<html.indexOf('data-action="new"'));
+ const nav=html.match(/<nav[^>]*>[\s\S]*?<\/nav>/)[0];assert.ok(!nav.includes('data-page="revisions"'));
+ await h.api.act({dataset:{action:'boardLayout'}});
+ for(const mode of ['project','status','team','person']){
+  await h.api.act({dataset:{action:'boardMode',mode}});html=h.element('#app').innerHTML;
+  assert.match(html,/board-table-view/);assert.match(html,/<table>/);assert.match(html,/진행률/);assert.match(html,/카드형 보기/);
+ }
+ await h.api.act({dataset:{action:'boardLayout'}});assert.ok(!h.element('#app').innerHTML.includes('board-table-view'));
+});

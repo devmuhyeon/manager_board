@@ -8,7 +8,7 @@
  function menu({page,canPersonnel,esc,button}){
     const all=groups.flatMap(group=>group.items);
     const primary=['work','dashboard','memo','schedule','board'];
-    const secondary=['leaves','customers','revisions','report','people'];
+    const secondary=['leaves','customers','report','people'];
     const item=key=>{
       const entry=all.find(item=>item[0]===key);if(!entry||(key==='people'&&!canPersonnel))return '';
       const [,icon,title]=entry;

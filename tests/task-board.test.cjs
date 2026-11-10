@@ -50,7 +50,7 @@ test('카드 이동은 검색된 담당 업무만 변경하고 가져온 원본�
  assert.equal(C.effective(restored).tasks[0].status,'완료');
  const reopened=Board.move(moved,'queue','김무현',C,'김무현');
  assert.equal(C.effective(reopened).tasks[0].completedOn,'');
- assert.equal(C.effective(reopened).tasks[0].status,'예정');
+ assert.equal(C.effective(reopened).tasks[0].status,'접수');
  assert.throws(()=>Board.move(project,'invalid','',C,'김무현'));
 });
 test('공동 카드 이동은 본인 업무만 바꾸고 다른 담당자의 상태를 유지한다',()=>{
@@ -58,8 +58,8 @@ test('공동 카드 이동은 본인 업무만 바꾸고 다른 담당자의 상
  assert.equal(C.effective(done).tasks[0].status,'완료');
  assert.equal(C.effective(done).tasks[1].status,'진행중');
  assert.equal(Board.cards([C.effective(done)],'김무현',true,C)[0].completedOn,C.today());
- const review=Board.move(done,'review','',C,'김무현');
- assert.equal(C.effective(review).tasks[0].status,'검토중');
+ const review=Board.move(done,'revision','',C,'김무현');
+ assert.equal(C.effective(review).tasks[0].status,'완료 후 수정');
  assert.equal(C.effective(review).tasks[1].status,'진행중');
  assert.ok(C.effective(review).tasks.every(task=>!task.completedOn));
 });
@@ -73,7 +73,7 @@ test('개인별·팀별 보기는 동일 카드의 담당 업무를 나눠 표�
  const teams=Board.groups(list,'team',[{name:'김무현',team:'퍼블'},{name:'정윤정',team:'디자인'}],C);
  assert.deepEqual(teams.map(g=>g.label),['퍼블','디자인']);
  assert.equal(Board.groups(list,'project',[],C).length,1);
- assert.equal(Board.groups(list,'status',[],C).length,4);
+ assert.equal(Board.groups(list,'status',[],C).length,6);
 });
 
 test('40% 진행률은 가져온 원본을 보존하며 재저장 후 유지된다',()=>{
@@ -142,4 +142,17 @@ test('편집창의 진행률 변경 및 자기 이름 추가를 통한 동시 �
 test('공동 담당 업무는 이름이 포함된 각 담당자가 조절할 수 있다',()=>{
  const shared={...project,tasks:[{...project.tasks[0],assignees:['김무현','정윤정']}]};
  for(const actor of ['김무현','정윤정'])assert.equal(C.effective(Board.setProgress(shared,'planning',40,C,actor)).tasks[0].progress,40);
+});
+
+test('여섯 진행 단계와 운영반영완료는 저장 후에도 유지된다',()=>{
+ assert.deepEqual(Board.lanes.map(lane=>lane.label),['접수','진행중','완료','완료 후 수정','운영반영완료','보류']);
+ let updated=Board.move(project,'released','김무현',C,'김무현');
+ const loaded=C.validateState(JSON.parse(JSON.stringify({...C.sampleState(),projects:[updated]})));
+ const task=C.effective(loaded.projects[0]).tasks[0];
+ assert.equal(task.status,'운영반영완료');assert.equal(task.progress,100);
+ assert.equal(Board.cards([C.effective(updated)],'김무현',false,C).length,0);
+ updated=Board.move(updated,'revision','김무현',C,'김무현');
+ assert.equal(C.effective(updated).tasks[0].status,'완료 후 수정');
+ assert.equal(Board.cards([C.effective(updated)],'김무현',false,C).length,1);
+ assert.deepEqual(C.effective(updated).tasks[1],project.tasks[1]);
 });

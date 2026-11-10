@@ -9,7 +9,8 @@
   const setMembers=members=>{roster=members||MEMBERS;};
   const TEAMS = ['기획','퍼블','디자인','콘텐츠'];
   const CUSTOMERS = ['고용24대민포털','고용24행정포털','취업지원서비스1','취업지원서비스2','고용보험서비스','능력개발서비스','외국인고용서비스','AI고용서비스','시스템운영','데이터지원'];
-  const STATUSES = ['예정','대기','진행중','검토중','완료','보류'];
+  const STATUSES = ['접수','진행중','완료','완료 후 수정','운영반영완료','보류','예정','대기','검토중'];
+  const isComplete=status=>status==='완료'||status==='운영반영완료';
   const text = v => v == null ? '' : Array.isArray(v) ? v.map(text).join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v);
   const pick = (o, keys) => { for (const k of keys) if(o[k] != null && o[k] !== '') return o[k]; return ''; };
   const date = v => { const s=text(v).trim(); const m=s.match(/^(\d{4})[-./]?(\d{2})[-./]?(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; };
@@ -54,7 +55,7 @@
     if(e.tasks?.length){
       e.assignees=[...new Set(e.tasks.flatMap(t=>t.assignees))];
       const states=e.tasks.map(t=>t.status);
-      e.status=states.every(s=>s==='완료')?'완료':states.includes('진행중')||states.includes('완료')?'진행중':states.includes('검토중')?'검토중':states.includes('보류')?'보류':states.includes('대기')?'대기':'예정';
+      e.status=states.every(s=>s==='운영반영완료')?'운영반영완료':states.every(isComplete)?'완료':states.includes('완료 후 수정')?'완료 후 수정':states.includes('진행중')||states.some(isComplete)?'진행중':states.includes('검토중')?'검토중':states.includes('보류')?'보류':states.includes('대기')?'대기':states.includes('접수')?'접수':'예정';
       const dues=e.tasks.map(t=>t.due).filter(Boolean).sort();if(dues.length)e.due=dues[dues.length-1];
     }
     return e;
@@ -140,6 +141,6 @@
     for(const [name,a] of Object.entries(s.accounts))if(!people.some(m=>m.name===name)||!a||typeof a.salt!=='string'||typeof a.hash!=='string'||a.iterations!==150000)throw new Error('계정 데이터 형식이 올바르지 않습니다.');
     return s;
   }
-    const api={MEMBERS,TEAMS,CUSTOMERS,STATUSES,today,uid,normalize,importRows,effective,teamsOf,matchesTask,filterProjects,reportRows,sampleState,validateState,setMembers,classification,cleanClassification};
+    const api={isComplete,MEMBERS,TEAMS,CUSTOMERS,STATUSES,today,uid,normalize,importRows,effective,teamsOf,matchesTask,filterProjects,reportRows,sampleState,validateState,setMembers,classification,cleanClassification};
   if(typeof module!=='undefined')module.exports=api;else root.BoardCore=api;
 })(typeof window!=='undefined'?window:globalThis);

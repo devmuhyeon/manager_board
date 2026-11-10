@@ -1,11 +1,14 @@
 (function(root){
  'use strict';
  const lanes=[
-  {id:'queue',label:'할 일',statuses:['예정','대기']},
-  {id:'doing',label:'진행 중',statuses:['진행중']},
-  {id:'review',label:'검토 · 보류',statuses:['검토중','보류']},
-  {id:'done',label:'완료',statuses:['완료']}
+  {id:'queue',label:'접수',statuses:['접수','예정','대기']},
+  {id:'doing',label:'진행중',statuses:['진행중','검토중']},
+  {id:'done',label:'완료',statuses:['완료']},
+  {id:'revision',label:'완료 후 수정',statuses:['완료 후 수정']},
+  {id:'released',label:'운영반영완료',statuses:['운영반영완료']},
+  {id:'hold',label:'보류',statuses:['보류']}
  ];
+ const isDone=status=>status==='완료'||status==='운영반영완료';
  function items(project){
   return project.tasks?.length ? project.tasks : [{
    id:'',role:'과업',assignees:project.assignees,due:project.due,started:project.started,
@@ -18,7 +21,7 @@
   return rows.flatMap(project=>{
    const tasks=items(project).filter(task=>!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)));
    if(!tasks.length)return [];
-   const open=tasks.filter(task=>task.status!=='완료');
+   const open=tasks.filter(task=>!isDone(task.status));
    if(!open.length&&!showDone)return [];
    const status=C.effective({...project,overrides:{},tasks}).status;
    const nextDue=open.map(task=>task.due).filter(Boolean).sort()[0]||project.due||project.requestedDue||'';
@@ -34,11 +37,11 @@
    if(previous.status!==task.status||progress(previous)!==progress(task))throw new Error('다른 담당자의 진행률과 완료 상태는 변경할 수 없습니다.');
    return {...task,status:previous.status,progress:previous.progress,completedOn:previous.completedOn,statusBeforeCompletion:previous.statusBeforeCompletion,progressBeforeCompletion:previous.progressBeforeCompletion};
   }
-  if(!previous&&!canProgress(task,actor)&&(progress(task)!==0||task.status==='완료'))throw new Error('다른 담당자의 새 업무는 진행률 0%로 등록해 주세요.');
+  if(!previous&&!canProgress(task,actor)&&(progress(task)!==0||isDone(task.status)))throw new Error('다른 담당자의 새 업무는 진행률 0%로 등록해 주세요.');
   return task;
  }
  function progress(task){
-  return task.status==='완료'?100:Math.min(99,Math.max(0,Number.isFinite(task.progress)?task.progress:0));
+  return isDone(task.status)?100:Math.min(99,Math.max(0,Number.isFinite(task.progress)?task.progress:0));
  }
  function average(tasks){return Math.floor(tasks.reduce((sum,task)=>sum+progress(task),0)/Math.max(1,tasks.length));}
  function setProgress(raw,taskId,value,C,actor){
@@ -46,18 +49,18 @@
   const project=C.effective(raw),task=items(project).find(item=>item.id===taskId);
   if(!task)throw new Error('담당 업무를 찾을 수 없습니다.');
   requireOwner(task,actor);
-  const status=value===100?'완료':value===0?'예정':'진행중';
+  const status=value===100?'완료':value===0?'접수':'진행중';
   const update={...completion(task,status,C.today()),status,progress:value};
   const changes=project.tasks?.length?{tasks:project.tasks.map(item=>item.id===taskId?{...item,...update}:item)}:update;
   return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
  }
  function completion(previous,status,today){
-  if(status==='완료')return {
-   progress:100,progressBeforeCompletion:previous?.status==='완료'?previous.progressBeforeCompletion||0:progress(previous||{}),
-   completedOn:previous?.status==='완료'?previous.completedOn||'':today,
-   statusBeforeCompletion:previous?.status==='완료'?previous.statusBeforeCompletion||'':previous?.status||''
+  if(isDone(status))return {
+   progress:100,progressBeforeCompletion:isDone(previous?.status)?previous.progressBeforeCompletion||0:progress(previous||{}),
+   completedOn:isDone(previous?.status)?previous.completedOn||'':today,
+   statusBeforeCompletion:isDone(previous?.status)?previous.statusBeforeCompletion||'':previous?.status||''
   };
-  return {completedOn:'',statusBeforeCompletion:'',progress:previous?.status==='완료'?previous.progressBeforeCompletion||0:progress(previous||{}),progressBeforeCompletion:0};
+  return {completedOn:'',statusBeforeCompletion:'',progress:isDone(previous?.status)?previous.progressBeforeCompletion||0:progress(previous||{}),progressBeforeCompletion:0};
  }
  function toggle(raw,taskId,C,actor){
   const project=C.effective(raw);
@@ -65,8 +68,8 @@
   if(!task)throw new Error('담당 업무를 찾을 수 없습니다.');
   requireOwner(task,actor);
   const prior=task.statusBeforeCompletion;
-  const status=task.status==='완료'
-   ? C.STATUSES.find(value=>value===prior&&value!=='완료')||'진행중'
+  const status=isDone(task.status)
+   ? C.STATUSES.find(value=>value===prior&&!isDone(value))||'진행중'
    : '완료';
   const update={status,...completion({...task,statusBeforeCompletion:prior},status,C.today())};
   const changes=project.tasks?.length
@@ -124,7 +127,7 @@
   }
   return [...groups.values()].sort((a,b)=>a.key==='undated'?1:b.key==='undated'?-1:b.key.localeCompare(a.key));
  }
- function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor=''}){
+ function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor='',layout='cards'}){
   const list=cards(rows,name,showDone,C);
   const remaining=list.reduce((total,card)=>total+card.remaining,0);
   const today=C.today();
@@ -144,7 +147,7 @@
     +'<div class="task-board-progress"><span>진행률 · '+complete+'/'+tasks.length+' 완료</span><strong data-card-percent>'+average(tasks)+'%</strong></div>'
     +'<progress value="'+average(tasks)+'" max="100" aria-label="'+esc(project.title)+' 완료한 담당 업무"></progress>'
     +'<ul class="task-board-checklist">'+tasks.map(task=>{
-     const checked=task.status==='완료',locked=!canProgress(task,actor);
+     const checked=isDone(task.status),locked=!canProgress(task,actor);
      const lock=locked?' disabled title="담당자 본인만 진행률을 변경할 수 있습니다"':'';
      const content=task.assignees.length&&task.assignees.every(name=>members.find(m=>m.name===name)?.team==='콘텐츠');
      const label=content&&['기획','디자인'].includes(task.role)?'콘텐츠 '+task.role:N.teamLabel(task.role)||'담당 업무';
@@ -155,6 +158,10 @@
       'task-check',lock+' data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-pressed="'+checked
        +'" aria-label="'+esc(project.title+' · '+label+(names?' · '+names:''))+'"')+button('editBoardTask','수정','board-task-edit','data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-label="'+esc(project.title+' · '+label)+' 수정"')+'<div class="task-progress-control"><input '+lock+' type="range" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 조절"><input '+lock+' type="number" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 숫자"><span>%</span></div></li>';
     }).join('')+'</ul><label '+(mode!=='status'?'hidden ':'')+'class="board-move-label">목록 이동<select '+(tasks.some(task=>canProgress(task,actor))?'':'disabled')+' data-board-move="'+esc(project.id)+'" aria-label="'+esc(project.title)+' 목록 이동">'+lanes.map(lane=>'<option value="'+lane.id+'"'+(lane.statuses.includes(status)?' selected':'')+'>'+lane.label+'</option>').join('')+'</select></label></article>';
+  }
+  if(layout==='table'){
+   const sections=mode==='project'?weekGroups(list):groups(list,mode,members,C);
+   return '<div class="board-table-view">'+sections.map(section=>'<section class="board-table-section"><h3>'+esc(N.teamLabel(section.label))+' <span class="count">'+section.entries.length+'</span></h3><div class="table-wrap"><table><caption class="sr-only">'+esc(section.label)+' 과업 도표</caption><thead><tr><th>과업</th><th>담당 업무</th><th>담당자</th><th>진행상태</th><th>진행률</th><th>마감일</th><th>수정</th></tr></thead><tbody>'+section.entries.flatMap(card=>orderedTasks(card.tasks,members,orderNames).map(task=>'<tr><td>'+button('boardDetail',esc(card.project.title),'project-button','data-id="'+esc(card.project.id)+'"')+'</td><td>'+esc(N.teamLabel(task.role))+'</td><td>'+esc(orderNames(task.assignees).join(', '))+'</td><td>'+esc(lanes.find(lane=>lane.statuses.includes(task.status))?.label||task.status)+'</td><td><span class="table-percent">'+progress(task)+'%</span><progress max="100" value="'+progress(task)+'" aria-label="진행률"></progress></td><td>'+esc(task.due||'미정')+'</td><td>'+button('editBoardTask','수정','','data-id="'+esc(card.project.id)+'" data-task-id="'+esc(task.id)+'"')+'</td></tr>')).join('')+'</tbody></table></div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   }
   if(mode==='project')return '<div class="task-board-wrap weekly-board"><p class="task-board-total">마감일 기준 · 최신 주차순</p>'+weekGroups(list).map(week=>'<section class="board-week"><h3>'+esc(week.label)+' <span class="count">'+week.entries.length+'</span></h3><div class="board-week-cards">'+week.entries.map(renderCard).join('')+'</div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   return '<div class="task-board-wrap">'

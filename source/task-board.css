@@ -280,3 +280,11 @@ html[data-astryx-theme][data-style] .task-progress-control input[type="number"] 
 .board-detail .task-board-card {box-shadow:none!important;border:0!important;padding:0!important;}
 @media(max-width:600px){.board-control-row{gap:16px;}#projectForm .task-form>.form-grid{grid-template-columns:1fr 1fr;}}
 html[data-astryx-theme][data-style] .task-progress-control input:disabled,html[data-astryx-theme][data-style] .task-check:disabled {cursor:not-allowed;opacity:.6;}
+.board-table-section {margin-bottom:24px;}
+.board-table-section>h3 {display:flex;gap:8px;align-items:center;font-size:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.board-table-section table {min-width:760px;}
+.board-table-section th {white-space:nowrap;}
+.board-table-section td {vertical-align:middle;}
+.board-table-section td:first-child {min-width:200px;}
+.board-table-section progress {display:block;width:90px;height:6px;margin-top:5px;accent-color:var(--color-info);}
+.table-percent {font-variant-numeric:tabular-nums;font-weight:650;}
