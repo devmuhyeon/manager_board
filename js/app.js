@@ -129,21 +129,21 @@
   function boardDetail(id){
     const raw=state.projects.find(project=>project.id===id);if(!raw)return;
     const project=C.effective(raw);
-    showDialog('<div class="modal-head"><div><small>과업 카드</small><h2>'+esc(project.title)+'</h2></div>'+button('close','닫기')+'</div><div class="modal-body board-detail"><h3>설명</h3><p class="board-description">'+esc(project.description||'등록된 설명이 없습니다.')+'</p><h3>담당자 · 체크리스트 · 마감일</h3>'+BoardTaskBoard.render({rows:[project],name:'',showDone:true,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})+'<h3>활동 기록</h3>'+((project.logs||[]).map(log=>'<article class="log"><small>'+esc(log.date)+' · '+esc(log.author)+'</small><p>'+esc(log.content)+'</p></article>').join('')||'<p class="muted">기록된 작업 내역이 없습니다.</p>')+'</div><div class="modal-foot">'+button('edit','담당자 · 마감일 · 내용 편집','primary','data-id="'+esc(id)+'"')+'</div>');
+    showDialog('<div class="modal-head"><div><small>과업 카드</small><h2>'+esc(project.title)+'</h2></div>'+button('close','닫기')+'</div><div class="modal-body board-detail"><h3>설명</h3><p class="board-description">'+esc(project.description||'등록된 설명이 없습니다.')+'</p><h3>담당자 · 체크리스트 · 마감일</h3>'+BoardTaskBoard.render({rows:[project],name:'',showDone:true,members:state.members,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})+'<h3>활동 기록</h3>'+((project.logs||[]).map(log=>'<article class="log"><small>'+esc(log.date)+' · '+esc(log.author)+'</small><p>'+esc(log.content)+'</p></article>').join('')||'<p class="muted">기록된 작업 내역이 없습니다.</p>')+'</div><div class="modal-foot">'+button('edit','담당자 · 마감일 · 내용 편집','primary','data-id="'+esc(id)+'"')+'</div>');
   }
   function openEditor(id,parentId){
     dialogOpener=document.activeElement;
     const original=state.projects.find(p=>p.id===id);editing=original?C.effective(original):{id:C.uid(),source:'manual',title:'',customer:'',requester:'',category1:'',category2:'',requested:C.today(),requestedDue:'',description:'',link:'',logs:[],tasks:[]};
     if(parentId)editing=W.revisionDraft(state,parentId,user.name);
-    taskDraft=structuredClone(editing.tasks?.length?editing.tasks:[{id:C.uid(),role:member(user.name)?.team==='콘텐츠'?'디자인':user.team,assignees:editing.assignees?.length?editing.assignees:[user.name],started:C.today(),due:editing.due||'',status:editing.status||'예정',notes:''}]);
+    taskDraft=structuredClone(editing.tasks?.length?editing.tasks:[{id:C.uid(),role:member(user.name)?.team==='콘텐츠'?'디자인':user.team,assignees:editing.assignees?.length?editing.assignees:[user.name],started:C.today(),due:editing.due||'',status:editing.status||'예정',progress:BoardTaskBoard.progress(editing),progressBeforeCompletion:editing.progressBeforeCompletion||0,notes:''}]);
     const field=(name,label,type='text')=>`<div class="field"><label for="p-${name}">${label}</label><input id="p-${name}" name="${name}" type="${type}" value="${esc(editing[name])}" ${name==='title'?'required maxlength="300"':''}></div>`;
-    $('#editor').innerHTML=`<div class="modal-head"><div><h2>${original?'과업 상세 및 수정':'새 과업 등록'}</h2><div class="muted" style="margin-top:7px">${sourceLabel(editing)} · ${original?'변경 내용은 통합관리 데이터에 저장됩니다':'담당 업무를 기획·디자인·퍼블리싱별로 추가하세요'}</div></div>${button('close','✕','','aria-label="닫기"')}</div><form id="projectForm"><div class="modal-body"><div class="form-grid"><div class="full">${field('title','과업명')}</div>${classificationFields(editing)}<div class="field"><label for="p-customer">고객팀</label><input id="p-customer" name="customer" list="customerOptions" value="${esc(editing.customer)}"><datalist id="customerOptions">${options(C.CUSTOMERS,'')}</datalist></div>${field('requester','고객명 / 요청자')}${field('requested','요청일','date')}${field('requestedDue','요청완료일','date')}<div class="field full"><label for="p-description">과업 설명 / 요청사항</label><textarea id="p-description" name="description">${esc(editing.description)}</textarea></div><div class="full">${field('link','작업 링크')}</div></div><div class="sectionhead task-heading"><h2>담당 업무</h2>${button('addTask','＋ 담당 업무 추가')}</div><div id="taskList">${taskForms()}</div><div class="logs"><h2>날짜별 작업 내역 <span class="count">${editing.logs.length}</span></h2><div>${editing.logs.map(l=>`<div class="log"><small>${esc(l.date)} · ${esc(l.author)}</small><div style="white-space:pre-wrap">${esc(l.content)}</div></div>`).join('')||'<p class="muted">기록된 내역이 없습니다.</p>'}</div><div class="form-grid" style="margin-top:20px"><div class="field"><label for="logDate">작업일</label><input id="logDate" type="date" name="logDate" value="${C.today()}"></div><div class="field"><label>작업자</label><input aria-label="작업자" value="${user.name}" readonly></div><div class="field full"><label for="logContent">새 작업 내역 (저장 시 추가)</label><textarea id="logContent" name="logContent" placeholder="오늘 진행한 내용을 기록하세요. 주간 업무보고에 반영됩니다."></textarea></div></div></div><div class="error" id="projectError" role="alert"></div></div><div class="modal-foot">${button('close','취소')}<button class="primary" type="submit">과업 저장</button></div></form>`;
+    $('#editor').innerHTML=`<div class="modal-head"><div><h2>${original?'과업 상세 및 수정':'새 과업 등록'}</h2><div class="muted" style="margin-top:7px">${sourceLabel(editing)} · ${original?'변경 내용은 통합관리 데이터에 저장됩니다':'담당 업무를 기획·디자인·퍼블리싱별로 추가하세요'}</div></div>${button('close','✕','','aria-label="닫기"')}</div><form id="projectForm"><div class="modal-body"><div class="form-grid"><div class="full">${field('title','과업명')}</div><div class="field full"><label for="p-description">과업 설명 / 요청사항</label><textarea id="p-description" name="description">${esc(editing.description)}</textarea></div>${classificationFields(editing)}<details class="full editor-extra"><summary>고객 · 요청일 · 작업 링크</summary><div class="form-grid"><div class="field"><label for="p-customer">고객팀</label><input id="p-customer" name="customer" list="customerOptions" value="${esc(editing.customer)}"><datalist id="customerOptions">${options(C.CUSTOMERS,'')}</datalist></div>${field('requester','고객명 / 요청자')}${field('requested','요청일','date')}${field('requestedDue','요청완료일','date')}<div class="full">${field('link','작업 링크')}</div></div></details></div><div class="sectionhead task-heading"><h2>담당 업무</h2>${button('addTask','＋ 담당 업무 추가')}</div><div id="taskList">${taskForms()}</div><details class="logs editor-extra"><summary>작업 기록 · ${editing.logs.length}건</summary><div>${editing.logs.map(l=>`<div class="log"><small>${esc(l.date)} · ${esc(l.author)}</small><div style="white-space:pre-wrap">${esc(l.content)}</div></div>`).join('')||'<p class="muted">기록된 내역이 없습니다.</p>'}</div><div class="form-grid" style="margin-top:20px"><div class="field"><label for="logDate">작업일</label><input id="logDate" type="date" name="logDate" value="${C.today()}"></div><div class="field"><label>작업자</label><input aria-label="작업자" value="${user.name}" readonly></div><div class="field full"><label for="logContent">새 작업 내역 (저장 시 추가)</label><textarea id="logContent" name="logContent" placeholder="오늘 진행한 내용을 기록하세요. 주간 업무보고에 반영됩니다."></textarea></div></div></details><div class="error" id="projectError" role="alert"></div></div><div class="modal-foot">${button('close','취소')}<button class="primary" type="submit">과업 저장</button></div></form>`;
     $('#customerOptions').innerHTML=options(state.customerTeams,'');
     $('#editor .modal-body').insertAdjacentHTML('beforeend',revisionLinks(editing));
     $('#editor').showModal();
   }
-  function taskForms(){return taskDraft.map((t,i)=>`<div class="task-form" data-task-index="${i}"><div class="task-top"><strong>담당 업무 ${i+1}</strong>${taskDraft.length>1?button('removeTask','삭제','','data-index="'+i+'"'):''}</div><div class="form-grid"><div class="field"><label for="task-role-${i}">세부유형</label><select id="task-role-${i}" data-task-field="role">${options(['기획','디자인','퍼블','기타'],t.role)}</select></div><div class="field"><label for="task-status-${i}">진행상태</label><select id="task-status-${i}" data-task-field="status">${options(C.STATUSES,t.status)}</select></div><div class="field full"><label>담당자 (여러 명 선택 가능)</label><div class="assignees">${P.orderedMembers(state).filter(m=>m.active!==false||t.assignees.includes(m.name)).map(m=>`<label class="check"><input type="checkbox" data-task-member="${esc(m.name)}" ${t.assignees.includes(m.name)?'checked':''}>${esc(m.name)}<span class="muted">${esc(N.teamLabel(m.team))}${m.active===false?' · 퇴사':''}</span></label>`).join('')}</div></div><div class="field"><label for="task-start-${i}">시작일</label><input id="task-start-${i}" type="date" data-task-field="started" value="${esc(t.started)}"></div><div class="field"><label for="task-due-${i}">마감일</label><input id="task-due-${i}" type="date" data-task-field="due" value="${esc(t.due)}"></div><div class="field full"><label for="task-notes-${i}">비고 / 진행 메모</label><textarea id="task-notes-${i}" data-task-field="notes" placeholder="기존 시트의 비고처럼 자유롭게 작성하세요.">${esc(t.notes)}</textarea></div></div></div>`).join('');}
-  function collectTasks(){document.querySelectorAll('[data-task-index]').forEach(el=>{const t=taskDraft[Number(el.dataset.taskIndex)];el.querySelectorAll('[data-task-field]').forEach(input=>t[input.dataset.taskField]=input.value);t.assignees=[...el.querySelectorAll('[data-task-member]:checked')].map(x=>x.dataset.taskMember);});}
+  function taskForms(){return taskDraft.map((t,i)=>`<div class="task-form" data-task-index="${i}"><div class="task-top"><strong>담당 업무 ${i+1}</strong>${taskDraft.length>1?button('removeTask','삭제','','data-index="'+i+'"'):''}</div><div class="form-grid"><div class="field"><label for="task-role-${i}">세부유형</label><select id="task-role-${i}" data-task-field="role">${options(['기획','디자인','퍼블','기타'],t.role)}</select></div><div class="field"><label for="task-status-${i}">진행상태</label><select id="task-status-${i}" data-task-field="status">${options(C.STATUSES,t.status)}</select></div><details class="field full editor-assignees" ${t.assignees.length?'':'open'}><summary>담당자 · ${esc(t.assignees.join(', ')||'선택하세요')}</summary><div class="assignees">${P.orderedMembers(state).filter(m=>m.active!==false||t.assignees.includes(m.name)).map(m=>`<label class="check"><input type="checkbox" data-task-member="${esc(m.name)}" ${t.assignees.includes(m.name)?'checked':''}>${esc(m.name)}<span class="muted">${esc(N.teamLabel(m.team))}${m.active===false?' · 퇴사':''}</span></label>`).join('')}</div></details><div class="field"><label for="task-progress-${i}">진행률 (%)</label><input id="task-progress-${i}" type="number" min="0" max="100" step="1" data-task-field="progress" value="${BoardTaskBoard.progress(t)}"></div><div class="field"><label for="task-start-${i}">시작일</label><input id="task-start-${i}" type="date" data-task-field="started" value="${esc(t.started)}"></div><div class="field"><label for="task-due-${i}">마감일</label><input id="task-due-${i}" type="date" data-task-field="due" value="${esc(t.due)}"></div><div class="field full"><label for="task-notes-${i}">비고 / 진행 메모</label><textarea id="task-notes-${i}" data-task-field="notes" placeholder="기존 시트의 비고처럼 자유롭게 작성하세요.">${esc(t.notes)}</textarea></div></div></div>`).join('');}
+  function collectTasks(){document.querySelectorAll('[data-task-index]').forEach(el=>{const t=taskDraft[Number(el.dataset.taskIndex)];el.querySelectorAll('[data-task-field]').forEach(input=>t[input.dataset.taskField]=input.dataset.taskField==='progress'?Number(input.value):input.value);t.assignees=[...el.querySelectorAll('[data-task-member]:checked')].map(x=>x.dataset.taskMember);});}
   function saveProject(form){
     collectTasks();const data=new FormData(form),values=Object.fromEntries(['title','taskCategory','contentCategory','contentType','platform','customer','requester','requested','requestedDue','description','link'].map(k=>[k,String(data.get(k)||'').trim()]));
     try{
@@ -156,7 +156,7 @@
       values.tasks=taskDraft.map(task=>{
         const previous=editing.tasks?.find(item=>item.id===task.id)||(!editing.tasks?.length?editing:null);
         if(previous?.status===task.status&&!previous.completedOn)return {...task};
-        return {...task,...BoardTaskBoard.completion(previous,task.status,C.today())};
+        return {...task,...BoardTaskBoard.completion(previous,task.status,C.today()),progress:task.status==='완료'?100:BoardTaskBoard.progress(task)};
       });
       values.assignees=[...new Set(taskDraft.flatMap(t=>t.assignees))];
       values.status=C.effective({...editing,...values,overrides:{}}).status;
@@ -412,12 +412,13 @@
     changed();render();toast('공용 자료와 최신 원본 요청을 새로 읽었습니다. 원본 반영 내용을 파일에 저장하려면 내용 저장을 눌러 주세요.');
   }
   function setWeek(){const d=new Date(),offset=(d.getDay()+6)%7;d.setDate(d.getDate()-offset);const fmt=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;filters.from=fmt(d);d.setDate(d.getDate()+6);filters.to=fmt(d);}
-  let draggedCard='';
-  document.addEventListener('dragstart',e=>{const card=e.target.closest('[data-card-id]');if(!card||card.getAttribute('draggable')!=='true'||card.closest('#editor')||e.target.closest('input,select'))return;draggedCard=card.dataset.cardId;e.dataTransfer.setData('text/plain',draggedCard);e.dataTransfer.effectAllowed='move';card.classList.add('is-dragging');});
+  let draggedCard='',dragPreview=null;
+  function clearDragPreview(){dragPreview?.remove();dragPreview=null;}
+  document.addEventListener('dragstart',e=>{const card=e.target.closest('[data-card-id]');if(!card||card.getAttribute('draggable')!=='true'||card.closest('#editor')||e.target.closest('input,select'))return;draggedCard=card.dataset.cardId;e.dataTransfer.setData('text/plain',draggedCard);e.dataTransfer.effectAllowed='move';clearDragPreview();dragPreview=card.cloneNode(true);dragPreview.classList.add('board-drag-preview');dragPreview.style.width=card.getBoundingClientRect().width+'px';dragPreview.setAttribute('aria-hidden','true');document.body.appendChild(dragPreview);e.dataTransfer.setDragImage(dragPreview,card.getBoundingClientRect().width/2,32);card.classList.add('is-dragging');});
   document.addEventListener('dragover',e=>{const lane=e.target.closest('[data-lane]');if(lane&&draggedCard){e.preventDefault();e.dataTransfer.dropEffect='move';lane.classList.add('is-drop-target');}});
   document.addEventListener('dragleave',e=>{const lane=e.target.closest('[data-lane]');if(lane&&!lane.contains(e.relatedTarget))lane.classList.remove('is-drop-target');});
-  document.addEventListener('drop',e=>{const lane=e.target.closest('[data-lane]');if(!lane||!draggedCard)return;e.preventDefault();moveBoardCard(draggedCard,lane.dataset.lane);draggedCard='';});
-  document.addEventListener('dragend',()=>{draggedCard='';document.querySelectorAll('.is-dragging,.is-drop-target').forEach(el=>el.classList.remove('is-dragging','is-drop-target'));});
+  document.addEventListener('drop',e=>{const lane=e.target.closest('[data-lane]');if(!lane||!draggedCard)return;e.preventDefault();moveBoardCard(draggedCard,lane.dataset.lane);draggedCard='';clearDragPreview();});
+  document.addEventListener('dragend',()=>{draggedCard='';clearDragPreview();document.querySelectorAll('.is-dragging,.is-drop-target').forEach(el=>el.classList.remove('is-dragging','is-drop-target'));});
   document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(el)act(el).catch(err=>{if(err.name!=='AbortError')toast(err.message);});else if(!e.target.closest('button,input,select,textarea,a,label')){const card=e.target.closest('[data-home-target]');if(card)act({dataset:{action:'page',page:card.dataset.homeTarget}}).catch(err=>toast(err.message));}});
   document.addEventListener('submit',e=>{
     if(e.target.id==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
@@ -437,6 +438,27 @@
   });
   document.addEventListener('change',async e=>{
     const el=e.target;
+    if(el.dataset.taskField==='progress'||el.dataset.taskField==='status'){
+      const row=el.closest('[data-task-index]'),percent=row.querySelector('[data-task-field="progress"]'),status=row.querySelector('[data-task-field="status"]');
+      if(el.dataset.taskField==='progress'&&el.value!==''&&el.validity.valid)status.value=Number(el.value)===100?'완료':Number(el.value)===0?'예정':'진행중';
+      if(el.dataset.taskField==='status')percent.value=el.value==='완료'?100:Math.min(99,Number(percent.value));
+    }
+    if(el.dataset.taskMember){const row=el.closest('.editor-assignees');row.querySelector('summary').textContent='담당자 · '+(Array.from(row.querySelectorAll('[data-task-member]:checked')).map(input=>input.dataset.taskMember).join(', ')||'선택하세요');}
+    if(el.dataset.progressId){
+      try{
+        const index=state.projects.findIndex(project=>project.id===el.dataset.progressId);
+        if(!user||index<0)return;
+        if(el.value.trim()==='')throw new Error('진행률을 입력해 주세요.');
+        const detailOpen=$('#editor').open;
+        state.projects[index]=BoardTaskBoard.setProgress(state.projects[index],el.dataset.progressTask,Number(el.value),C);
+        changed();render();
+        if(detailOpen){$('#editor').close();boardDetail(el.dataset.progressId);}
+        const controls=Array.from(document.querySelectorAll('[data-progress-id]'));
+        const focus=controls.find(input=>input.dataset.progressId===el.dataset.progressId&&input.dataset.progressTask===el.dataset.progressTask&&input.type===el.type&&Boolean(input.closest('#editor'))===detailOpen);
+        focus?.focus?.({preventScroll:true});
+      }catch(err){toast(err.message);}
+      return;
+    }
     if(el.dataset.boardMove){const detailOpen=$('#editor').open;moveBoardCard(el.dataset.boardMove,el.value,detailOpen?'':boardAssignee());if(detailOpen){$('#editor').close();boardDetail(el.dataset.boardMove);}return;}
     if(el.id==='boardShowDone'){boardShowDone=el.checked;render();$('#boardShowDone')?.focus?.();return;}
     if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;render();}return;}
@@ -456,6 +478,15 @@
   let searchTimer;
   document.addEventListener('input',e=>{
     const input=e.target;
+    if(input.dataset.progressId){
+      if(input.value.trim()===''||!input.validity.valid)return;
+      const row=input.closest('li'),card=input.closest('.task-board-card');
+      row.querySelectorAll('[data-progress-id]').forEach(control=>{if(control!==input)control.value=input.value;});
+      const values=Array.from(card.querySelectorAll('input[type="range"][data-progress-id]')).map(control=>Number(control.value));
+      const percent=Math.floor(values.reduce((sum,value)=>sum+value,0)/values.length);
+      card.querySelector('progress').value=percent;card.querySelector('[data-card-percent]').textContent=percent+'%';
+      return;
+    }
     const isName=input.id==='boardName';
     if(!isName&&input.dataset.filter!=='search')return;
     if(isName)boardName=input.value;else filters.search=input.value;

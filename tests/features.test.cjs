@@ -44,3 +44,8 @@ test('인원 정렬은 관리자와 관계없이 소속 팀 안에서 팀장 다
  assert.equal(JSON.stringify(s),before);
  s.teamLeaders.퍼블='신규팀원';assert.deepEqual(P.orderedMembers(s).filter(m=>m.team==='퍼블').map(m=>m.name),['신규팀원','김무현','임정규']);
 });
+
+test('같은 팀은 팀장 우선 이후 직급순이며 같은 직급은 기존 순서를 유지한다',()=>{
+ const s={members:[{name:'사원',team:'디자인',rank:'사원'},{name:'과장',team:'디자인',rank:'과장'},{name:'대리1',team:'디자인',rank:'대리'},{name:'대리2',team:'디자인',rank:'대리'}],teamLeaders:{디자인:'사원'}};
+ assert.deepEqual(P.orderedMembers(s).map(m=>m.name),['사원','과장','대리1','대리2']);
+});

@@ -73,3 +73,48 @@ test('개인별·팀별 보기는 동일 카드의 담당 업무를 나눠 표�
  assert.equal(Board.groups(list,'project',[],C).length,1);
  assert.equal(Board.groups(list,'status',[],C).length,4);
 });
+
+test('40% 진행률은 가져온 원본을 보존하며 재저장 후 유지된다',()=>{
+ const updated=Board.setProgress(project,'planning',40,C);
+ assert.deepEqual(updated.tasks,project.tasks);
+ const effective=C.effective(updated);
+ assert.equal(effective.tasks[0].progress,40);
+ assert.equal(effective.tasks[0].status,'진행중');
+ assert.equal(Board.average(effective.tasks),20);
+ const loaded=C.validateState(JSON.parse(JSON.stringify({...C.sampleState(),projects:[updated]})));
+ assert.equal(Board.progress(C.effective(loaded.projects[0]).tasks[0]),40);
+ assert.equal(C.effective(updated).tasks[1].progress,undefined);
+});
+test('진행률 100%는 완료일을 기록하고 완료 취소는 이전 진행률을 복원한다',()=>{
+ const partial=Board.setProgress(project,'planning',40,C);
+ const done=Board.toggle(partial,'planning',C);
+ assert.equal(C.effective(done).tasks[0].progress,100);
+ assert.equal(C.effective(done).tasks[0].completedOn,C.today());
+ const reopened=C.effective(Board.toggle(done,'planning',C)).tasks[0];
+ assert.equal(reopened.progress,40);assert.equal(reopened.completedOn,'');
+ const lowered=C.effective(Board.setProgress(done,'planning',65,C)).tasks[0];
+ assert.equal(lowered.status,'진행중');assert.equal(lowered.progress,65);assert.equal(lowered.completedOn,'');
+ assert.equal(C.effective(Board.move(partial,'done','김무현',C)).tasks[0].progress,100);
+});
+test('기존 단일 과업도 진행률을 지원하고 잘못된 값은 거절한다',()=>{
+ const old={id:'legacy',source:'manual',title:'기존',assignees:['김무현'],status:'예정'};
+ assert.equal(Board.setProgress(old,'',40,C).progress,40);
+ for(const value of [-1,101,NaN,Infinity,40.5,'40'])assert.throws(()=>Board.setProgress(old,'',value,C));
+ assert.equal(Board.progress({status:'완료'}),100);
+ assert.equal(Board.progress({status:'진행중'}),0);
+});
+
+test('주차 묶음은 월 경계를 잘라 표시하고 최신 주차와 미정 순서로 정렬한다',()=>{
+ const make=(id,due)=>({project:{id},nextDue:due});
+ const groups=Board.weekGroups([make('a','2026-10-01'),make('b','2026-10-09'),make('c',''),make('d','2026-11-02')]);
+ assert.deepEqual(groups.map(g=>g.entries[0].project.id),['d','b','a','c']);
+ assert.equal(groups[1].label,'2026년 10월 2주차 (10/5~10/11)');
+ assert.equal(groups[2].label,'2026년 10월 1주차 (10/1~10/4)');
+ assert.equal(groups[3].label,'마감일 미정');
+});
+test('카드 담당 업무는 기획 디자인 퍼블 순으로 정렬하고 동종 업무는 담당자 순서를 따른다',()=>{
+ const tasks=[{id:'p',role:'퍼블',assignees:['P']},{id:'d2',role:'디자인',assignees:['후임']},{id:'c',role:'콘텐츠 기획',assignees:['C']},{id:'d1',role:'디자인',assignees:['선임']},{id:'a',role:'기획',assignees:['A']}];
+ const ordered=Board.orderedTasks(tasks,[],()=>['A','C','선임','후임','P']);
+ assert.deepEqual(ordered.map(t=>t.id),['a','c','d1','d2','p']);
+ assert.equal(tasks[0].id,'p');
+});

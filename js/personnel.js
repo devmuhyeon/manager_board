@@ -4,7 +4,9 @@
   function compareNames(s,a,b){
     const members=s.members||C.MEMBERS,ma=members.find(m=>m.name===a),mb=members.find(m=>m.name===b);
     const team=m=>{const i=C.TEAMS.indexOf(m?.team);return i<0?C.TEAMS.length:i;};
-    return team(ma)-team(mb)||Number(s.teamLeaders?.[mb?.team]===b)-Number(s.teamLeaders?.[ma?.team]===a);
+    const ranks=['대표','사장','부사장','전무','상무','이사','부장','차장','과장','대리','주임','사원','인턴'];
+    const rank=m=>{const index=ranks.indexOf(m?.rank);return index<0?ranks.length:index;};
+    return team(ma)-team(mb)||Number(s.teamLeaders?.[mb?.team]===b)-Number(s.teamLeaders?.[ma?.team]===a)||rank(ma)-rank(mb);
   }
   const orderNames=(s,names)=>names.slice().sort((a,b)=>compareNames(s,a,b));
   const orderedMembers=s=>(s.members||C.MEMBERS).slice().sort((a,b)=>compareNames(s,a.name,b.name));

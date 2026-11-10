@@ -120,6 +120,7 @@
       if(typeof p.id!=='string'||ids.has(p.id)||typeof e.title!=='string'||!Array.isArray(e.assignees)||!Array.isArray(e.logs)||!STATUSES.includes(e.status)||!['sample','import','manual'].includes(p.source))throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.');
       ids.add(p.id);
       if(e.tasks && (!Array.isArray(e.tasks)||e.tasks.some(t=>typeof t.id!=='string'||!Array.isArray(t.assignees)||!STATUSES.includes(t.status))))throw new Error('담당 업무 형식이 올바르지 않습니다.');
+      for(const task of [e,...(e.tasks||[])])if(task.progress!==undefined&&(!Number.isInteger(task.progress)||task.progress<0||task.progress>100))throw new Error('진행률은 0~100 사이의 정수여야 합니다.');
       for(const l of e.logs)if(typeof l.id!=='string'||!date(l.date)||typeof l.author!=='string'||typeof l.content!=='string')throw new Error('작업 내역 형식이 올바르지 않습니다.');
     }
     const people=s.members||MEMBERS;

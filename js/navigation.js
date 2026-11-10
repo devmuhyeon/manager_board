@@ -14,7 +14,7 @@
       const [,icon,title]=entry;
       return button('page','<span class="tossface" aria-hidden="true">'+icon+'</span>'+title,page===key?'active':'','data-page="'+key+'" aria-label="'+esc(title)+'" title="'+esc(title)+'" '+(page===key?'aria-current="page"':''));
     };
-    return primary.map(item).join('')+'<details class="nav-more"'+(secondary.includes(page)?' open':'')+'><summary aria-label="보고 및 관리 메뉴 더 보기">더 보기</summary><div>'+secondary.map(item).join('')+'</div></details>';
+    return primary.map(item).join('')+'<div class="nav-secondary" aria-label="보고 및 관리 메뉴">'+secondary.map(item).join('')+'</div>';
   }
  const api={menu,groups,titles,teamLabel,defaults,cleanLinks};if(typeof module!=='undefined')module.exports=api;else root.BoardNavigation=api;
 })(typeof window!=='undefined'?window:globalThis);
