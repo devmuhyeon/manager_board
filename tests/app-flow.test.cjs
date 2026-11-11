@@ -4,7 +4,7 @@ function harness(){
  const events={};
  const nodes=new Map(),element=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},hidden:false,disabled:false,open:false,addEventListener(){},insertAdjacentHTML(_,html){this.innerHTML+=html;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(selector);};
  const store=new Map(),vault={rememberConnections:async v=>{vault.connections=v;},recallConnections:async()=>vault.connections,recall:async()=>null,forget:async()=>{}};
- const context={BoardSimpleEditor:require('../js/simple-editor.js'),BoardBriefingCalendar:require('../js/briefing-calendar.js'),BoardAccountReset:require('../js/account-reset.js'),BoardTaskBoard:require('../js/task-board.js'),BoardMemoCarousel:require('../js/memo-carousel.js'),BoardDisplayStyles:require('../js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../js/work-tables.js'),BoardNavigation:require('../js/navigation.js'),BoardTeamPosts:require('../js/team-board.js'),BoardDetailViews:require('../js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
+ const context={BoardProjectReport:require('../js/project-report.js'),BoardSimpleEditor:require('../js/simple-editor.js'),BoardBriefingCalendar:require('../js/briefing-calendar.js'),BoardAccountReset:require('../js/account-reset.js'),BoardTaskBoard:require('../js/task-board.js'),BoardMemoCarousel:require('../js/memo-carousel.js'),BoardDisplayStyles:require('../js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../js/work-tables.js'),BoardNavigation:require('../js/navigation.js'),BoardTeamPosts:require('../js/team-board.js'),BoardDetailViews:require('../js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
@@ -132,7 +132,7 @@ test('테리어몬은 사용자가 지정한 original 경로로 선택·프로�
  assert.doesNotThrow(()=>C.validateState(JSON.parse(JSON.stringify(h.api.read().state))));
 });
 
-test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 연결된다',async()=>{
+test('첫 화면은 업무 보드이며 프로젝트 클릭은 과업별 도표로 연결된다',async()=>{
  const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현',null);h.api.render();
  assert.equal(h.context.document.documentElement.dataset.boardView,'true');
  assert.match(h.element('#app').innerHTML,/보드 기준/);
@@ -140,12 +140,10 @@ test('첫 화면은 업무 보드이며 카드 상세에서 체크와 수정이 
  assert.match(h.element('#app').innerHTML,/draggable="true"/);
  const p=h.api.read().state.projects.find(p=>p.tasks?.length);
  await h.api.act({dataset:{action:'boardDetail',id:p.id}});
- assert.equal(h.element('#editor').open,true);
- assert.match(h.element('#editor').innerHTML,/활동 기록/);
+ assert.equal(h.element('#editor').open,false);assert.match(h.element('#app').innerHTML,/project-spreadsheet/);
  h.api.session(p.tasks[0].assignees[0],'work');
  await h.api.act({dataset:{action:'toggleBoardTask',id:p.id,taskId:p.tasks[0].id}});
- assert.equal(h.element('#editor').open,true);
- assert.match(h.element('#editor').innerHTML,/담당자 · 마감일 · 내용 편집/);
+ assert.equal(h.element('#editor').open,false);
  await h.api.act({dataset:{action:'edit',id:p.id}});
  assert.match(h.element('#editor').innerHTML,/projectForm/);
 });
@@ -205,8 +203,8 @@ test('간단 편집에서 제목만 바꿔도 고객과 분류 및 기존 기록
 test('메뉴 그룹과 주차는 각각 독립적으로 접고 펼친다',async()=>{
  const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');h.api.render();
  await h.api.act({dataset:{action:'navSection',section:'schedule'}});await h.api.act({dataset:{action:'page',page:'memo'}});
- assert.match(h.element('#app').innerHTML,/id="nav-schedule" class="nav-children" hidden/);
- await h.api.act({dataset:{action:'navSection',section:'schedule'}});assert.ok(!h.element('#app').innerHTML.includes('id="nav-schedule" class="nav-children" hidden'));
+ assert.match(h.element('#app').innerHTML,/id="nav-schedule" class="nav-children is-collapsed" inert/);
+ await h.api.act({dataset:{action:'navSection',section:'schedule'}});assert.ok(!h.element('#app').innerHTML.includes('id="nav-schedule" class="nav-children is-collapsed" inert'));
  await h.api.act({dataset:{action:'page',page:'work'}});const key=h.element('#app').innerHTML.match(/data-action="toggleWeek"[^>]*data-key="([^"]+)"/)[1];
  await h.api.act({dataset:{action:'toggleWeek',key}});assert.match(h.element('#app').innerHTML,/class="board-week-cards" hidden/);
  await h.api.act({dataset:{action:'boardMode',mode:'status'}});await h.api.act({dataset:{action:'toggleLane',key:'done'}});assert.match(h.element('#app').innerHTML,/task-board-lane is-collapsed" data-lane="done"/);
@@ -214,4 +212,17 @@ test('메뉴 그룹과 주차는 각각 독립적으로 접고 펼친다',async(
 test('카드 도표 전환은 텍스트 대신 두 아이콘과 접근성 이름을 제공한다',()=>{
  const h=harness();h.api.seed(fixture());h.api.session('김무현','work');h.api.render();const toggle=h.element('#app').innerHTML.match(/<button[^>]*data-action="boardLayout"[\s\S]*?<\/button>/)[0];
  assert.equal((toggle.match(/<svg /g)||[]).length,2);assert.match(toggle,/title="카드 보기"/);assert.match(toggle,/title="도표 보기"/);assert.match(toggle,/aria-label="도표형 보기"/);assert.ok(!toggle.includes('>카드</span>'));
+});
+test('업무조회 메뉴는 고객별 다음에 과업별을 표시하고 클릭한 프로젝트만 도표로 연다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;
+ const nav=html.match(/<nav[\s\S]*?<\/nav>/)[0];assert.ok(nav.indexOf('data-page="customers"')<nav.indexOf('data-page="projects"'));assert.ok(!nav.includes('고객별 업무'));
+ const projects=h.api.read().state.projects;await h.api.act({dataset:{action:'boardDetail',id:projects[0].id}});html=h.element('#app').innerHTML;assert.match(html,/project-spreadsheet/);assert.ok(html.includes(projects[0].title));assert.ok(!html.includes(projects[1].title));assert.equal(h.element('#editor').open,false);
+ await h.api.act({dataset:{action:'allProjects'}});assert.ok(h.element('#app').innerHTML.includes(projects[1].title));
+ await h.api.act({dataset:{action:'editBoardTask',id:projects[0].id,taskId:projects[0].tasks[0].id}});assert.match(h.element('#editor').innerHTML,/projectForm/);
+});
+test('휴가 개인별 보기는 기존 조회 권한 안에서 이름으로 분리하고 인원 추가는 팀 이름 직급을 받는다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','leaves');h.api.render();await h.api.act({dataset:{action:'leaveView',view:'person'}});let html=h.element('#app').innerHTML;assert.match(html,/id="leavePerson"/);assert.match(html,/leave-person-group/);
+ await h.change({id:'leavePerson',value:'김무현',dataset:{}});const table=h.element('#app').innerHTML.match(/<table class="leave-table">[\s\S]*?<\/table>/)[0];assert.ok(!table.includes('정윤정'));
+ await h.api.act({dataset:{action:'page',page:'people'}});html=h.element('#app').innerHTML;assert.ok(html.indexOf('입사·퇴사 인원 관리')<html.indexOf('팀원 휴가 관리'));assert.match(html,/<th scope="col">직급<\/th>/);
+ await h.api.act({dataset:{action:'addMember'}});for(const field of ['memberTeam','memberName','memberRank'])assert.ok(h.element('#editor').innerHTML.includes('id="'+field+'"'));
 });

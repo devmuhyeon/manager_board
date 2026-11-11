@@ -41,7 +41,7 @@
  }
  function home({style,state,user,C,B,N,esc,button,badge,hint,table,orderNames=names=>names}){
   const rows=state.projects.map(C.effective);
-  const open=p=>button('edit',esc(p.title),'project-button','data-id="'+esc(p.id)+'"');
+  const open=p=>button('boardDetail',esc(p.title),'project-button','data-id="'+esc(p.id)+'"');
   if(style==='briefing'){
    const posts=B.list(state,user.name,user.team).slice(0,3);
    return '<section class="card briefing-news"><div class="sectionhead"><h2>'+esc(N.teamLabel(user.team))+' 팀 브리핑</h2>'+button('page','팀 게시판 →','','data-page="board"')+'</div><div class="briefing-posts">'+(posts.map(p=>'<article><span class="origin-label">'+esc(B.typeOf(p))+'</span><h3>'+esc(p.title)+'</h3><p>'+esc(p.content)+'</p><small>'+esc(p.author)+' · '+esc(p.updatedAt.slice(0,10))+'</small></article>').join('')||hint(user.avatar,'팀의 첫 소식을 남겨보세요','팀 게시판에서 공지와 작업 소식을 공유할 수 있어요.'))+'</div></section><section class="card style-work-panel"><div class="sectionhead"><h2>진행 중인 과업</h2>'+button('page','전체 업무 →','','data-page="work"')+'</div>'+table(rows.filter(p=>!C.isComplete(p.status)).slice(0,6))+'</section>';
