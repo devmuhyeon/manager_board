@@ -35,3 +35,8 @@ html[data-astryx-theme][data-style] .task-work-section>.task-progress-control{pa
 html[data-astryx-theme][data-style] .task-revision-section .revision-required{margin:0;padding:0 0 8px;font-size:11px;color:#5b21b6}
 html[data-astryx-theme][data-style] .task-revision-section .revision-control{padding:0;margin:0;background:transparent;gap:6px}
 html[data-astryx-theme][data-style] .task-revision-section .revision-control strong{color:#6d28d9;font-size:11px}
+/* Shared title hierarchy: primary headings 700, card and group titles 600. */
+html[data-astryx-theme][data-style] :is(.heading h1,.sectionhead h2,.table-toolbar h2,.report-intro h2,.modal-head h2,.settings-card>h2,.connect-card h2){font-weight:700}
+html[data-astryx-theme][data-style] :is(.task-board-card .task-board-title,.project-button,.memo-title strong,.board-post h3,.briefing-posts h3,.category-group>h3,.user-work-section>h3,.modal-body>h3,.leave-person-group h3,.task-board-lane>h3,.board-table-section>h3,.board-week .board-collapse,.nav-parent,.simple-task-head>label){font-weight:600}
+html[data-astryx-theme][data-style] .task-work-heading .task-check>span:not(.task-check-mark){font-weight:600}
+html[data-astryx-theme][data-style] .task-work-heading .task-check small{font-weight:400}
