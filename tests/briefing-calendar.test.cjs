@@ -11,3 +11,9 @@ test('메모 기간 저장과 역전 기간 검증 및 주간 일정 겹침을 �
  assert.throws(()=>P.savePersonal(state,'김무현',{title:'역전',date:'2026-11-05',endDate:'2026-11-01'}));
  assert.throws(()=>P.savePersonal(state,'김무현',{title:'종료만',endDate:'2026-11-01'}));
 });
+test('기간 막대는 하루씩 반복하지 않고 주 경계에서만 나눈다',()=>{
+ const days=Calendar.weeks('2026-11')[1],e={id:'a',start:'2026-11-01',end:'2026-11-12'};
+ const packed=Calendar.segments([e],days);assert.equal(packed.visible.length,1);assert.equal(packed.visible[0].span,7);assert.equal(packed.visible[0].continuesBefore,true);assert.equal(packed.visible[0].continuesAfter,true);
+ const crowded=Calendar.segments([e,{...e,id:'b'},{...e,id:'c'}],days);assert.equal(crowded.visible.length,2);assert.equal(crowded.overflow.length,1);
+ assert.equal(Calendar.weeks('2026-02').flat().length,35);
+});

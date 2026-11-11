@@ -12,11 +12,22 @@
   return rows.sort((a,b)=>a.start.localeCompare(b.start)||a.title.localeCompare(b.title,'ko'));
  }
  function shift(month,delta){const d=new Date(month+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+delta);return d.toISOString().slice(0,7);}
- function render({state,actor,C,month,selected,esc,button}){
-  const all=events(state,actor,C),first=new Date(month+'-01T00:00:00Z'),offset=(first.getUTCDay()+6)%7;
-  const days=Array.from({length:42},(_,i)=>{const d=new Date(first);d.setUTCDate(1-offset+i);return d.toISOString().slice(0,10);});
-  const selectedEvents=all.filter(e=>e.start<=selected&&e.end>=selected);
-  return '<section class="card briefing-calendar"><div class="sectionhead"><div><h2>내 업무 달력</h2><p class="muted">내가 참여한 프로젝트 기간 · 개인 메모 기간</p></div><div class="actions">'+button('calendarMonth','‹','','data-step="-1" aria-label="이전 달"')+'<strong>'+esc(month.replace('-','년 '))+'월</strong>'+button('calendarMonth','›','','data-step="1" aria-label="다음 달"')+button('calendarToday','오늘')+'</div></div><div class="calendar-legend"><span class="project">프로젝트</span><span class="memo">개인 메모</span></div><div class="calendar-scroll"><div class="calendar-grid">'+['월','화','수','목','금','토','일'].map(day=>'<div class="calendar-weekday">'+day+'</div>').join('')+days.map(date=>{const entries=all.filter(e=>e.start<=date&&e.end>=date);return '<div class="calendar-day '+(date.slice(0,7)!==month?'outside ':'')+(date===C.today()?'today ':'')+(date===selected?'selected':'')+'">'+button('calendarDay',String(Number(date.slice(-2))),'calendar-day-button','data-date="'+date+'" aria-label="'+date+' 일정 '+entries.length+'개" aria-pressed="'+(date===selected)+'"')+entries.slice(0,3).map(e=>button(e.kind==='project'?'boardDetail':'editMemo',esc(e.title),'calendar-event '+e.kind+(e.done?' done':''),'data-id="'+esc(e.id)+'" title="'+esc(e.title+' · '+e.start+' ~ '+e.end)+'"')).join('')+(entries.length>3?button('calendarDay','+'+(entries.length-3)+'개 더 보기','calendar-more','data-date="'+date+'"'):'')+'</div>';}).join('')+'</div></div><div class="calendar-day-list"><h3>'+esc(selected)+' 일정 <span class="count">'+selectedEvents.length+'</span></h3>'+selectedEvents.map(e=>'<article>'+button(e.kind==='project'?'boardDetail':'editMemo',esc(e.title),'project-button','data-id="'+esc(e.id)+'"')+'<small>'+esc((e.kind==='project'?'프로젝트':'개인 메모')+' · '+e.start+' ~ '+e.end)+'</small></article>').join('')+(!selectedEvents.length?'<p class="muted">선택한 날짜에 일정이 없습니다.</p>':'')+'</div></section>';
+ function weeks(month){
+  const first=new Date(month+'-01T00:00:00Z'),offset=(first.getUTCDay()+6)%7,last=new Date(first);last.setUTCMonth(last.getUTCMonth()+1);last.setUTCDate(0);
+  return Array.from({length:Math.ceil((last.getUTCDate()+offset)/7)},(_,w)=>Array.from({length:7},(_,i)=>{const d=new Date(first);d.setUTCDate(1-offset+w*7+i);return d.toISOString().slice(0,10);}));
  }
- const api={events,shift,render};if(typeof module!=='undefined')module.exports=api;else root.BoardBriefingCalendar=api;
+ function segments(all,days){
+  const occupied=[Array(7).fill(false),Array(7).fill(false)],visible=[],overflow=[];
+  all.filter(e=>e.start<=days[6]&&e.end>=days[0]).forEach(event=>{
+   const start=Math.max(0,days.findIndex(day=>day>=event.start)),end=event.end>=days[6]?6:days.findLastIndex(day=>day<=event.end);
+   const row=occupied.findIndex(cells=>cells.slice(start,end+1).every(value=>!value));
+   if(row<0){overflow.push(event);return;}for(let i=start;i<=end;i++)occupied[row][i]=true;
+   visible.push({...event,column:start+1,span:end-start+1,row:row+2,continuesBefore:event.start<days[0],continuesAfter:event.end>days[6]});
+  });return {visible,overflow};
+ }
+ function render({state,actor,C,month,esc,button}){
+  const all=events(state,actor,C);
+  return '<section class="card briefing-calendar compact-calendar"><div class="sectionhead"><h2>내 업무 달력</h2><div class="calendar-legend"><span class="project">프로젝트</span><span class="memo">개인 메모</span></div><div class="actions">'+button('calendarMonth','‹','','data-step="-1" aria-label="이전 달"')+'<strong>'+esc(month.replace('-','년 '))+'월</strong>'+button('calendarMonth','›','','data-step="1" aria-label="다음 달"')+button('calendarToday','오늘')+'</div></div><div class="calendar-scroll"><div class="calendar-weekdays">'+['월','화','수','목','금','토','일'].map(day=>'<span>'+day+'</span>').join('')+'</div>'+weeks(month).map(days=>{const packed=segments(all,days);return '<div class="calendar-week">'+days.map((date,i)=>'<div class="calendar-date '+(date.slice(0,7)!==month?'outside ':'')+(date===C.today()?'today':'')+'" style="grid-column:'+(i+1)+';grid-row:1" aria-label="'+date+'">'+Number(date.slice(-2))+'</div>').join('')+packed.visible.map(e=>button(e.kind==='project'?'boardDetail':'editMemo',(e.continuesBefore?'‹ ':'')+esc(e.title)+(e.continuesAfter?' ›':''),'calendar-span '+e.kind+(e.continuesBefore?' continues-before':'')+(e.continuesAfter?' continues-after':''),'data-id="'+esc(e.id)+'" style="grid-column:'+e.column+' / span '+e.span+';grid-row:'+e.row+'" title="'+esc(e.title+' · '+e.start+' ~ '+e.end)+'"')).join('')+(packed.overflow.length?button('calendarWeek','+'+packed.overflow.length+'개 · 이번 주 전체','calendar-overflow','data-date="'+days[0]+'" style="grid-column:1 / -1;grid-row:4"'):'')+'</div>';}).join('')+'</div></section>';
+ }
+ const api={events,shift,weeks,segments,render};if(typeof module!=='undefined')module.exports=api;else root.BoardBriefingCalendar=api;
 })(typeof window!=='undefined'?window:globalThis);

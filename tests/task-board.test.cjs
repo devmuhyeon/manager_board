@@ -195,3 +195,10 @@ test('보드 기간은 담당 업무 마감일 기준이며 시작일과 종료�
  assert.equal(Board.cards(rows,'',true,C,{to:'2026-11-12'})[0].tasks.length,2);
  assert.equal(Board.cards(rows,'',true,C,{})[0].tasks.length,2);
 });
+test('과업명 검색 중에도 본인 업무만 이동하며 진행별은 최근 수정순이다',()=>{
+ const list=Board.cards([C.effective(project)],'공동',true,C);assert.equal(list[0].tasks.length,2);
+ const moved=C.effective(Board.move(project,'hold','공동',C,'김무현'));assert.equal(moved.tasks[0].status,'보류');assert.equal(moved.tasks[1].status,'진행중');
+ const older={...project,id:'old',updatedAt:'2026-11-01'},newer={...project,id:'new',updatedAt:'2026-11-10'};
+ const groups=Board.groups(Board.cards([C.effective(older),C.effective(newer)],'',true,C),'status',[],C);
+ assert.deepEqual(groups.find(g=>g.id==='doing').entries.map(c=>c.project.id),['new','old']);
+});

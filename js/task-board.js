@@ -19,7 +19,7 @@
  function cards(rows,name,showDone,C,period={}){
   const query=name.trim().toLocaleLowerCase('ko');
   return rows.flatMap(project=>{
-   const tasks=items(project).filter(task=>(!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))&&(!period.from||task.due&&task.due>=period.from)&&(!period.to||task.due&&task.due<=period.to));
+   const tasks=items(project).filter(task=>(!query||project.title.toLocaleLowerCase('ko').includes(query)||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))&&(!period.from||task.due&&task.due>=period.from)&&(!period.to||task.due&&task.due<=period.to));
    if(!tasks.length)return [];
    const open=tasks.filter(task=>!isDone(task.status));
    if(!open.length&&!showDone)return [];
@@ -93,14 +93,14 @@
   const lane=lanes.find(item=>item.id===laneId);
   if(!lane)throw new Error('목록을 찾을 수 없습니다.');
   const project=C.effective(raw),query=name.trim().toLocaleLowerCase('ko'),status=lane.statuses[0];
-  if(!items(project).some(task=>canProgress(task,actor)&&(!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))))throw new Error('이 카드에 이동할 수 있는 본인 업무가 없습니다.');
-  const update=task=>(canProgress(task,actor)&&(!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query))))
+  if(!items(project).some(task=>canProgress(task,actor)&&(!query||project.title.toLocaleLowerCase('ko').includes(query)||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))))throw new Error('이 카드에 이동할 수 있는 본인 업무가 없습니다.');
+  const update=task=>(canProgress(task,actor)&&(!query||project.title.toLocaleLowerCase('ko').includes(query)||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query))))
    ? (status==='완료 후 수정'?{...task,status,revisionProgress:task.revisionProgress||0}:{...task,status,...completion(task,status,C.today())}):task;
   const changes=project.tasks?.length?{tasks:project.tasks.map(update)}:update(project);
   return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
  }
  function groups(list,mode,members,C,actor=''){
-  if(mode==='status')return lanes.map(lane=>({...lane,entries:list.filter(card=>lane.statuses.includes(card.status))}));
+  if(mode==='status')return lanes.map(lane=>({...lane,entries:list.filter(card=>lane.statuses.includes(card.status)).sort((a,b)=>String(b.project.updatedAt||b.project.createdAt||b.project.requested||b.nextDue||'').localeCompare(String(a.project.updatedAt||a.project.createdAt||a.project.requested||a.nextDue||'')))}));
   if(mode==='project')return list.map(card=>({id:card.project.id,label:card.project.title,entries:[card]}));
   const keys=task=>mode==='person'?(task.assignees.length?task.assignees:['담당자 미지정']):(task.assignees.length?[...new Set(task.assignees.map(name=>members.find(m=>m.name===name)?.team||'팀 미지정'))]:['팀 미지정']);
   const labels=[...new Set(list.flatMap(card=>card.tasks.flatMap(keys)))];
@@ -142,7 +142,7 @@
   }
   return [...groups.values()].sort((a,b)=>a.key==='undated'?1:b.key==='undated'?-1:b.key.localeCompare(a.key));
  }
- function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor='',layout='cards',period={}}){
+ function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor='',layout='cards',period={},closedWeeks=[],closedLanes=[]}){
   const list=cards(rows,name,showDone,C,period);
   const remaining=list.reduce((total,card)=>total+card.remaining,0);
   const today=C.today();
@@ -177,19 +177,20 @@
   }
   if(layout==='table'){
    const sections=mode==='project'?weekGroups(list):groups(list,mode,members,C,actor);
-   return '<div class="board-table-view">'+sections.map(section=>'<section class="board-table-section"><h3>'+esc(N.teamLabel(section.label))+(section.team?' · '+esc(N.teamLabel(section.team))+'팀':'')+' <span class="count">'+section.entries.length+'</span></h3><div class="table-wrap"><table><caption class="sr-only">'+esc(section.label)+' 과업 도표</caption><thead><tr><th>과업</th><th>담당 업무</th><th>담당자</th><th>진행상태</th><th>진행률</th><th>마감일</th><th>수정</th></tr></thead><tbody>'+section.entries.flatMap(card=>orderedTasks(card.tasks,members,orderNames).map(task=>'<tr><td>'+button('boardDetail',esc(card.project.title),'project-button','data-id="'+esc(card.project.id)+'"')+'</td><td>'+esc(N.teamLabel(task.role))+'</td><td>'+esc(orderNames(task.assignees).join(', '))+'</td><td>'+esc(lanes.find(lane=>lane.statuses.includes(task.status))?.label||task.status)+'</td><td><span class="table-percent">'+progress(task)+'%</span><progress max="100" value="'+progress(task)+'" aria-label="진행률"></progress>'+(task.status==='완료 후 수정'?'<small>수정 '+(task.revisionProgress||0)+'%</small><progress max="100" value="'+(task.revisionProgress||0)+'" aria-label="수정 진행률"></progress>':'')+'</td><td>'+esc(task.due||'미정')+'</td><td>'+button('editBoardTask','수정','','data-id="'+esc(card.project.id)+'" data-task-id="'+esc(task.id)+'"')+'</td></tr>')).join('')+'</tbody></table></div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
+   const closed=section=>mode==='project'?closedWeeks.includes(section.key):mode==='status'&&closedLanes.includes(section.id);
+   return '<div class="board-table-view">'+sections.map(section=>'<section class="board-table-section"><h3>'+(['project','status'].includes(mode)?button(mode==='project'?'toggleWeek':'toggleLane',(closed(section)?'＋':'−'),'lane-toggle','data-key="'+esc(section.key||section.id)+'" aria-label="'+esc(section.label)+' 접기 또는 펼치기" aria-expanded="'+!closed(section)+'"'):'')+esc(N.teamLabel(section.label))+(section.team?' · '+esc(N.teamLabel(section.team))+'팀':'')+' <span class="count">'+section.entries.length+'</span></h3><div class="table-wrap"'+(closed(section)?' hidden':'')+'><table><caption class="sr-only">'+esc(section.label)+' 과업 도표</caption><thead><tr><th>과업</th><th>담당 업무</th><th>담당자</th><th>진행상태</th><th>진행률</th><th>마감일</th><th>수정</th></tr></thead><tbody>'+section.entries.flatMap(card=>orderedTasks(card.tasks,members,orderNames).map(task=>'<tr><td>'+button('boardDetail',esc(card.project.title),'project-button','data-id="'+esc(card.project.id)+'"')+'</td><td>'+esc(N.teamLabel(task.role))+'</td><td>'+esc(orderNames(task.assignees).join(', '))+'</td><td>'+esc(lanes.find(lane=>lane.statuses.includes(task.status))?.label||task.status)+'</td><td><span class="table-percent">'+progress(task)+'%</span><progress max="100" value="'+progress(task)+'" aria-label="진행률"></progress>'+(task.status==='완료 후 수정'?'<small>수정 '+(task.revisionProgress||0)+'%</small><progress max="100" value="'+(task.revisionProgress||0)+'" aria-label="수정 진행률"></progress>':'')+'</td><td>'+esc(task.due||'미정')+'</td><td>'+button('editBoardTask','수정','','data-id="'+esc(card.project.id)+'" data-task-id="'+esc(task.id)+'"')+'</td></tr>')).join('')+'</tbody></table></div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   }
-  if(mode==='project')return '<div class="task-board-wrap weekly-board"><p class="task-board-total">마감일 기준 · 최신 주차순</p>'+weekGroups(list).map(week=>'<section class="board-week"><h3>'+esc(week.label)+' <span class="count">'+week.entries.length+'</span></h3><div class="board-week-cards">'+week.entries.map(renderCard).join('')+'</div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
+  if(mode==='project')return '<div class="task-board-wrap weekly-board">'+weekGroups(list).map(week=>'<section class="board-week"><h3>'+button('toggleWeek','<span>'+esc(week.label)+' <span class="count">'+week.entries.length+'</span></span><span aria-hidden="true">'+(closedWeeks.includes(week.key)?'＋':'−')+'</span>','board-collapse','data-key="'+esc(week.key)+'" aria-expanded="'+!closedWeeks.includes(week.key)+'"')+'</h3><div class="board-week-cards"'+(closedWeeks.includes(week.key)?' hidden':'')+'>'+week.entries.map(renderCard).join('')+'</div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   return '<div class="task-board-wrap">'
    +'<p class="task-board-total" role="status"><strong>남은 과업 '+list.filter(card=>card.remaining).length+'개</strong>'
    +(mode==='status'?'<span class="board-drag-hint">카드를 잡아 다른 목록으로 옮기세요</span>':'')
-   +'<span>미완료 담당 업무 '+remaining+'개 · 마감일 가까운 순</span></p>'
-   +'<div class="task-board" tabindex="0" role="region" aria-label="상태별 과업 보드">'
+   +'<span>미완료 담당 업무 '+remaining+'개</span></p>'
+   +'<div class="task-board '+(mode==='status'?'status-board':'')+'" tabindex="0" role="region" aria-label="상태별 과업 보드">'
    +(!list.length&&mode!=='status'?'<p class="task-board-empty">조건에 맞는 과업이 없습니다. 담당자 검색을 바꾸거나 새 과업을 등록해 주세요.</p>':'')
    +groups(list,mode,members,C,actor).map(lane=>{
-    const entries=lane.entries;
-    return '<section class="task-board-lane" '+(mode==='status'?'data-lane="'+lane.id+'"':'')+'><h3><span>'+esc(N.teamLabel(lane.label))+(lane.team?'<small class="person-team-label">'+esc(N.teamLabel(lane.team))+'팀</small>':'')+'</span><span class="count">'+entries.length+'</span></h3>'
-     +(entries.map(renderCard).join('')||'<p class="task-board-empty">'+(lane.id==='done'&&!showDone?'완료 포함을 켜면 완료 카드가 표시됩니다.':'카드를 이곳으로 옮겨 보세요.')+'</p>')+(mode==='status'?button('boardAdd','＋ 카드 추가','board-add','data-lane="'+lane.id+'"'):'')+'</section>';
+    const entries=lane.entries,closed=mode==='status'&&closedLanes.includes(lane.id);
+    return '<section class="task-board-lane '+(closed?'is-collapsed':'')+'" '+(mode==='status'?'data-lane="'+lane.id+'"':'')+'><h3>'+(mode==='status'?button('toggleLane',(closed?'＋':'−'),'lane-toggle','data-key="'+lane.id+'" aria-label="'+lane.label+' 접기 또는 펼치기" aria-expanded="'+!closed+'"'):'')+'<span>'+esc(N.teamLabel(lane.label))+(lane.team?'<small class="person-team-label">'+esc(N.teamLabel(lane.team))+'팀</small>':'')+'</span><span class="count">'+entries.length+'</span></h3>'
+     +'<div class="lane-content"'+(closed?' hidden':'')+'>'+(entries.map(renderCard).join('')||'<p class="task-board-empty">'+(lane.id==='done'&&!showDone?'완료 포함을 켜면 완료 카드가 표시됩니다.':'카드를 이곳으로 옮겨 보세요.')+'</p>')+(mode==='status'?button('boardAdd','＋ 카드 추가','board-add','data-lane="'+lane.id+'"'):'')+'</div></section>';
    }).join('')+'</div></div>';
  }
  const api={cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,canProgress,guardEdit,orderedTasks,weekGroups};
