@@ -217,3 +217,8 @@ test('수정 필요 선택은 담당 업무별로 독립적이며 저장 후 유
  assert.throws(()=>Board.setRevisionProgress(edited,'0',20,C,'김무현'),/수정 필요/);
  assert.throws(()=>Board.guardEdit(tasks[2],{...tasks[2],revisionRequired:false},'정윤정'));
 });
+test('카드 수정 진행률은 선택한 업무만 합산하고 기존 게이지 아래 표시한다',()=>{
+ const raw={id:'revision-card',title:'선택 수정',tasks:[{id:'a',role:'기획',assignees:['김무현'],status:'완료 후 수정',progress:100,revisionRequired:true,revisionProgress:40},{id:'b',role:'디자인',assignees:['김무현'],status:'완료 후 수정',progress:100,revisionRequired:false,revisionProgress:0}]};
+ const html=Board.render({rows:[C.effective(raw)],name:'',showDone:true,C,N:{teamLabel:x=>x},esc:x=>String(x||''),button:(a,t)=>'<button>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현'});
+ assert.match(html,/수정 진행률 · 1개 업무<\/span><strong>40%/);assert.ok(html.indexOf('data-card-percent')<html.indexOf('card-revision-summary'));assert.match(html,/class="revision-progress" value="40"/);
+});

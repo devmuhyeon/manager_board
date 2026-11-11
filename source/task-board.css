@@ -385,3 +385,11 @@ html[data-astryx-theme][data-style] .compact-calendar .calendar-overflow{box-siz
 .revision-required{display:flex!important;align-items:center;gap:8px;padding:8px 0;font-size:12px;font-weight:600}.revision-required input[type=checkbox]{width:16px!important;height:16px;min-height:0;margin:0;accent-color:var(--color-info)}
 .board-layout-toggle .view-option{display:flex;align-items:center;justify-content:center;padding:6px 9px}.board-layout-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .compact-calendar+.home-layout-tools{margin-top:24px}
+/* Revision progress is independent of the original blue work gauge. */
+.card-revision-summary{margin:10px 0 4px;padding:10px;border-radius:8px;background:#f3efff}.card-revision-summary .task-board-progress{margin:0 0 6px;color:#6d28d9}
+html[data-astryx-theme][data-style] .revision-control input[type="range"],html[data-astryx-theme][data-style] progress.revision-progress{accent-color:#8b5cf6}
+html[data-astryx-theme][data-style] progress.revision-progress{display:block;width:100%;height:6px;overflow:hidden;border:0;border-radius:6px;background:#e9ddff}
+progress.revision-progress::-webkit-progress-bar{background:#e9ddff;border-radius:6px}progress.revision-progress::-webkit-progress-value{background:#8b5cf6;border-radius:6px}progress.revision-progress::-moz-progress-bar{background:#8b5cf6;border-radius:6px}
+.revision-control{flex-wrap:wrap;background:#f3efff}.revision-control strong{flex-basis:100%;color:#6d28d9}.task-board-checklist .revision-required{flex-basis:100%}
+html[data-theme="dark"] .card-revision-summary,html[data-theme="dark"] .revision-control,html[data-style="midnight"] .card-revision-summary,html[data-style="midnight"] .revision-control{background:#302447}
+html[data-theme="dark"] .card-revision-summary .task-board-progress,html[data-theme="dark"] .revision-control strong,html[data-style="midnight"] .card-revision-summary .task-board-progress,html[data-style="midnight"] .revision-control strong{color:#c4b5fd}
