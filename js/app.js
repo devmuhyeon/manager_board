@@ -13,7 +13,7 @@
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let closedNav=[],closedWeeks=[],closedLanes=[];
-  let boardName='',boardShowDone=false,boardMode='project',boardLayout='cards';
+  let boardName='',boardMode='project',boardLayout='cards';
   let boardTeam='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today();
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
@@ -93,7 +93,7 @@
   function viewTabs(){return '<div class="tabs" role="group" aria-label="업무 보기">'+(page==='work'?button('view','보드',view==='board'?'active':'','data-view="board"'):'')+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
   function categorizedTable(rows){return W.group(rows).map(([label,group])=>'<section class="category-group"><h3>'+esc(label.replace(/^퍼블(?= >|$)/,'퍼블리싱'))+' <span class="count">'+group.length+'</span></h3>'+sheetTable(group)+'</section>').join('')||'<p class="empty">조회 조건에 맞는 과업이 없습니다.</p>';}
   const boardAssignee=()=>boardName||(scope==='personal'?user.name:'');
-  const boardIncludesDone=()=>boardMode==='status'||boardShowDone||C.isComplete(filters.status);
+  const boardIncludesDone=()=>true;
   function dashboardContent(){
     const rows=projects();
     const isBoard=page==='work'&&view==='board';
@@ -103,7 +103,7 @@
       +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
-      +'<label class="task-board-completed"><input type="checkbox" id="boardShowDone"'+(showDone?' checked':'')+(boardMode==='status'||C.isComplete(filters.status)?' disabled':'')+'> 완료 포함</label></div></div>':'';
+      +'</div></div>':'';
     const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,layout:boardLayout,closedWeeks,closedLanes,period:{from:filters.from,to:filters.to},members:state.members,actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
@@ -251,7 +251,7 @@
     else if(a==='customerMode'){customerMode=el.dataset.mode;filters.customer='';filters.requester='';render();}
     else if(a==='customer'){filters[customerMode==='team'?'customer':'requester']=el.dataset.value;render();}
     else if(a==='allCustomers'){filters.customer='';filters.requester='';render();}
-    else if(a==='logout'){user=null;demoSession=false;boardName='';boardShowDone=false;render();}
+    else if(a==='logout'){user=null;demoSession=false;boardName='';render();}
     else if(a==='new')openEditor();
     else if(a==='edit'){if($('#editor').open)$('#editor').close();openEditor(el.dataset.id);}
     else if(a==='close')$('#editor').close();
@@ -260,7 +260,7 @@
     else if(a==='week'){setWeek();render();}
     else if(a==='sortWork'){T.toggleSort(el.dataset.sortKey);render();document.querySelector('[data-sort-key="'+el.dataset.sortKey+'"]')?.focus?.();}
     else if(a==='resetBoardDates'){filters.from='';filters.to='';render();$('#boardFrom')?.focus?.();}
-    else if(a==='clearFilters'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};if(page==='work'&&view==='board'){boardName='';boardShowDone=false;}render();}
+    else if(a==='clearFilters'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};if(page==='work'&&view==='board'){boardName='';}render();}
     else if(a==='export')await exportXlsx();
     else if(a==='connect')await connect();
     else if(a==='reload')await reload();
@@ -483,7 +483,6 @@
       return;
     }
     if(el.dataset.boardMove){const detailOpen=$('#editor').open;moveBoardCard(el.dataset.boardMove,el.value,detailOpen?'':boardAssignee());if(detailOpen){$('#editor').close();boardDetail(el.dataset.boardMove);}return;}
-    if(el.id==='boardShowDone'){boardShowDone=el.checked;render();$('#boardShowDone')?.focus?.();return;}
     if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;render();}return;}
     if(el.id==='leaveOwner'&&!el.closest('#leaveForm')){leaveOwner=el.value;render();return;}
     if(el.id==='p-taskCategory'){const isContent=el.value==='콘텐츠';for(const [container,input,show] of [['contentCategoryField','p-contentCategory',isContent],['contentTypeField','p-contentType',isContent],['platformField','p-platform',!isContent]]){$('#'+container).hidden=!show;$('#'+input).disabled=!show;$('#'+input).required=show;}}
