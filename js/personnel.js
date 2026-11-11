@@ -59,7 +59,8 @@
     if(!state.members.some(m=>m.name===owner&&m.active!==false))throw new Error('로그인한 재직자만 메모를 저장할 수 있습니다.');
     if(!String(item.title||'').trim())throw new Error('메모 제목을 입력해 주세요.');
     const next=structuredClone(state);next.personal??={};const items=next.personal[owner]||[];
-    const clean={id:item.id||C.uid(),title:String(item.title).trim().slice(0,150),content:String(item.content||''),date:item.date||'',time:item.time||'',done:Boolean(item.done),updatedAt:new Date().toISOString()};
+    const clean={id:item.id||C.uid(),title:String(item.title).trim().slice(0,150),content:String(item.content||''),date:item.date||'',endDate:item.endDate||'',time:item.time||'',done:Boolean(item.done),updatedAt:new Date().toISOString()};
+    if(clean.date&&!validDate(clean.date)||clean.endDate&&(!validDate(clean.endDate)||!clean.date||clean.endDate<clean.date))throw new Error('메모 시작일과 종료일을 확인해 주세요.');
     if(clean.time&&!clean.date)throw new Error('시간을 입력할 때에는 일정 날짜도 선택해 주세요.');
     const i=items.findIndex(x=>x.id===clean.id);if(i<0)items.push(clean);else items[i]=clean;next.personal[owner]=items;return next;
   }
@@ -104,7 +105,7 @@
   function deleteLeave(s,actor,id){const l=s.leaves.find(l=>l.id===id);if(!l)throw new Error('휴가를 찾을 수 없습니다.');if(!canEditLeave(s,actor,l.owner))throw new Error('이 팀원의 휴가를 삭제할 권한이 없습니다.');const next=structuredClone(s);next.leaves=next.leaves.filter(l=>l.id!==id);return next;}
   function weekRanges(today=C.today()){const d=new Date(today+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return [0,1].map(n=>{const start=new Date(d);start.setUTCDate(start.getUTCDate()+n*7);const end=new Date(start);end.setUTCDate(end.getUTCDate()+6);return {start:start.toISOString().slice(0,10),end:end.toISOString().slice(0,10)};});}
   function schedule(s,actor,range){const me=s.members.find(m=>m.name===actor),names=s.members.filter(m=>m.active!==false&&(m.name===actor||(isLeader(s,actor)&&m.team===me.team))).map(m=>m.name);const rows=[];
-    for(const name of names)for(const i of s.personal[name]||[])if(i.date>=range.start&&i.date<=range.end)rows.push({owner:name,date:i.date,title:i.title,time:i.time,done:i.done,kind:'일정'});
+    for(const name of names)for(const i of s.personal[name]||[])if(i.date&&i.date<=range.end&&(i.endDate||i.date)>=range.start)rows.push({owner:name,date:i.date,end:i.endDate||i.date,title:i.title,time:i.time,done:i.done,kind:'일정'});
     for(const l of s.leaves)if(names.includes(l.owner)&&l.start<=range.end&&l.end>=range.start)rows.push({owner:l.owner,date:l.start,end:l.end,title:l.type,kind:'휴가'});
     for(const raw of s.projects||[]){
       if(s.hiddenProjects?.includes(raw.id))continue;

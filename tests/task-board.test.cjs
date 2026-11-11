@@ -61,7 +61,7 @@ test('공동 카드 이동은 본인 업무만 바꾸고 다른 담당자의 상
  const review=Board.move(done,'revision','',C,'김무현');
  assert.equal(C.effective(review).tasks[0].status,'완료 후 수정');
  assert.equal(C.effective(review).tasks[1].status,'진행중');
- assert.ok(C.effective(review).tasks.every(task=>!task.completedOn));
+ assert.equal(C.effective(review).tasks[0].completedOn,C.today());
 });
 
 test('개인별·팀별 보기는 동일 카드의 담당 업무를 나눠 표시한다',()=>{
@@ -162,4 +162,27 @@ test('개인별 탭은 본인 팀, 본인, 직급, 가나다 순으로 정렬한
  const list=Board.cards([{id:'order',title:'순서',tasks:members.slice().reverse().map((m,i)=>({id:String(i),role:'기획',assignees:[m.name],status:'진행중'}))}],'',true,C);
  assert.deepEqual(Board.groups(list,'person',members,C,'본인').map(group=>group.label),['본인','나팀장','가대리','나다리','기획장']);
  assert.equal(Board.groups(list,'person',members,C,'기획장')[0].label,'기획장');
+});
+
+test('수정 게이지는 본인 업무에서만 원래 진행률과 독립적으로 변경된다',()=>{
+ const done=Board.setProgress(project,'planning',100,C,'김무현');
+ const revision=Board.move(done,'revision','김무현',C,'김무현');
+ assert.equal(C.effective(revision).tasks[0].progress,100);
+ const edited=Board.setRevisionProgress(revision,'planning',40,C,'김무현');
+ assert.equal(C.effective(edited).tasks[0].revisionProgress,40);
+ assert.equal(C.effective(edited).tasks[0].progress,100);
+ assert.throws(()=>Board.setRevisionProgress(revision,'planning',60,C,'정윤정'));
+ assert.throws(()=>Board.setRevisionProgress(done,'planning',40,C,'김무현'));
+ assert.throws(()=>Board.guardEdit(C.effective(edited).tasks[0],{...C.effective(edited).tasks[0],revisionProgress:90},'정윤정'));
+ const moved=Board.move(edited,'released','김무현',C,'김무현');
+ assert.equal(C.effective(moved).tasks[0].revisionProgress,40);
+ assert.equal(C.effective(moved).tasks[0].status,'운영반영완료');
+});
+
+test('수정 전용 게이지는 해당 상태에서만 표시된다',()=>{
+ const options={name:'',showDone:true,C,N:{teamLabel:x=>x},esc:x=>String(x||''),button:(a,t)=>'<button>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현'};
+ const revision=Board.move(Board.setProgress(project,'planning',100,C,'김무현'),'revision','김무현',C,'김무현');
+ assert.match(Board.render({...options,rows:[C.effective(revision)]}),/revision-control/);
+ const released=Board.move(revision,'released','김무현',C,'김무현');
+ assert.ok(!Board.render({...options,rows:[C.effective(released)]}).includes('revision-control'));
 });
