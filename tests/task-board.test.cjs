@@ -186,3 +186,12 @@ test('수정 전용 게이지는 해당 상태에서만 표시된다',()=>{
  const released=Board.move(revision,'released','김무현',C,'김무현');
  assert.ok(!Board.render({...options,rows:[C.effective(released)]}).includes('revision-control'));
 });
+
+test('보드 기간은 담당 업무 마감일 기준이며 시작일과 종료일을 포함한다',()=>{
+ const rows=[C.effective(project)];
+ const filtered=Board.cards(rows,'',true,C,{from:'2026-11-09',to:'2026-11-09'});
+ assert.deepEqual(filtered[0].tasks.map(t=>t.id),['planning']);
+ assert.equal(Board.cards(rows,'김무현',true,C,{from:'2026-11-10'}).length,0);
+ assert.equal(Board.cards(rows,'',true,C,{to:'2026-11-12'})[0].tasks.length,2);
+ assert.equal(Board.cards(rows,'',true,C,{})[0].tasks.length,2);
+});

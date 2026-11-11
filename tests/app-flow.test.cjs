@@ -4,12 +4,12 @@ function harness(){
  const events={};
  const nodes=new Map(),element=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},hidden:false,disabled:false,open:false,addEventListener(){},insertAdjacentHTML(_,html){this.innerHTML+=html;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(selector);};
  const store=new Map(),vault={rememberConnections:async v=>{vault.connections=v;},recallConnections:async()=>vault.connections,recall:async()=>null,forget:async()=>{}};
- const context={BoardBriefingCalendar:require('../js/briefing-calendar.js'),BoardAccountReset:require('../js/account-reset.js'),BoardTaskBoard:require('../js/task-board.js'),BoardMemoCarousel:require('../js/memo-carousel.js'),BoardDisplayStyles:require('../js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../js/work-tables.js'),BoardNavigation:require('../js/navigation.js'),BoardTeamPosts:require('../js/team-board.js'),BoardDetailViews:require('../js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
+ const context={BoardSimpleEditor:require('../js/simple-editor.js'),BoardBriefingCalendar:require('../js/briefing-calendar.js'),BoardAccountReset:require('../js/account-reset.js'),BoardTaskBoard:require('../js/task-board.js'),BoardMemoCarousel:require('../js/memo-carousel.js'),BoardDisplayStyles:require('../js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../js/work-tables.js'),BoardNavigation:require('../js/navigation.js'),BoardTeamPosts:require('../js/team-board.js'),BoardDetailViews:require('../js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
  const instrumented=source.replace(/\}\)\(\);\s*$/,`globalThis.testApp={weekBlocks,render,login,act,saveProject,exportXlsx,updateLogin,refreshAll,saveDisk,restoreFolders,setupExtras,read:()=>({state,dirty,setupDone,health}),seed:s=>{state=P.upgrade(s);syncRoster();},session:(n,startPage="dashboard")=>{user=member(n);setupDone=true;if(startPage){page=startPage;view=startPage==="work"?"board":"category";}},connect:(src,out,text)=>{sourceHandle=src;targetHandle=out;sourceDir=targetDir={queryPermission:async()=> 'granted'};diskText=text;},markDirty:()=>changed()};})();`);
- vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
+ vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,change:async target=>{for(const fn of events.change||[])await fn({target});},windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
 test('내 아바타 선택은 다른 사용자를 바꾸지 않고 공용 저장 후에도 유지된다',async()=>{const h=harness(),s=fixture(),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(handle('[]'),out,out.text);await h.api.act({dataset:{action:'avatarSettings'}});assert.match(h.element('#editor').innerHTML,/용용이/);assert.match(h.element('#editor').innerHTML,/삐약이/);await h.api.act({dataset:{action:'setAvatar',avatar:'bbiyak'}});assert.equal(h.api.read().state.members.find(m=>m.name==='김무현').avatar,'bbiyak');assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').avatar,undefined);assert.match(h.element('#app').innerHTML,/내 캐릭터 변경: 삐약이/);await h.api.act({dataset:{action:'save'}});assert.equal(C.validateState(JSON.parse(out.text)).members.find(m=>m.name==='김무현').avatar,'bbiyak');await assert.rejects(h.api.act({dataset:{action:'setAvatar',avatar:'unknown'}}));});
@@ -184,4 +184,21 @@ test('도표형 전환은 네 탭에서 같은 과업을 표시하고 신규 버
   assert.match(html,/board-table-view/);assert.match(html,/<table>/);assert.match(html,/진행률/);assert.match(html,/카드형 보기/);
  }
  await h.api.act({dataset:{action:'boardLayout'}});assert.ok(!h.element('#app').innerHTML.includes('board-table-view'));
+});
+
+test('날짜 초기화는 담당자와 도표형 선택을 유지한다',async()=>{
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');
+ await h.api.act({dataset:{action:'boardMine'}});await h.api.act({dataset:{action:'boardLayout'}});
+ await h.change({id:'boardFrom',dataset:{boardDate:'from'},value:'2026-11-01'});
+ await h.change({id:'boardTo',dataset:{boardDate:'to'},value:'2026-11-30'});
+ assert.match(h.element('#app').innerHTML,/value="2026-11-01"/);
+ await h.api.act({dataset:{action:'resetBoardDates'}});
+ const html=h.element('#app').innerHTML;assert.match(html,/boardFrom[^>]*value=""/);assert.match(html,/boardTo[^>]*value=""/);assert.match(html,/id="boardName"[^>]*value="김무현"/);assert.match(html,/board-table-view/);
+});
+test('간단 편집에서 제목만 바꿔도 고객과 분류 및 기존 기록을 보존한다',async()=>{
+ const h=harness(),s=P.addSamples(fixture()),p=s.projects[0];p.customer='보존 고객';p.link='https://example.com';p.taskCategory='UX';p.platform='PC&MO';h.api.seed(s);h.api.session('김무현','work');
+ await h.api.act({dataset:{action:'edit',id:p.id}});
+ assert.match(h.element('#editor').innerHTML,/simple-project-form/);assert.ok(!h.element('#editor').innerHTML.includes('classification-fields'));
+ h.api.saveProject({title:'간단 수정',description:'설명',logContent:'',logDate:C.today()});
+ const saved=C.effective(h.api.read().state.projects.find(item=>item.id===p.id));assert.equal(saved.title,'간단 수정');assert.equal(saved.customer,'보존 고객');assert.equal(saved.link,'https://example.com');assert.equal(saved.taskCategory,'UX');assert.deepEqual(saved.logs,p.logs);
 });

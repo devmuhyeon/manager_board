@@ -16,10 +16,10 @@
    statusBeforeCompletion:project.statusBeforeCompletion
   }];
  }
- function cards(rows,name,showDone,C){
+ function cards(rows,name,showDone,C,period={}){
   const query=name.trim().toLocaleLowerCase('ko');
   return rows.flatMap(project=>{
-   const tasks=items(project).filter(task=>!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)));
+   const tasks=items(project).filter(task=>(!query||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))&&(!period.from||task.due&&task.due>=period.from)&&(!period.to||task.due&&task.due<=period.to));
    if(!tasks.length)return [];
    const open=tasks.filter(task=>!isDone(task.status));
    if(!open.length&&!showDone)return [];
@@ -142,8 +142,8 @@
   }
   return [...groups.values()].sort((a,b)=>a.key==='undated'?1:b.key==='undated'?-1:b.key.localeCompare(a.key));
  }
- function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor='',layout='cards'}){
-  const list=cards(rows,name,showDone,C);
+ function render({rows,name,showDone,C,N,esc,button,dday,orderNames,mode='status',members=[],actor='',layout='cards',period={}}){
+  const list=cards(rows,name,showDone,C,period);
   const remaining=list.reduce((total,card)=>total+card.remaining,0);
   const today=C.today();
   function renderCard({project,tasks,status,nextDue,completedOn,remaining}){
