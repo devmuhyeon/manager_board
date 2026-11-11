@@ -27,3 +27,11 @@ html[data-astryx-theme][data-style] .card-revision-summary .task-board-progress{
 .project-report-description{white-space:pre-wrap;padding:0 20px;color:#526072}.project-spreadsheet{max-height:calc(100dvh - 260px);overflow:auto;border-top:1px solid #dce2e9}.project-spreadsheet table{min-width:1100px;width:100%;border-collapse:separate;border-spacing:0;font-size:13px}.project-spreadsheet th{position:sticky;top:0;z-index:2;text-align:left;white-space:nowrap}.project-spreadsheet :is(th,td){padding:12px;border-right:1px solid #e1e6ec;border-bottom:1px solid #e1e6ec;vertical-align:top}.project-spreadsheet td:first-child{min-width:190px}.project-spreadsheet progress{width:90px;height:7px;display:block;margin-top:6px;accent-color:var(--color-info)}.project-spreadsheet tbody tr:hover td{background:#f7f9fc}
 .leave-view-controls{display:flex;gap:20px;align-items:center;padding:16px 20px}.leave-view-controls .tabs{margin:0}.leave-person-group{padding:0 20px 20px}.leave-person-group h3{padding:12px 0;border-bottom:1px solid #dce2e9}.leave-person-group h3 small{color:#637083;font-weight:400;margin-left:8px}
 @media(prefers-reduced-motion:reduce){html[data-astryx-theme][data-style] .nav .nav-children{transition:none}}
+/* Keep each role's revision opt-in and gauge inside that role's own section. */
+html[data-astryx-theme][data-style] .task-board-checklist>li.task-work-section{display:block;min-width:0;padding:12px 0;margin:0;border-top:1px solid #e1e6ec}
+.task-work-heading{display:flex;align-items:flex-start;gap:8px}.task-work-heading .task-check{flex:1;min-width:0}.task-work-heading .board-task-edit{flex:none}
+html[data-astryx-theme][data-style] .task-work-section>.task-progress-control{padding:8px 0 0 24px}
+.task-revision-section{margin:10px 0 0 24px;padding-top:8px;border-top:1px solid #e1e6ec}
+html[data-astryx-theme][data-style] .task-revision-section .revision-required{margin:0;padding:0 0 8px;font-size:11px;color:#5b21b6}
+html[data-astryx-theme][data-style] .task-revision-section .revision-control{padding:0;margin:0;background:transparent;gap:6px}
+html[data-astryx-theme][data-style] .task-revision-section .revision-control strong{color:#6d28d9;font-size:11px}

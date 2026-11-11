@@ -222,3 +222,12 @@ test('카드 수정 진행률은 선택한 업무만 합산하고 기존 게이�
  const html=Board.render({rows:[C.effective(raw)],name:'',showDone:true,C,N:{teamLabel:x=>x},esc:x=>String(x||''),button:(a,t)=>'<button>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현'});
  assert.match(html,/수정 진행률 · 0\/1 완료<\/span><strong>40%/);assert.ok(html.indexOf('data-card-percent')<html.indexOf('card-revision-summary'));assert.match(html,/class="revision-progress" value="40"/);
 });
+test('각 담당 업무 영역에 자기 수정 체크와 게이지만 포함된다',()=>{
+ const raw={id:'split',title:'역할 분리',tasks:[{id:'design',role:'디자인',assignees:['정윤정'],status:'완료',progress:100},{id:'publish',role:'퍼블',assignees:['김무현'],status:'완료 후 수정',progress:100,revisionRequired:true,revisionProgress:40}]};
+ const options={name:'',showDone:true,C,N:{teamLabel:x=>x==='퍼블'?'퍼블리싱':x},esc:x=>String(x||''),button:(a,t)=>'<button>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현'};
+ const html=Board.render({...options,rows:[C.effective(raw)]}),sections=[...html.matchAll(/<li class="task-work-section"[\s\S]*?<\/li>/g)].map(m=>m[0]);assert.equal(sections.length,2);
+ assert.ok(sections[0].includes('디자인 수정 필요'));assert.ok(!sections[0].includes('revision-control'));assert.ok(!sections[0].includes('퍼블리싱 수정 필요'));
+ assert.ok(sections[1].includes('퍼블리싱 수정 필요'));assert.ok(sections[1].includes('퍼블리싱 수정 진행률'));assert.ok(!sections[1].includes('디자인 수정 필요'));
+ assert.throws(()=>Board.setRevisionRequired(raw,'design',true,C,'김무현'));
+ const selected=C.effective(Board.setRevisionRequired(raw,'design',true,C,'정윤정'));assert.equal(selected.tasks[0].status,'완료 후 수정');assert.equal(selected.tasks[0].progress,100);assert.equal(selected.tasks[1].revisionProgress,40);
+});

@@ -226,3 +226,11 @@ test('휴가 개인별 보기는 기존 조회 권한 안에서 이름으로 분
  await h.api.act({dataset:{action:'page',page:'people'}});html=h.element('#app').innerHTML;assert.ok(html.indexOf('입사·퇴사 인원 관리')<html.indexOf('팀원 휴가 관리'));assert.match(html,/<th scope="col">직급<\/th>/);
  await h.api.act({dataset:{action:'addMember'}});for(const field of ['memberTeam','memberName','memberRank'])assert.ok(h.element('#editor').innerHTML.includes('id="'+field+'"'));
 });
+test('관리자는 기존 인원 직급만 변경하고 일반 사용자의 직접 저장은 차단한다',async()=>{
+ const h=harness(),s=P.addSamples(fixture());h.api.seed(s);h.api.session('김무현','people');h.api.render();assert.match(h.element('#app').innerHTML,/data-action="editMemberRank"/);
+ const before=h.api.read().state,projects=JSON.stringify(before.projects),person=before.members.find(m=>m.name==='정윤정'),team=person.team;
+ await h.api.act({dataset:{action:'editMemberRank',name:'정윤정'}});assert.match(h.element('#editor').innerHTML,/memberRankForm/);
+ h.submit({id:'memberRankForm',fields:{name:'정윤정',rank:'차장'}});assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').rank,'차장');assert.equal(person.team,team);assert.equal(JSON.stringify(h.api.read().state.projects),projects);
+ h.api.session('정윤정');await assert.rejects(h.api.act({dataset:{action:'editMemberRank',name:'김무현'}}),/관리자/);
+ h.submit({id:'memberRankForm',fields:{name:'정윤정',rank:'이사'}});assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').rank,'차장');
+});
