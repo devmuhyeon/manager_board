@@ -21,7 +21,7 @@ test('모든 상세 탭은 렌더되고 업무는 보드가 기본이고 고객�
 test('일정 제목에는 날짜칸이 없고 각 일정·마감·휴가에 날짜칸이 붙는다',async()=>{const h=harness();h.api.seed(P.savePersonal(P.addSamples(fixture()),'김무현',{title:'오늘 일정 검증',date:C.today()}));h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});let html=h.element('#app').innerHTML;assert.ok(html.includes('week-countdown'));assert.ok(!/<div class="sectionhead">[\s\S]*?week-countdown[\s\S]*?<div class="agenda-list">/.test(html.split('<div class="agenda-list">')[0]));for(const page of ['deadlines']){await h.api.act({dataset:{action:'page',page}});assert.match(h.element('#app').innerHTML,/week-countdown/);}});
 test('인원관리 탭은 팀장에게 휴가만, 관리자에게 입사·퇴사도 제공한다',async()=>{const s=P.setLeaders(fixture(),{기획:'성아미'});for(const actor of ['정윤정','성아미','김무현']){const h=harness();h.api.seed(s);h.api.session(actor);h.api.render();const hasTab=h.element('#app').innerHTML.includes('data-page="people"');assert.equal(hasTab,actor!=='정윤정');if(hasTab){await h.api.act({dataset:{action:'page',page:'people'}});assert.match(h.element('#app').innerHTML,/팀원 휴가 관리/);assert.equal(h.element('#app').innerHTML.includes('입사·퇴사 인원 관리'),actor==='김무현');}}});
 test('수정작업 저장은 부모 과업을 보존하고 수정 탭과 엑셀 분류 열에 반영한다',async()=>{const h=harness(),s=P.addSamples(fixture()),root=s.projects[0];h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state.projects[0]);await h.api.act({dataset:{action:'newRevision',id:root.id}});h.api.saveProject({title:'검증용 1차 수정',taskCategory:'UX',platform:'PC&MO',contentCategory:'',contentType:'',logContent:'',logDate:C.today()});const state=h.api.read().state,revision=state.projects.find(p=>p.parentProjectId===root.id);assert.ok(revision);assert.equal(JSON.stringify(state.projects[0]),before);await h.api.act({dataset:{action:'page',page:'revisions'}});assert.match(h.element('#app').innerHTML,/검증용 1차 수정/);await h.api.exportXlsx();const sheet=h.context.exportedSheets[0];assert.deepEqual(Array.from(sheet.headers.slice(0,3)),['분류 1','분류 2','분류 3']);assert.equal(sheet.headers.length,sheet.rows[0].length);});
-test('브리핑은 요약과 작은 달력만 표시한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML;assert.match(html,/compact-calendar/);assert.match(html,/briefing-stats/);assert.ok(!html.includes('data-home-section='));assert.ok(!html.includes('calendar-selected'));});
+test('브리핑은 기존 업무 패널과 작은 달력을 함께 표시한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML;assert.match(html,/compact-calendar/);assert.equal((html.match(/data-home-section=/g)||[]).length,6);assert.match(html,/data-home-section="memo"/);assert.ok(!html.includes('calendar-selected'));});
 
 test('팀장 휴가 등록 목록에는 소속 팀원만 나온다',async()=>{const h=harness();h.api.seed(P.setLeaders(fixture(),{콘텐츠:'김다솔'}));h.api.session('김다솔');await h.api.act({dataset:{action:'newLeave'}});const select=h.element('#editor').innerHTML.match(/<select name="owner"[\s\S]*?<\/select>/)[0];assert.equal((select.match(/<option /g)||[]).length,3);assert.ok(select.includes('김아영'));assert.ok(!select.includes('김무현'));});
 test('저장 폴더 없이 내용 저장을 눌러도 홈과 로그인 상태를 유지한다',async()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const before=h.element('#app').innerHTML;h.api.markDirty();await h.api.act({dataset:{action:'save'}});assert.equal(h.element('#app').innerHTML,before);assert.match(h.element('#toast').textContent,/브라우저에 임시 저장/);h.api.render();assert.match(h.element('#app').innerHTML,/내 업무 달력/);assert.equal(h.api.read().dirty,true);});
@@ -83,10 +83,10 @@ test('D+2는 두 칸, D+9는 일곱 칸을 채우고 완료 일정은 채우지 
  const done=h.api.weekBlocks(day(-2),true);assert.match(done,/is-complete/);assert.ok(!done.includes('class="filled"'));
 });
 
-test('개인 메모는 별도 페이지에 유지하고 브리핑에서는 간소화한다',async()=>{
+test('개인 메모는 브리핑과 별도 페이지에서 모두 유지한다',async()=>{
  const h=harness(),s=fixture();s.personal['김무현']=Array.from({length:6},(_,i)=>({id:'carousel-'+i,title:'메모 '+(i+1),date:'',time:'',content:'메모 내용',done:false}));
  h.api.seed(s);h.api.session('김무현');h.api.render();
- let html=h.element('#app').innerHTML;assert.ok(!html.includes('id="home-memos"'));
+ let html=h.element('#app').innerHTML;assert.ok(html.includes('id="home-memos"'));
  await h.api.act({dataset:{action:'page',page:'memo'}});html=h.element('#app').innerHTML;assert.match(html,/id="personal-memos"/);assert.match(html,/data-memo-controls="personal-memos"/);
  await h.api.act({dataset:{action:'preferences'}});assert.ok(!h.element('#editor').innerHTML.includes('디자인 시안 10개 비교하기'));assert.match(h.element('#editor').innerHTML,/화면 스타일/);
 });
@@ -210,4 +210,8 @@ test('메뉴 그룹과 주차는 각각 독립적으로 접고 펼친다',async(
  await h.api.act({dataset:{action:'page',page:'work'}});const key=h.element('#app').innerHTML.match(/data-action="toggleWeek"[^>]*data-key="([^"]+)"/)[1];
  await h.api.act({dataset:{action:'toggleWeek',key}});assert.match(h.element('#app').innerHTML,/class="board-week-cards" hidden/);
  await h.api.act({dataset:{action:'boardMode',mode:'status'}});await h.api.act({dataset:{action:'toggleLane',key:'done'}});assert.match(h.element('#app').innerHTML,/task-board-lane is-collapsed" data-lane="done"/);
+});
+test('카드 도표 전환은 텍스트 대신 두 아이콘과 접근성 이름을 제공한다',()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','work');h.api.render();const toggle=h.element('#app').innerHTML.match(/<button[^>]*data-action="boardLayout"[\s\S]*?<\/button>/)[0];
+ assert.equal((toggle.match(/<svg /g)||[]).length,2);assert.match(toggle,/title="카드 보기"/);assert.match(toggle,/title="도표 보기"/);assert.match(toggle,/aria-label="도표형 보기"/);assert.ok(!toggle.includes('>카드</span>'));
 });

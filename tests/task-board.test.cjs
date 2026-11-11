@@ -168,7 +168,9 @@ test('수정 게이지는 본인 업무에서만 원래 진행률과 독립적�
  const done=Board.setProgress(project,'planning',100,C,'김무현');
  const revision=Board.move(done,'revision','김무현',C,'김무현');
  assert.equal(C.effective(revision).tasks[0].progress,100);
- const edited=Board.setRevisionProgress(revision,'planning',40,C,'김무현');
+ assert.throws(()=>Board.setRevisionProgress(revision,'planning',40,C,'김무현'),/수정 필요/);
+ const selected=Board.setRevisionRequired(revision,'planning',true,C,'김무현');
+ const edited=Board.setRevisionProgress(selected,'planning',40,C,'김무현');
  assert.equal(C.effective(edited).tasks[0].revisionProgress,40);
  assert.equal(C.effective(edited).tasks[0].progress,100);
  assert.throws(()=>Board.setRevisionProgress(revision,'planning',60,C,'정윤정'));
@@ -182,7 +184,12 @@ test('수정 게이지는 본인 업무에서만 원래 진행률과 독립적�
 test('수정 전용 게이지는 해당 상태에서만 표시된다',()=>{
  const options={name:'',showDone:true,C,N:{teamLabel:x=>x},esc:x=>String(x||''),button:(a,t)=>'<button>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현'};
  const revision=Board.move(Board.setProgress(project,'planning',100,C,'김무현'),'revision','김무현',C,'김무현');
- assert.match(Board.render({...options,rows:[C.effective(revision)]}),/revision-control/);
+ assert.ok(!Board.render({...options,rows:[C.effective(revision)]}).includes('revision-control'));
+ const selected=Board.setRevisionRequired(revision,'planning',true,C,'김무현');
+ assert.match(Board.render({...options,rows:[C.effective(selected)]}),/revision-control/);
+ assert.throws(()=>Board.setRevisionRequired(revision,'planning',true,C,'정윤정'));
+ const off=Board.setRevisionRequired(selected,'planning',false,C,'김무현');
+ assert.ok(!Board.render({...options,rows:[C.effective(off)]}).includes('revision-control'));
  const released=Board.move(revision,'released','김무현',C,'김무현');
  assert.ok(!Board.render({...options,rows:[C.effective(released)]}).includes('revision-control'));
 });
@@ -201,4 +208,12 @@ test('과업명 검색 중에도 본인 업무만 이동하며 진행별은 최�
  const older={...project,id:'old',updatedAt:'2026-11-01'},newer={...project,id:'new',updatedAt:'2026-11-10'};
  const groups=Board.groups(Board.cards([C.effective(older),C.effective(newer)],'',true,C),'status',[],C);
  assert.deepEqual(groups.find(g=>g.id==='doing').entries.map(c=>c.project.id),['new','old']);
+});
+test('수정 필요 선택은 담당 업무별로 독립적이며 저장 후 유지된다',()=>{
+ const raw={id:'multi',title:'역할별 수정',source:'manual',tasks:['기획','디자인','퍼블'].map((role,i)=>({id:String(i),role,assignees:['김무현'],status:'완료',progress:100}))};
+ const revision=Board.move(raw,'revision','',C,'김무현');assert.ok(C.effective(revision).tasks.every(t=>!t.revisionRequired));
+ const selected=Board.setRevisionRequired(revision,'2',true,C,'김무현');const edited=Board.setRevisionProgress(selected,'2',40,C,'김무현');
+ const tasks=C.effective(JSON.parse(JSON.stringify(edited))).tasks;assert.deepEqual(tasks.map(t=>Boolean(t.revisionRequired)),[false,false,true]);assert.equal(tasks[2].revisionProgress,40);
+ assert.throws(()=>Board.setRevisionProgress(edited,'0',20,C,'김무현'),/수정 필요/);
+ assert.throws(()=>Board.guardEdit(tasks[2],{...tasks[2],revisionRequired:false},'정윤정'));
 });

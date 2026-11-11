@@ -12,7 +12,7 @@
  function items(project){
   return project.tasks?.length ? project.tasks : [{
    id:'',role:'과업',assignees:project.assignees,due:project.due,started:project.started,
-   revisionProgress:project.revisionProgress,progress:project.progress,progressBeforeCompletion:project.progressBeforeCompletion,status:project.status,completedOn:project.completedOn,notes:project.description,
+   revisionRequired:project.revisionRequired,revisionProgress:project.revisionProgress,progress:project.progress,progressBeforeCompletion:project.progressBeforeCompletion,status:project.status,completedOn:project.completedOn,notes:project.description,
    statusBeforeCompletion:project.statusBeforeCompletion
   }];
  }
@@ -34,9 +34,10 @@
  function requireOwner(task,actor){if(!canProgress(task,actor))throw new Error('본인이 담당하는 업무의 진행률만 변경할 수 있습니다.');}
  function guardEdit(previous,task,actor){
   if(previous&&(!canProgress(previous,actor)||!canProgress(task,actor))){
-   if(previous.status!==task.status||progress(previous)!==progress(task)||(previous.revisionProgress||0)!==(task.revisionProgress||0))throw new Error('다른 담당자의 진행률과 완료 상태는 변경할 수 없습니다.');
-   return {...task,status:previous.status,progress:previous.progress,revisionProgress:previous.revisionProgress,completedOn:previous.completedOn,statusBeforeCompletion:previous.statusBeforeCompletion,progressBeforeCompletion:previous.progressBeforeCompletion};
+   if(Boolean(previous.revisionRequired)!==Boolean(task.revisionRequired)||previous.status!==task.status||progress(previous)!==progress(task)||(previous.revisionProgress||0)!==(task.revisionProgress||0))throw new Error('다른 담당자의 진행률과 완료 상태는 변경할 수 없습니다.');
+   return {...task,revisionRequired:previous.revisionRequired,status:previous.status,progress:previous.progress,revisionProgress:previous.revisionProgress,completedOn:previous.completedOn,statusBeforeCompletion:previous.statusBeforeCompletion,progressBeforeCompletion:previous.progressBeforeCompletion};
   }
+  if(previous&&task.status==='완료 후 수정'&&!task.revisionRequired&&(previous.revisionProgress||0)!==(task.revisionProgress||0))throw new Error('수정 필요를 먼저 체크해 주세요.');
   if(!previous&&!canProgress(task,actor)&&(progress(task)!==0||isDone(task.status)))throw new Error('다른 담당자의 새 업무는 진행률 0%로 등록해 주세요.');
   return task;
  }
@@ -44,11 +45,19 @@
   return isDone(task.status)?100:Math.min(task.status==='완료 후 수정'?100:99,Math.max(0,Number.isFinite(task.progress)?task.progress:0));
  }
  function average(tasks){return Math.floor(tasks.reduce((sum,task)=>sum+progress(task),0)/Math.max(1,tasks.length));}
+ function setRevisionRequired(raw,taskId,value,C,actor){
+  const project=C.effective(raw),task=items(project).find(item=>item.id===taskId);
+  if(!task)throw new Error('담당 업무를 찾을 수 없습니다.');requireOwner(task,actor);
+  if(task.status!=='완료 후 수정')throw new Error('완료 후 수정 상태에서만 선택할 수 있습니다.');
+  const changes=project.tasks?.length?{tasks:project.tasks.map(item=>item.id===taskId?{...item,revisionRequired:Boolean(value)}:item)}:{revisionRequired:Boolean(value)};
+  return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
+ }
  function setRevisionProgress(raw,taskId,value,C,actor){
   if(!Number.isInteger(value)||value<0||value>100)throw new Error('수정 진행률은 0~100 사이로 입력해 주세요.');
   const project=C.effective(raw),task=items(project).find(item=>item.id===taskId);
   if(!task)throw new Error('담당 업무를 찾을 수 없습니다.');requireOwner(task,actor);
   if(task.status!=='완료 후 수정')throw new Error('완료 후 수정 상태에서만 수정 진행률을 바꿀 수 있습니다.');
+  if(!task.revisionRequired)throw new Error('수정 필요를 먼저 체크해 주세요.');
   const changes=project.tasks?.length?{tasks:project.tasks.map(item=>item.id===taskId?{...item,revisionProgress:value}:item)}:{revisionProgress:value};
   return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
  }
@@ -95,7 +104,7 @@
   const project=C.effective(raw),query=name.trim().toLocaleLowerCase('ko'),status=lane.statuses[0];
   if(!items(project).some(task=>canProgress(task,actor)&&(!query||project.title.toLocaleLowerCase('ko').includes(query)||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query)))))throw new Error('이 카드에 이동할 수 있는 본인 업무가 없습니다.');
   const update=task=>(canProgress(task,actor)&&(!query||project.title.toLocaleLowerCase('ko').includes(query)||task.assignees.some(person=>person.toLocaleLowerCase('ko').includes(query))))
-   ? (status==='완료 후 수정'?{...task,status,revisionProgress:task.revisionProgress||0}:{...task,status,...completion(task,status,C.today())}):task;
+   ? (status==='완료 후 수정'?{...task,status,revisionRequired:task.status==='완료 후 수정'&&Boolean(task.revisionRequired),revisionProgress:task.revisionProgress||0}:{...task,status,...completion(task,status,C.today())}):task;
   const changes=project.tasks?.length?{tasks:project.tasks.map(update)}:update(project);
   return {...raw,...(raw.source==='import'?{overrides:{...raw.overrides,...changes}}:changes),updatedAt:new Date().toISOString()};
  }
@@ -172,13 +181,13 @@
       '<span class="task-check-mark" aria-hidden="true">'+(checked?'✓':'')+'</span><span>'+esc(label)
        +(names?'<small>'+esc(names)+'</small>':'')+'<small>'+esc(checked?(task.completedOn?'완료 '+task.completedOn:'완료'):(task.due?'마감 '+task.due:'마감일 미정'))+'</small></span>',
       'task-check',baseLock+' data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-pressed="'+checked
-       +'" aria-label="'+esc(project.title+' · '+label+(names?' · '+names:''))+'"')+button('editBoardTask','수정','board-task-edit','data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-label="'+esc(project.title+' · '+label)+' 수정"')+'<div class="task-progress-control"><input '+baseLock+' type="range" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 조절"><input '+baseLock+' type="number" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 숫자"><span>%</span></div>'+(task.status==='완료 후 수정'?'<div class="task-progress-control revision-control"><strong>수정</strong><input '+lock+' type="range" min="0" max="100" step="1" value="'+(task.revisionProgress||0)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" data-progress-kind="revision" aria-label="'+esc(label+' · '+names)+' 수정 진행률"><input '+lock+' type="number" min="0" max="100" step="1" value="'+(task.revisionProgress||0)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" data-progress-kind="revision" aria-label="'+esc(label+' · '+names)+' 수정 진행률 숫자"><span>%</span></div>':'')+'</li>';
+       +'" aria-label="'+esc(project.title+' · '+label+(names?' · '+names:''))+'"')+button('editBoardTask','수정','board-task-edit','data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" aria-label="'+esc(project.title+' · '+label)+' 수정"')+'<div class="task-progress-control"><input '+baseLock+' type="range" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 조절"><input '+baseLock+' type="number" min="0" max="100" step="1" value="'+progress(task)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" aria-label="'+esc(label+' · '+names)+' 진행률 숫자"><span>%</span></div>'+(task.status==='완료 후 수정'?'<label class="revision-required"><input type="checkbox" '+lock+(task.revisionRequired?' checked':'')+' data-revision-required="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'">수정 필요</label>':'')+(task.status==='완료 후 수정'&&task.revisionRequired?'<div class="task-progress-control revision-control"><strong>수정</strong><input '+lock+' type="range" min="0" max="100" step="1" value="'+(task.revisionProgress||0)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" data-progress-kind="revision" aria-label="'+esc(label+' · '+names)+' 수정 진행률"><input '+lock+' type="number" min="0" max="100" step="1" value="'+(task.revisionProgress||0)+'" data-progress-id="'+esc(project.id)+'" data-progress-task="'+esc(task.id)+'" data-progress-kind="revision" aria-label="'+esc(label+' · '+names)+' 수정 진행률 숫자"><span>%</span></div>':'')+'</li>';
     }).join('')+'</ul><label '+(mode!=='status'?'hidden ':'')+'class="board-move-label">목록 이동<select '+(tasks.some(task=>canProgress(task,actor))?'':'disabled')+' data-board-move="'+esc(project.id)+'" aria-label="'+esc(project.title)+' 목록 이동">'+lanes.map(lane=>'<option value="'+lane.id+'"'+(lane.statuses.includes(status)?' selected':'')+'>'+lane.label+'</option>').join('')+'</select></label></article>';
   }
   if(layout==='table'){
    const sections=mode==='project'?weekGroups(list):groups(list,mode,members,C,actor);
    const closed=section=>mode==='project'?closedWeeks.includes(section.key):mode==='status'&&closedLanes.includes(section.id);
-   return '<div class="board-table-view">'+sections.map(section=>'<section class="board-table-section"><h3>'+(['project','status'].includes(mode)?button(mode==='project'?'toggleWeek':'toggleLane',(closed(section)?'＋':'−'),'lane-toggle','data-key="'+esc(section.key||section.id)+'" aria-label="'+esc(section.label)+' 접기 또는 펼치기" aria-expanded="'+!closed(section)+'"'):'')+esc(N.teamLabel(section.label))+(section.team?' · '+esc(N.teamLabel(section.team))+'팀':'')+' <span class="count">'+section.entries.length+'</span></h3><div class="table-wrap"'+(closed(section)?' hidden':'')+'><table><caption class="sr-only">'+esc(section.label)+' 과업 도표</caption><thead><tr><th>과업</th><th>담당 업무</th><th>담당자</th><th>진행상태</th><th>진행률</th><th>마감일</th><th>수정</th></tr></thead><tbody>'+section.entries.flatMap(card=>orderedTasks(card.tasks,members,orderNames).map(task=>'<tr><td>'+button('boardDetail',esc(card.project.title),'project-button','data-id="'+esc(card.project.id)+'"')+'</td><td>'+esc(N.teamLabel(task.role))+'</td><td>'+esc(orderNames(task.assignees).join(', '))+'</td><td>'+esc(lanes.find(lane=>lane.statuses.includes(task.status))?.label||task.status)+'</td><td><span class="table-percent">'+progress(task)+'%</span><progress max="100" value="'+progress(task)+'" aria-label="진행률"></progress>'+(task.status==='완료 후 수정'?'<small>수정 '+(task.revisionProgress||0)+'%</small><progress max="100" value="'+(task.revisionProgress||0)+'" aria-label="수정 진행률"></progress>':'')+'</td><td>'+esc(task.due||'미정')+'</td><td>'+button('editBoardTask','수정','','data-id="'+esc(card.project.id)+'" data-task-id="'+esc(task.id)+'"')+'</td></tr>')).join('')+'</tbody></table></div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
+   return '<div class="board-table-view">'+sections.map(section=>'<section class="board-table-section"><h3>'+(['project','status'].includes(mode)?button(mode==='project'?'toggleWeek':'toggleLane',(closed(section)?'＋':'−'),'lane-toggle','data-key="'+esc(section.key||section.id)+'" aria-label="'+esc(section.label)+' 접기 또는 펼치기" aria-expanded="'+!closed(section)+'"'):'')+esc(N.teamLabel(section.label))+(section.team?' · '+esc(N.teamLabel(section.team))+'팀':'')+' <span class="count">'+section.entries.length+'</span></h3><div class="table-wrap"'+(closed(section)?' hidden':'')+'><table><caption class="sr-only">'+esc(section.label)+' 과업 도표</caption><thead><tr><th>과업</th><th>담당 업무</th><th>담당자</th><th>진행상태</th><th>진행률</th><th>마감일</th><th>수정</th></tr></thead><tbody>'+section.entries.flatMap(card=>orderedTasks(card.tasks,members,orderNames).map(task=>'<tr><td>'+button('boardDetail',esc(card.project.title),'project-button','data-id="'+esc(card.project.id)+'"')+'</td><td>'+esc(N.teamLabel(task.role))+'</td><td>'+esc(orderNames(task.assignees).join(', '))+'</td><td>'+esc(lanes.find(lane=>lane.statuses.includes(task.status))?.label||task.status)+'</td><td><span class="table-percent">'+progress(task)+'%</span><progress max="100" value="'+progress(task)+'" aria-label="진행률"></progress>'+(task.status==='완료 후 수정'&&task.revisionRequired?'<small>수정 '+(task.revisionProgress||0)+'%</small><progress max="100" value="'+(task.revisionProgress||0)+'" aria-label="수정 진행률"></progress>':'')+'</td><td>'+esc(task.due||'미정')+'</td><td>'+button('editBoardTask','수정','','data-id="'+esc(card.project.id)+'" data-task-id="'+esc(task.id)+'"')+'</td></tr>')).join('')+'</tbody></table></div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   }
   if(mode==='project')return '<div class="task-board-wrap weekly-board">'+weekGroups(list).map(week=>'<section class="board-week"><h3>'+button('toggleWeek','<span>'+esc(week.label)+' <span class="count">'+week.entries.length+'</span></span><span aria-hidden="true">'+(closedWeeks.includes(week.key)?'＋':'−')+'</span>','board-collapse','data-key="'+esc(week.key)+'" aria-expanded="'+!closedWeeks.includes(week.key)+'"')+'</h3><div class="board-week-cards"'+(closedWeeks.includes(week.key)?' hidden':'')+'>'+week.entries.map(renderCard).join('')+'</div></section>').join('')+(!list.length?'<p class="empty">조건에 맞는 과업이 없습니다.</p>':'')+'</div>';
   return '<div class="task-board-wrap">'
@@ -193,6 +202,6 @@
      +'<div class="lane-content"'+(closed?' hidden':'')+'>'+(entries.map(renderCard).join('')||'<p class="task-board-empty">'+(lane.id==='done'&&!showDone?'완료 포함을 켜면 완료 카드가 표시됩니다.':'카드를 이곳으로 옮겨 보세요.')+'</p>')+(mode==='status'?button('boardAdd','＋ 카드 추가','board-add','data-lane="'+lane.id+'"'):'')+'</div></section>';
    }).join('')+'</div></div>';
  }
- const api={cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,canProgress,guardEdit,orderedTasks,weekGroups};
+ const api={cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,setRevisionRequired,canProgress,guardEdit,orderedTasks,weekGroups};
  if(typeof module!=='undefined')module.exports=api;else root.BoardTaskBoard=api;
 })(typeof window!=='undefined'?window:globalThis);
