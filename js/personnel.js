@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+ const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const C=typeof module!=='undefined'?require('./core.js'):root.BoardCore;
   function compareNames(s,a,b){
     const members=s.members||C.MEMBERS,ma=members.find(m=>m.name===a),mb=members.find(m=>m.name===b);
@@ -123,6 +124,6 @@
     return rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||compareNames(s,a.owner,b.owner)||a.owner.localeCompare(b.owner));
   }
   function dday(date,today=C.today()){const n=Math.round((Date.parse(date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000);return n===0?'D-day':n>0?'D-'+n:'D+'+Math.abs(n);}
-  function setAvatar(s,actor,avatar){if(!['yongyong','bbiyak','hamtaro','penguin','terriermon'].includes(avatar))throw Error('캐릭터를 선택하세요.');const next=structuredClone(s),person=next.members.find(m=>m.name===actor&&m.active!==false);if(!person)throw Error('로그인이 필요합니다.');person.avatar=avatar;return next;}
+  function setAvatar(s,actor,avatar){if(!Avatars.keys.includes(avatar))throw Error('캐릭터를 선택하세요.');const next=structuredClone(s),person=next.members.find(m=>m.name===actor&&m.active!==false);if(!person)throw Error('로그인이 필요합니다.');person.avatar=avatar;return next;}
   const api={compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,addSamples,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
 })(typeof window!=='undefined'?window:globalThis);

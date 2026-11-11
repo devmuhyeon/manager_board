@@ -1,7 +1,8 @@
 (function(root){
  'use strict';
+ const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
  function create({C,P,W,B,N,esc,button,options,member,weekBlocks}){
-  const characters=[['yongyong','용용이','yongyong-3d.png'],['bbiyak','삐약이','bbiyak-3d.png'],['hamtaro','햄토리','hamtaro-3d.png'],['penguin','펭귄','penguin-3d.png'],['terriermon','테리어몬','terriermon-original.jpg']];
+  const characters=Avatars.characters;
   const characterKey=value=>characters.some(([key])=>key===value)?value:'yongyong';
   const characterFile=value=>characters.find(c=>c[0]===characterKey(value))[2];
   function characterImage(key,width,height){
