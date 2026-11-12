@@ -18,3 +18,11 @@ test('클릭한 보기 모드는 재렌더·프로필 변경·새 세션에서�
  const store=storage(),controller=Hero.create(store);controller.setMode(user,'big');assert.equal(controller.get(user).mode,'big');assert.equal(controller.get({...user,avatar:'frog'}).mode,'big');assert.equal(Hero.create(store).get(user).mode,'big');controller.setMode(user,'normal');assert.equal(Hero.create(store).get(user).mode,'normal');
  const blocked=Hero.create({getItem(){throw Error('blocked')},setItem(){throw Error('blocked')}});assert.equal(blocked.setMode(user,'big'),false);assert.equal(blocked.get(user).mode,'big');
 });
+test('한 모드 저장은 다른 모드와 다른 사용자·캐릭터를 보존한다',()=>{
+ const store=storage(),controller=Hero.create(store),record=controller.get(user);
+ record.big.x=71;controller.save(user,record);
+ controller.saveMode(user,'normal',{...record.normal,x:-12,title:'#112233'});
+ const reopened=Hero.create(store).get(user);assert.equal(reopened.normal.x,-12);assert.equal(reopened.big.x,71);
+ assert.notEqual(controller.get({...user,name:'다른 사용자'}).normal.x,-12);
+ assert.notEqual(controller.get({...user,avatar:'frog'}).normal.x,-12);
+});

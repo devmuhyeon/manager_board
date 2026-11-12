@@ -42,3 +42,9 @@ html[data-workplace-theme][data-style] .briefing-hero-frame .hero-mode-toggle bu
 .briefing-hero-frame .hero-image img{width:160px;height:160px}
 .briefing-hero-frame .hero-big .hero-image{width:320px}
 .briefing-hero-frame .hero-big .hero-image img{width:200px;height:220px}
+
+/* Both modes share the large-head composition. */
+html[data-workplace-theme][data-style] .briefing-hero-frame .briefing-hero{height:258px}
+.briefing-hero-frame .hero-image{width:320px;height:258px}
+.briefing-hero-frame .hero-intro{left:360px;width:560px}
+.briefing-hero-frame .hero-right{top:34px}

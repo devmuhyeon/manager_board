@@ -23,3 +23,7 @@ Thumbs.db
 .workboard-presence/
 # Generated internal-network runtime package
 dist/
+
+# Shared modular saves contain work and account data
+save/
+*.lnk

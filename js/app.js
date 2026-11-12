@@ -131,7 +131,7 @@
   }
   function report(){const logs=C.reportRows(state.projects,f()).sort((a,b)=>b.date.localeCompare(a.date));const groups=W.group(logs,l=>view==='category'?W.classificationKey(l.project):l.project.title);return '<section class="card"><div class="report-intro"><h2>작업 내역 모아보기 <span class="count">'+logs.length+'건</span></h2>'+scopeTabs()+viewTabs()+'</div>'+filterBar(true)+groups.map(([label,items])=>'<div class="category-group"><h3>'+esc(label)+'</h3><div class="table-wrap"><table><caption class="sr-only">'+esc(label)+' 작업 내역</caption><thead><tr><th>작업일</th><th>과업명</th><th>작업자</th><th>담당팀</th><th>작업 내용</th></tr></thead><tbody>'+items.map(l=>'<tr><td>'+esc(l.date)+'</td><td>'+button('boardDetail',esc(l.project.title),'project-button','data-id="'+esc(l.project.id)+'"')+'</td><td>'+esc(l.author)+'</td><td>'+esc(N.teamLabel(member(l.author)?.team||''))+'</td><td class="notes-cell">'+esc(l.content)+'</td></tr>').join('')+'</tbody></table></div></div>').join('')+(logs.length?'':'<p class="empty">선택 기간의 기록이 없습니다.</p>')+'</section>';}
   
-  function settings(){return `<div class="settings-grid"><section class="card settings-card"><h2>원본과 저장 폴더</h2><p>원본 기준 폴더는 Z:\\고용24 디자인파트 요청관리\\디자인파트요청관리\\입니다. 요청관리 JSON의 정확한 위치는 직접 선택합니다. 원본의 프로젝트 자료와 팀관리 JSON도 변경하지 않습니다.</p>${connectionCards()}<div class="actions">${button('refreshAll','최신 자료 새로고침')}${button('reload','저장된 통합관리 파일 다시 읽기')}</div><p>최근 가져오기: ${state.importedAt?new Date(state.importedAt).toLocaleString('ko-KR'):'아직 없음'}</p></section><section class="card settings-card"><h2>저장 및 백업</h2><p>과업·인원·메모 변경사항은 현재 브라우저에 임시 저장됩니다. 내용 저장을 누르면 선택한 Y 폴더의 <strong>${BOARD_FILE}</strong>에만 반영합니다.</p><div class="actions">${button('save','내용 저장','primary')}${button('backup','통합관리 JSON 내려받기')}${button('restore','통합관리 JSON 복원')}</div><p>다른 사용자가 파일을 변경한 경우 덮어쓰기를 중단합니다. 여러 사람이 동시에 쓰는 순간까지 잠그는 기능은 없으므로 작업 전 새로고침 후 저장하세요.</p></section></div>`;}
+  function settings(){return `<div class="settings-grid"><section class="card settings-card"><h2>원본과 저장 폴더</h2><p>원본 기준 폴더는 Z:\\고용24 디자인파트 요청관리\\디자인파트요청관리\\입니다. 요청관리 JSON의 정확한 위치는 직접 선택합니다. 원본의 프로젝트 자료와 팀관리 JSON도 변경하지 않습니다.</p>${connectionCards()}<div class="actions">${button('refreshAll','최신 자료 새로고침')}${button('reload','저장된 통합관리 파일 다시 읽기')}</div><p>최근 가져오기: ${state.importedAt?new Date(state.importedAt).toLocaleString('ko-KR'):'아직 없음'}</p></section><section class="card settings-card"><h2>저장 및 백업</h2><p>과업·인원·메모 변경사항은 현재 브라우저에 임시 저장됩니다. 내용 저장을 누르면 선택한 Y 폴더의 <strong>save/</strong> 아래 기능별 JSON에 반영합니다.</p><div class="actions">${button('save','내용 저장','primary')}${button('backup','통합관리 JSON 내려받기')}${button('restore','통합관리 JSON 복원')}</div><p>다른 사용자가 먼저 저장하면 덮어쓰기를 중단합니다. 동시 저장 이력이 갈라지면 양쪽 자료를 보존하고 복구 전까지 추가 저장을 차단합니다. 작업 전 새로고침을 권장합니다.</p></section></div>`;}
   function classificationFields(project){const c=C.classification(project),content=c.taskCategory==='콘텐츠',lists=W.contentOptions(state);return '<fieldset class="full classification-fields"><legend>과업 분류</legend><div class="classification-grid"><div class="field"><label for="p-taskCategory">분류 1</label><select id="p-taskCategory" name="taskCategory" required>'+options(['UX','UI','기획','디자인','퍼블','콘텐츠'],c.taskCategory,'선택하세요')+'</select></div><div class="field" id="contentCategoryField" '+(content?'':'hidden')+'><label for="p-contentCategory">분류 2</label><input id="p-contentCategory" name="contentCategory" list="contentCategories" maxlength="100" value="'+esc(c.contentCategory)+'" '+(content?'required':'disabled')+' placeholder="예: 10월 뉴스레터"><datalist id="contentCategories">'+options(lists.level2,c.contentCategory)+'</datalist></div><div class="field" id="platformField" '+(content?'hidden':'')+'><label for="p-platform">분류 2</label><select id="p-platform" name="platform" '+(content?'disabled':'required')+'>'+options(['PC&MO','PC','MO'],c.platform,'선택하세요')+'</select></div><div class="field" id="contentTypeField" '+(content?'':'hidden')+'><label for="p-contentType">분류 3</label><select id="p-contentType" name="contentType" '+(content?'required':'disabled')+'>'+options([...new Set([...lists.level3,...(c.contentType?[c.contentType]:[])])],c.contentType,'선택하세요')+'</select></div></div><p class="muted">콘텐츠: 월별 주제 → 콘텐츠 유형 · 그 외: PC&MO / PC / MO</p></fieldset>';}
   
   function moveBoardCard(id,lane,name=boardAssignee()){
@@ -190,8 +190,8 @@
       const current=await (await targetHandle.getFile()).text();
       if(current!==diskText)throw new Error('다른 사용자가 파일을 변경했습니다. 덮어쓰지 않았습니다. 현재 내용을 JSON 백업한 후 저장된 파일을 다시 읽어 주세요.');
       const next={...state,revision:state.revision+1,savedAt:new Date().toISOString(),savedBy:user?.name||'계정 설정'};const serialized=JSON.stringify(next,null,2);
-      const stream=await targetHandle.createWritable();try{await stream.write(serialized);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}
-      state=next;diskText=serialized;dirty=false;persist();await rememberFolders();
+      const stream=await targetHandle.createWritable({expectedText:diskText});try{await stream.write(serialized);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}
+      state=next;diskText=targetHandle.modular?await (await targetHandle.getFile()).text():serialized;dirty=false;persist();await rememberFolders();
     }finally{saving=false;}
   }
   async function reload(){if(!targetHandle)return;if(dirty&&!confirm('임시 변경사항을 버리고 저장된 파일을 다시 읽으시겠습니까?'))return;const raw=await (await targetHandle.getFile()).text();const loaded=loadState(JSON.parse(raw));state=P.upgrade(loaded);syncRoster();diskText=raw;dirty=false;user=null;demoSession=false;persist();render();toast('공용 자료를 다시 읽었습니다. 로그인해 주세요.');}
@@ -236,6 +236,7 @@
     if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(user);showDialog(heroEditorHTML());}return;}
     if(a==='heroPreviewMode'&&heroDraft){heroDraft.mode=el.dataset.mode==='big'?'big':'normal';$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
     if(a==='heroPalette'&&heroDraft){const palette=BoardBriefingHero.palettes.find(p=>p.id===el.dataset.palette);if(palette){const current=heroDraft[heroDraft.mode];heroDraft[heroDraft.mode]={...BoardBriefingHero.fromPalette(palette,heroDraft.mode),scale:current.scale,x:current.x,y:current.y};$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);}return;}
+    if(a==='heroSaveMode'&&heroDraft){heroDesign.saveMode(user,heroDraft.mode,heroDraft[heroDraft.mode]);toast((heroDraft.mode==='big'?'대두형':'기본형')+' 설정을 이 사용자·캐릭터에 저장했습니다.');return;}
     if(a==='heroReset'&&heroDraft){heroDraft[heroDraft.mode]=BoardBriefingHero.defaults(user,heroDraft.mode);$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
     if(a==='allProjects'){selectedProject='';render();return;}
     if(a==='leaveView'){leaveView=el.dataset.view;render();return;}
@@ -325,10 +326,10 @@
   }
   function connectionReady(){return Boolean(sourceDir&&sourceHandle&&targetDir&&targetHandle&&health.source&&health.target);}
   function setupExtras(){const footer=$('.setup-footer');if(footer)footer.insertAdjacentHTML('afterend',`<div class="setup-secondary">${sourceDir||targetDir?button('permitFolders','기억된 폴더 접근 허용'):''}${button('skipSetup','연결은 나중에, 로그인 먼저','black-button')}<p class="muted">연결 전에는 이 브라우저에 임시 저장됩니다. 공용 저장은 로그인 후 폴더를 연결해 주세요.</p></div>`);}
-  async function rememberFolders(){try{await V.rememberConnections({sourceDir,sourceHandle,targetDir,targetHandle,lastDiskText:diskText});}catch{toast('이 브라우저에서 폴더 연결을 기억하지 못했습니다. 다음 실행 때 다시 선택해 주세요.');}}
+  async function rememberFolders(){try{await V.rememberConnections({sourceDir,sourceHandle,targetDir,targetHandle:targetHandle?.modular?null:targetHandle,modular:!!targetHandle?.modular,lastDiskText:diskText});}catch{toast('이 브라우저에서 폴더 연결을 기억하지 못했습니다. 다음 실행 때 다시 선택해 주세요.');}}
   async function restoreFolders(){
     const saved=await V.recallConnections();if(!saved||setupDone||user)return;
-    sourceDir=saved.sourceDir||null;sourceHandle=saved.sourceHandle||null;targetDir=saved.targetDir||null;targetHandle=saved.targetHandle||null;diskText=saved.lastDiskText??null;
+    sourceDir=saved.sourceDir||null;sourceHandle=saved.sourceHandle||null;targetDir=saved.targetDir||null;targetHandle=targetDir?.getDirectoryHandle?null:saved.targetHandle||null;diskText=saved.lastDiskText??null;
     if(await checkConnections()){
       const raw=await (await targetHandle.getFile()).text();
       if(dirty&&diskText!==raw){render();toast('기억된 폴더를 찾았지만 공용 파일이 변경되었습니다. 임시 자료를 백업한 뒤 저장 폴더를 다시 연결해 주세요.');return;}
@@ -336,7 +337,7 @@
       diskText=raw;await finishSetup();toast('이전에 연결한 폴더를 자동으로 연결했습니다.');
     }else render();
   }
-  function connectionCards(){return `<div class="connection-grid"><section class="connect-card"><span class="step-number">01</span><h2>원본 자료 · 읽기 전용</h2><p>프로젝트 자료와 팀관리 JSON이 있는 폴더를 선택하세요.</p><div class="connection-line"><span>${sourceDir?esc(sourceDir.name):'자료 폴더 미연결'}</span>${button('sourceFolder',sourceDir?'폴더 재연결':'Z 자료 폴더 연결')}</div><div class="connection-line"><span>${sourceHandle&&health.source?'요청관리.json 연결됨':'요청관리 JSON 미연결'}</span>${button('sourceFile',sourceHandle?'JSON 재연결':'요청관리 JSON 선택')}</div><p class="muted">요청관리.json은 다른 위치에 있어도 별도로 선택할 수 있습니다.</p></section><section class="connect-card"><span class="step-number">02</span><h2>통합관리 · 읽기 및 저장</h2><p>Y 드라이브에서 통합관리 데이터를 보관할 폴더를 선택하세요.</p><div class="connection-line"><span>${targetDir&&health.target?esc(targetDir.name):'저장 폴더 미연결'}</span>${button('connect',targetDir?'폴더 재연결':'Y 저장 폴더 연결')}</div><p class="muted">저장 파일: ${BOARD_FILE}<br>선택한 폴더에 기존 파일이 있으면 그 자료를 불러옵니다.</p></section></div>`;}
+  function connectionCards(){return `<div class="connection-grid"><section class="connect-card"><span class="step-number">01</span><h2>원본 자료 · 읽기 전용</h2><p>프로젝트 자료와 팀관리 JSON이 있는 폴더를 선택하세요.</p><div class="connection-line"><span>${sourceDir?esc(sourceDir.name):'자료 폴더 미연결'}</span>${button('sourceFolder',sourceDir?'폴더 재연결':'Z 자료 폴더 연결')}</div><div class="connection-line"><span>${sourceHandle&&health.source?'요청관리.json 연결됨':'요청관리 JSON 미연결'}</span>${button('sourceFile',sourceHandle?'JSON 재연결':'요청관리 JSON 선택')}</div><p class="muted">요청관리.json은 다른 위치에 있어도 별도로 선택할 수 있습니다.</p></section><section class="connect-card"><span class="step-number">02</span><h2>통합관리 · 읽기 및 저장</h2><p>Y 드라이브에서 통합관리 데이터를 보관할 폴더를 선택하세요.</p><div class="connection-line"><span>${targetDir&&health.target?esc(targetDir.name):'저장 폴더 미연결'}</span>${button('connect',targetDir?'폴더 재연결':'Y 저장 폴더 연결')}</div><p class="muted">저장 위치: save/ (기능별 JSON)<br>선택한 폴더에 기존 파일이 있으면 그 자료를 불러옵니다.</p></section></div>`;}
   async function login(){
     if(!setupDone){setup();setupExtras();return;}
     syncRoster();const members=activeMembers();
@@ -408,6 +409,7 @@
   
   async function checkConnections(){
     async function readable(handle,mode){if(!handle)return false;try{return !handle.queryPermission||await handle.queryPermission({mode})==='granted';}catch{return false;}}
+    if(!targetHandle&&targetDir&&await readable(targetDir,'readwrite'))targetHandle=await BoardModularSave.open(targetDir);
     health.source=await readable(sourceDir,'read')&&await readable(sourceHandle,'read');health.target=await readable(targetDir,'readwrite')&&await readable(targetHandle,'readwrite');
     if(health.source)try{await sourceHandle.getFile();}catch{health.source=false;}
     if(health.target)try{await targetHandle.getFile();}catch{health.target=false;}
@@ -434,11 +436,9 @@
     if(!window.showDirectoryPicker)throw new Error('폴더 연결을 지원하는 데스크톱 Edge 또는 Chrome에서 열어 주세요.');
     const directory=await showDirectoryPicker({id:'workplace-output',mode:'readwrite'});
     if(sourceDir&&(await sourceDir.isSameEntry(directory)||await sourceDir.resolve(directory)!==null))throw new Error('원본 폴더와 그 하위 폴더에는 저장할 수 없습니다. Y 드라이브의 별도 폴더를 선택하세요.');
-    let handle,existing=null,loaded=null;
-    try{handle=await directory.getFileHandle(BOARD_FILE);existing=await (await handle.getFile()).text();if(existing.trim())loaded=P.upgrade(loadState(JSON.parse(existing)));}catch(e){if(e.name!=='NotFoundError')throw e;}
+    const handle=await BoardModularSave.open(directory),existing=await (await handle.getFile()).text(),loaded=existing.trim()?P.upgrade(loadState(JSON.parse(existing))):null;
     if(loaded&&dirty&&!confirm('현재 임시 변경사항을 연결할 통합관리 파일의 자료로 바꾸시겠습니까? 취소 후 JSON 백업을 받을 수 있습니다.'))return;
     if(loaded){state=loaded;dirty=false;cacheError='';user=null;setupDone=false;}
-    if(!handle){handle=await directory.getFileHandle(BOARD_FILE,{create:true});existing='';}
     targetDir=directory;targetHandle=handle;diskText=existing;health.target=true;syncRoster();persist();await rememberFolders();if($('#editor').open)$('#editor').close();render();toast('통합관리 저장 폴더를 연결했습니다.');
   }
   async function finishSetup(){
