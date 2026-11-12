@@ -18,3 +18,8 @@ node_modules/
 *.bak
 .DS_Store
 Thumbs.db
+
+# Ephemeral shared-folder presence (never commit online user metadata)
+.workboard-presence/
+# Generated internal-network runtime package
+dist/

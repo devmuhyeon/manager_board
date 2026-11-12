@@ -1,0 +1,13 @@
+/* Standalone workplace tokens, based on the existing neutral visual language. No runtime dependency. */
+:root{
+ --font-family-body:Pretendard,"Malgun Gothic",sans-serif;--font-family-heading:var(--font-family-body);
+ --color-background-body:#f1f1f1;--color-background-surface:#fff;--color-background-card:#fff;--color-background-popover:#fff;--color-background-muted:#f2f4f7;
+ --color-border:#dce2e9;--color-border-emphasized:#b7c1cc;--color-text-primary:#172033;--color-text-secondary:#637083;
+ --color-accent:#1b1b1b;--color-text-accent:#1b1b1b;--color-on-accent:#fff;--color-neutral:#edf0f4;--color-overlay-hover:#0000000d;
+ --color-text-error:#c0262c;--color-text-success:#2f7d33;--color-info:#0074e2;--color-on-info:#fff;--color-info-muted:#dbeafe;--color-on-info-muted:#1e40af;
+ --color-success:#198100;--color-on-success:#fff;--color-success-muted:#dcfce7;--color-on-success-muted:#166534;--color-warning-muted:#fef3c7;--color-on-warning-muted:#92400e;--color-error-muted:#fee2e2;--color-on-error-muted:#991b1b;
+ --radius-container:12px;--radius-element:10px;--radius-full:9999px;--radius-page:28px;--radius-inner:6px;--shadow-med:0 4px 16px #17203320;
+}
+:root[data-theme="dark"],:root[data-style="midnight"]{
+ --color-background-body:#1b1b1b;--color-background-surface:#262626;--color-background-card:#20252d;--color-background-popover:#252b35;--color-background-muted:#303843;--color-border:#ffffff26;--color-border-emphasized:#627083;--color-text-primary:#f1f5f9;--color-text-secondary:#bbc5d1;--color-accent:#f1f1f1;--color-on-accent:#111;--color-neutral:#ffffff1a;--color-overlay-hover:#ffffff0d;--color-info:#6d9cfe;--color-info-muted:#243e60;--color-on-info-muted:#bfdbfe;--color-success-muted:#24432e;--color-on-success-muted:#bbf7d0;--color-warning-muted:#4b3b1d;--color-on-warning-muted:#fde68a;--color-error-muted:#4b242b;--color-on-error-muted:#fecaca;
+}

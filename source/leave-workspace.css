@@ -1,31 +1,31 @@
 /* Leave workspace uses the official Astryx Neutral semantic theme. */
-.astryx-leave-workspace {display:grid;gap:24px;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .card {margin:0;border:1px solid var(--color-border);border-radius:var(--radius-container);background:var(--color-background-surface);box-shadow:none;overflow:hidden;}
-.astryx-leave-workspace .sectionhead {padding:20px 24px;border-bottom:1px solid var(--color-border);gap:16px;}
-.astryx-leave-workspace .sectionhead h2 {font-size:18px;font-weight:700;}
-.astryx-leave-workspace .sectionhead .actions {gap:12px;align-items:center;}
-.astryx-leave-workspace .sectionhead label {display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-text-secondary);}
-.astryx-leave-workspace #leaveYear {width:94px;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:24px;margin:0;background:var(--color-background-surface);}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals>div {display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:20px;border:0;border-radius:var(--radius-container);background:var(--color-background-muted);}
-.astryx-leave-workspace .annual-totals small {font-size:12px;color:var(--color-text-secondary);}
-.astryx-leave-workspace .annual-totals strong {font-size:28px;line-height:1.2;letter-spacing:-.04em;font-variant-numeric:tabular-nums;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals>div:nth-child(3) {background:var(--color-info-muted);color:var(--color-on-info-muted);}
-.astryx-leave-workspace .annual-totals>div:nth-child(3) small {color:inherit;}
-.astryx-leave-workspace .annual-panel>details {margin:0 24px 16px;padding:12px 0;border-top:1px solid var(--color-border);}
-.astryx-leave-workspace summary {cursor:pointer;font-size:13px;font-weight:600;}
-.astryx-leave-workspace .panel-note {margin:0;padding:0 24px 20px;color:var(--color-text-secondary);font-size:12px;line-height:1.7;}
-.astryx-leave-workspace .leave-schedule-panel .panel-note {padding:16px 24px;}
-.astryx-leave-workspace .allowance-form {padding:16px 0 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.astryx-leave-workspace .table-wrap {padding:0;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .leave-table th {background:var(--color-background-muted);color:var(--color-text-secondary);font-size:12px;font-weight:600;padding:14px 20px;border-inline:0;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .leave-table td {padding:18px 20px;border-inline:0;background:var(--color-background-surface);border-bottom:1px solid var(--color-border);font-size:13px;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .leave-table tbody tr:last-child td {border-bottom:0;}
-html[data-astryx-theme][data-style] .astryx-leave-workspace .leave-table tbody tr:hover td {background:var(--color-background-muted);}
+.leave-workspace {display:grid;gap:24px;}
+html[data-workplace-theme][data-style] .leave-workspace .card {margin:0;border:1px solid var(--color-border);border-radius:var(--radius-container);background:var(--color-background-surface);box-shadow:none;overflow:hidden;}
+.leave-workspace .sectionhead {padding:20px 24px;border-bottom:1px solid var(--color-border);gap:16px;}
+.leave-workspace .sectionhead h2 {font-size:18px;font-weight:700;}
+.leave-workspace .sectionhead .actions {gap:12px;align-items:center;}
+.leave-workspace .sectionhead label {display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-text-secondary);}
+.leave-workspace #leaveYear {width:94px;}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:24px;margin:0;background:var(--color-background-surface);}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div {display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:20px;border:0;border-radius:var(--radius-container);background:var(--color-background-muted);}
+.leave-workspace .annual-totals small {font-size:12px;color:var(--color-text-secondary);}
+.leave-workspace .annual-totals strong {font-size:28px;line-height:1.2;letter-spacing:-.04em;font-variant-numeric:tabular-nums;}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div:nth-child(3) {background:var(--color-info-muted);color:var(--color-on-info-muted);}
+.leave-workspace .annual-totals>div:nth-child(3) small {color:inherit;}
+.leave-workspace .annual-panel>details {margin:0 24px 16px;padding:12px 0;border-top:1px solid var(--color-border);}
+.leave-workspace summary {cursor:pointer;font-size:13px;font-weight:600;}
+.leave-workspace .panel-note {margin:0;padding:0 24px 20px;color:var(--color-text-secondary);font-size:12px;line-height:1.7;}
+.leave-workspace .leave-schedule-panel .panel-note {padding:16px 24px;}
+.leave-workspace .allowance-form {padding:16px 0 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.leave-workspace .table-wrap {padding:0;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table th {background:var(--color-background-muted);color:var(--color-text-secondary);font-size:12px;font-weight:600;padding:14px 20px;border-inline:0;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table td {padding:18px 20px;border-inline:0;background:var(--color-background-surface);border-bottom:1px solid var(--color-border);font-size:13px;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:last-child td {border-bottom:0;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:hover td {background:var(--color-background-muted);}
 .leave-type-badge {display:inline-flex;align-items:center;border-radius:var(--radius-element);background:var(--color-info-muted);color:var(--color-on-info-muted);padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap;}
 .leave-date-cell {font-variant-numeric:tabular-nums;white-space:nowrap;}
 #leaveForm .modal-body {display:grid;gap:16px;}
 #leaveForm .field {margin:0;}
 #leaveForm textarea {min-height:70px;}
-@media(max-width:1100px){html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals{grid-template-columns:repeat(3,minmax(0,1fr));}.astryx-leave-workspace .sectionhead{flex-wrap:wrap;}}
-@media(max-width:600px){html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;gap:8px;}html[data-astryx-theme][data-style] .astryx-leave-workspace .annual-totals>div{padding:16px;}.astryx-leave-workspace .annual-totals strong{font-size:24px;}.astryx-leave-workspace .sectionhead{padding:16px;}.astryx-leave-workspace .leave-table{min-width:650px;}}
+@media(max-width:1100px){html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(3,minmax(0,1fr));}.leave-workspace .sectionhead{flex-wrap:wrap;}}
+@media(max-width:600px){html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;gap:8px;}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:16px;}.leave-workspace .annual-totals strong{font-size:24px;}.leave-workspace .sectionhead{padding:16px;}.leave-workspace .leave-table{min-width:650px;}}
