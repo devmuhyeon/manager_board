@@ -7,13 +7,14 @@
   {id:'pink-bold',name:'진한 핑크',start:'#fcb0d0',end:'#f965a9',ink:'#ffffff',muted:'#ffffff',accent:'#fc67ac',button:'#ffb7da',buttonText:'#bd005b',metricInk:'#bd005b'},
   {id:'blue',name:'블루',start:'#d6eefe',end:'#719eff',ink:'#1c2bad',muted:'#5f6f91',accent:'#5163d6',button:'#a5bcf3'},
   {id:'orange',name:'오렌지',start:'#fef6ed',end:'#ffbc70',ink:'#b84200',muted:'#8f735d',accent:'#f57505',button:'#fccca7'},
+  {id:'goku-orange',name:'손오공 오렌지',start:'#fff6eb',end:'#ffc580',ink:'#9b3b08',muted:'#765940',accent:'#b94a0a',button:'#ffe1bb'},
   {id:'yellow',name:'옐로',start:'#fef7c4',end:'#ffe457',ink:'#845200',muted:'#876b29',accent:'#ffa600',button:'#fff7cd'},
   {id:'green',name:'그린',start:'#f1fae9',end:'#b5df8d',ink:'#35591f',muted:'#62765b',accent:'#668e3b',button:'#ddedc8'},
   {id:'mint',name:'민트',start:'#e8fcf5',end:'#8dddd1',ink:'#105c53',muted:'#5e7d77',accent:'#218779',button:'#c5f1e6'},
   {id:'purple',name:'퍼플',start:'#f5efff',end:'#c7a5ed',ink:'#5f298d',muted:'#7b668a',accent:'#9059bf',button:'#e6d2f6'},
   {id:'gray',name:'그레이',start:'#f5f5f6',end:'#bac8d6',ink:'#33475e',muted:'#687581',accent:'#60778d',button:'#dbe4ed'}
  ];
- const colorsByAvatar={yongyong:'green',bbiyak:'yellow',hamtaro:'orange',penguin:'blue',terriermon:'green','sprout-potato':'green',frog:'mint','sweet-potato':'purple',danbi:'pink',dongdong:'blue',strawberry:'pink',ddochi:'yellow',maruko:'orange',mashimaro:'mint','majin-buu':'pink',culprit:'gray','baby-jjanggu':'orange','sailor-moon':'blue',atammamma:'orange',glasses:'purple',juice:'orange',kongkong:'green',quokka:'orange',kitty:'pink',powerpuff:'pink','penguin-new':'blue'};
+ const colorsByAvatar={yongyong:'green',bbiyak:'yellow',hamtaro:'orange',penguin:'blue',terriermon:'green','sprout-potato':'green',frog:'mint','sweet-potato':'purple',danbi:'pink',dongdong:'blue',strawberry:'pink',ddochi:'yellow',maruko:'orange',mashimaro:'mint','majin-buu':'pink',culprit:'gray','baby-jjanggu':'orange','sailor-moon':'blue',atammamma:'orange',glasses:'purple',juice:'orange',kongkong:'green',quokka:'orange',kitty:'pink',powerpuff:'pink','penguin-new':'blue','young-goku':'goku-orange'};
  const groups=[
   ['배경',[['bgStart','왼쪽 색'],['bgEnd','오른쪽 색']]],
   ['타이틀',[['title','글자'],['titleBg','배경',true]]],
