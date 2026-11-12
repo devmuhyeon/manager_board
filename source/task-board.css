@@ -3,7 +3,7 @@
   align-items: center;
   gap: 8px 12px;
   flex-wrap: wrap;
-  padding: 14px var(--panel-inset) 0;
+  padding: 16px var(--panel-inset) 0;
 }
 .task-board-controls label {
   font-size: 13px;
@@ -28,7 +28,7 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: 4px 12px;
-  margin: 14px 0;
+  margin: 16px 0;
   color: var(--muted);
   font-size: 13px;
 }
@@ -45,7 +45,7 @@
 }
 .task-board-lane {
   min-width: 0;
-  padding: 10px;
+  padding: 12px;
   border-radius: var(--radius-container);
   background: var(--color-background-muted);
 }
@@ -71,7 +71,7 @@
 .task-board-card {
   min-width: 0;
   margin-block-end: 8px;
-  padding: 13px;
+  padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-container);
   background: var(--color-background-surface);
@@ -92,14 +92,14 @@ html[data-workplace-theme][data-style] .task-board-card .task-board-title {
 }
 html[data-workplace-theme][data-style] .task-board-title:hover { text-decoration: underline; }
 .task-board-assignees {
-  margin: 5px 0 10px;
+  margin: 4px 0 12px;
   color: var(--muted);
   overflow-wrap: anywhere;
   font-size: 12px;
 }
 .task-board-due {
   display: inline-block;
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: var(--radius-inner);
   background: var(--color-background-muted);
   color: var(--text);
@@ -127,7 +127,7 @@ html[data-workplace-theme][data-style] .task-board-title:hover { text-decoration
   display: grid;
   gap: 4px;
   padding: 0;
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   list-style: none;
 }
 html[data-workplace-theme][data-style] .task-board-card .task-check {
@@ -136,7 +136,7 @@ html[data-workplace-theme][data-style] .task-board-card .task-check {
   gap: 8px;
   width: 100%;
   min-height: 30px;
-  padding: 5px 6px;
+  padding: 4px 8px;
   border: 0;
   text-align: start;
   font-size: 12px;
@@ -184,19 +184,19 @@ html[data-workplace-theme][data-style] .board-surface .table-toolbar {padding:0 
 .board-surface .task-board-wrap {padding:0;}
 .board-surface .task-board-total {margin:4px 0 20px;}
 .board-surface .task-board-total strong {font-size:14px;}
-.board-surface .task-board {grid-auto-columns:290px;gap:16px;min-height:calc(100dvh - 330px);padding:2px 2px 20px;scrollbar-width:thin;scrollbar-color:#aebdd0 transparent;}
+.board-surface .task-board {grid-auto-columns:290px;gap:16px;min-height:calc(100dvh - 330px);padding:4px 4px 20px;scrollbar-width:thin;scrollbar-color:#aebdd0 transparent;}
 html[data-workplace-theme][data-style] .task-board-lane {background:#f1f2f4;border-radius:12px;padding:12px;box-shadow:0 1px 2px #091e4220;min-height:160px;}
 .task-board-lane h3 {border:0;padding:4px 4px 16px;font-size:14px;}
-html[data-workplace-theme][data-style] .task-board-card {background:var(--color-background-surface);border:1px solid var(--color-border);box-shadow:0 1px 2px #091e4226;border-radius:9px;padding:14px;margin-bottom:10px;cursor:grab;transition:box-shadow .15s,transform .15s;}
+html[data-workplace-theme][data-style] .task-board-card {background:var(--color-background-surface);border:1px solid var(--color-border);box-shadow:0 1px 2px #091e4226;border-radius:9px;padding:16px;margin-bottom:12px;cursor:grab;transition:box-shadow .15s,transform .15s;}
 html[data-workplace-theme][data-style] .task-board-card:hover {box-shadow:0 3px 10px #091e4226;}
 .task-board-card.is-dragging {opacity:.4;transform:rotate(2deg);}
 html[data-workplace-theme][data-style] .task-board-lane.is-drop-target {outline:2px solid var(--color-info);outline-offset:2px;}
-.board-card-label {display:inline-block;font-size:11px;font-weight:650;padding:3px 8px;margin-bottom:10px;border-radius:4px;background:var(--color-info-muted);color:var(--color-on-info-muted);}
+.board-card-label {display:inline-block;font-size:11px;font-weight:650;padding:4px 8px;margin-bottom:12px;border-radius:4px;background:var(--color-info-muted);color:var(--color-on-info-muted);}
 .task-board-title {font-weight:700;}
 .task-board-due:not(.is-overdue) {background:var(--color-info-muted);color:var(--color-on-info-muted);}
-.board-move-label {display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--color-border);margin-top:12px;padding-top:10px;font-size:11px;color:var(--muted);}
-html[data-workplace-theme][data-style] .board-move-label select {min-height:28px;padding:3px 6px;width:112px;font-size:12px;background:transparent;}
-html[data-workplace-theme][data-style] .board-add {width:100%;text-align:left;border:0;background:transparent;color:var(--muted);padding:10px;justify-content:flex-start;}
+.board-move-label {display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--color-border);margin-top:12px;padding-top:12px;font-size:11px;color:var(--muted);}
+html[data-workplace-theme][data-style] .board-move-label select {min-height:28px;padding:4px 8px;width:112px;font-size:12px;background:transparent;}
+html[data-workplace-theme][data-style] .board-add {width:100%;text-align:left;border:0;background:transparent;color:var(--muted);padding:12px;justify-content:flex-start;}
 html[data-workplace-theme][data-style] .board-add:hover {background:var(--color-background-muted);color:var(--text);}
 .board-detail .task-board {display:block;min-height:0;}
 .board-detail .task-board-lane:has(.task-board-empty) {display:none;}
@@ -214,7 +214,7 @@ html[data-workplace-theme][data-style] .main .content {max-width:none;padding:24
 html[data-workplace-theme][data-style] .shell {display:grid;}
 html[data-workplace-theme][data-style] .sidebar {height:100dvh;position:sticky;top:0;overflow:hidden;}
 html[data-workplace-theme][data-style] .sidebar .nav {flex-direction:column;overflow-y:auto;min-height:0;}
-html[data-workplace-theme][data-style] .task-board-card .task-board-title {padding-bottom:10px;border-bottom:1px solid var(--color-border);}
+html[data-workplace-theme][data-style] .task-board-card .task-board-title {padding-bottom:12px;border-bottom:1px solid var(--color-border);}
 html[data-workplace-theme][data-style] .sidebar .nav button.active {background:var(--color-info-muted);color:var(--color-on-info-muted);}
 html[data-workplace-theme][data-style] .sidebar .nav button.active::after {display:none;}
 @media(max-width:760px){
@@ -223,18 +223,18 @@ html[data-workplace-theme][data-style] .sidebar .nav button.active::after {displ
  html[data-workplace-theme][data-style] .sidebar .brand {justify-content:center;}
  html[data-workplace-theme][data-style] .sidebar .brand span,html[data-workplace-theme][data-style] .sidebar .nav-group,html[data-workplace-theme][data-style] .sidebar .subbrand,html[data-workplace-theme][data-style] .sidebar .user>div {display:none;}
  html[data-workplace-theme][data-style] .sidebar .nav {max-height:none;margin-top:20px;}
- html[data-workplace-theme][data-style] .sidebar .nav button {font-size:0;padding:10px;text-align:center;}
+ html[data-workplace-theme][data-style] .sidebar .nav button {font-size:0;padding:12px;text-align:center;}
  html[data-workplace-theme][data-style] .sidebar .nav button .tossface {font-size:21px;margin:0;}
  html[data-workplace-theme][data-style] .sidebar .sidebar-bottom .user {display:flex;flex-wrap:wrap;justify-content:center;}
- html[data-workplace-theme][data-style] .sidebar .user>[data-action="logout"] {margin:0;font-size:10px;padding:6px 2px;}
+ html[data-workplace-theme][data-style] .sidebar .user>[data-action="logout"] {margin:0;font-size:10px;padding:8px 4px;}
  html[data-workplace-theme][data-style] .main .content {padding:16px;}
 }
 .board-view-tabs {margin:16px 0 0;gap:6px;}
 .task-board-card {position:relative;}
-html[data-workplace-theme][data-style] .task-board-card .board-edit {float:right;min-height:26px;padding:3px 8px;font-size:11px;}
+html[data-workplace-theme][data-style] .task-board-card .board-edit {float:right;min-height:26px;padding:4px 8px;font-size:11px;}
 .task-board-checklist li {display:flex;align-items:center;gap:4px;}
 html[data-workplace-theme][data-style] .task-board-card .task-check {flex:1;min-width:0;}
-html[data-workplace-theme][data-style] .board-task-edit {flex:none;font-size:11px;min-height:28px;padding:4px 6px;}
+html[data-workplace-theme][data-style] .board-task-edit {flex:none;font-size:11px;min-height:28px;padding:4px 8px;}
 .board-move-label[hidden] {display:none;}
 .task-board-card[draggable="false"] {cursor:default;}
 /* Essential navigation and progressive disclosure. */
@@ -246,7 +246,7 @@ html[data-workplace-theme][data-style] .board-surface .table-toolbar {display:no
 .board-view-tabs {margin-top:0;flex-wrap:nowrap;overflow-x:auto;}
 
 .task-board-checklist li {flex-wrap:wrap;}
-.task-progress-control {display:flex;align-items:center;gap:8px;flex-basis:100%;padding:0 4px 10px 24px;font-size:12px;color:var(--muted);}
+.task-progress-control {display:flex;align-items:center;gap:8px;flex-basis:100%;padding:0 4px 12px 24px;font-size:12px;color:var(--muted);}
 html[data-workplace-theme][data-style] .task-progress-control input[type="range"] {flex:1;min-width:0;width:100%;height:24px;min-height:24px;padding:0;border:0;box-shadow:none;background:transparent;accent-color:var(--color-info);cursor:pointer;}
 html[data-workplace-theme][data-style] .task-progress-control input[type="number"] {width:54px;min-height:30px;padding:4px;text-align:center;}
 .editor-extra {margin-block:16px;border-top:1px solid var(--border);padding-top:12px;}
@@ -286,40 +286,40 @@ html[data-workplace-theme][data-style] .task-progress-control input:disabled,htm
 .board-table-section th {white-space:nowrap;}
 .board-table-section td {vertical-align:middle;}
 .board-table-section td:first-child {min-width:200px;}
-.board-table-section progress {display:block;width:90px;height:6px;margin-top:5px;accent-color:var(--color-info);}
+.board-table-section progress {display:block;width:90px;height:6px;margin-top:4px;accent-color:var(--color-info);}
 .table-percent {font-variant-numeric:tabular-nums;font-weight:650;}
 .schedule-help {margin:0 0 20px;color:var(--muted);font-size:13px;}
 .schedule-task-progress {margin-top:8px;display:grid;gap:6px;color:var(--muted);font-size:12px;}
 .schedule-task-progress progress {width:100%;height:6px;accent-color:var(--color-info);}
-.preview-label {padding:5px 10px;border-radius:6px;background:var(--color-info-muted);color:var(--color-on-info-muted);font-size:11px;white-space:nowrap;}
+.preview-label {padding:4px 12px;border-radius:6px;background:var(--color-info-muted);color:var(--color-on-info-muted);font-size:11px;white-space:nowrap;}
 .person-team-label {display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:400;}
 .briefing-calendar {margin:24px 0;overflow:hidden;}
 .briefing-calendar .sectionhead {padding:20px 24px;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
 .calendar-legend {display:flex;gap:16px;padding:12px 24px;font-size:12px;}
-.calendar-legend span::before {content:'';display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--color-info);}
+.calendar-legend span::before {content:'';display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:var(--color-info);}
 .calendar-legend .memo::before {background:var(--color-success);}
 .calendar-scroll {overflow:auto;}
 .calendar-grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:700px;}
-.calendar-weekday {padding:10px;text-align:center;font-size:12px;background:var(--color-background-muted);border-bottom:1px solid var(--border);}
-.calendar-day {min-height:128px;padding:6px;min-width:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.calendar-weekday {padding:12px;text-align:center;font-size:12px;background:var(--color-background-muted);border-bottom:1px solid var(--border);}
+.calendar-day {min-height:128px;padding:8px;min-width:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
 .calendar-day:nth-child(7n) {border-right:0;}
 .calendar-day.outside {background:var(--color-background-muted);}
 .calendar-day.selected {box-shadow:inset 0 0 0 2px var(--color-info);}
-html[data-workplace-theme][data-style] .calendar-day-button {border:0;background:transparent;min-height:28px;padding:3px 7px;font-size:12px;}
+html[data-workplace-theme][data-style] .calendar-day-button {border:0;background:transparent;min-height:28px;padding:4px 8px;font-size:12px;}
 html[data-workplace-theme][data-style] .calendar-day.today .calendar-day-button {background:var(--color-info);color:var(--color-on-info);border-radius:50%;}
-html[data-workplace-theme][data-style] .calendar-event {display:block;width:100%;min-height:24px;padding:3px 6px;margin-top:3px;border:0;border-radius:4px;background:var(--color-info-muted);color:var(--color-on-info-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;}
+html[data-workplace-theme][data-style] .calendar-event {display:block;width:100%;min-height:24px;padding:4px 8px;margin-top:4px;border:0;border-radius:4px;background:var(--color-info-muted);color:var(--color-on-info-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;}
 html[data-workplace-theme][data-style] .calendar-event.memo {background:var(--color-success-muted);color:var(--color-on-success-muted);}
 .calendar-event.done {opacity:.65;}
 html[data-workplace-theme][data-style] .calendar-more {border:0;background:transparent;font-size:11px;padding:4px;min-height:24px;}
 .calendar-day-list {padding:20px 24px;}
 .calendar-day-list h3 {margin:0 0 12px;font-size:14px;}
-.calendar-day-list article {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);}
+.calendar-day-list article {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border);}
 .calendar-day-list small {color:var(--muted);white-space:nowrap;}
 .revision-control {background:var(--color-background-muted);border-radius:6px;padding:8px;margin-bottom:8px;}
 .revision-control strong {font-size:11px;white-space:nowrap;}
 @media(max-width:600px){.calendar-day-list article{align-items:flex-start;flex-direction:column;}.briefing-calendar .sectionhead{padding:16px;}.calendar-day-list{padding:16px;}}
 .board-period {display:flex;align-items:center;gap:8px;flex:none;white-space:nowrap;padding-left:12px;border-left:1px solid var(--border);font-size:12px;color:var(--muted);}
-html[data-workplace-theme][data-style] .board-period input[type="date"] {width:140px;min-height:36px;padding:6px 8px;font-size:12px;}
+html[data-workplace-theme][data-style] .board-period input[type="date"] {width:140px;min-height:36px;padding:8px 8px;font-size:12px;}
 .simple-project-form .modal-body {display:grid;gap:20px;padding:24px!important;}
 .simple-field {display:grid;gap:8px;font-size:13px;font-weight:600;}
 .simple-field textarea {min-height:76px;resize:vertical;}
@@ -330,14 +330,14 @@ html[data-workplace-theme][data-style] .board-period input[type="date"] {width:1
 .simple-task-head select {max-width:140px;}
 .simple-task-head button {margin-left:auto;}
 .simple-task .editor-assignees {margin:12px 0;}
-.simple-task .editor-assignees summary {display:flex;align-items:center;gap:12px;padding:10px 0;border-block:1px solid var(--border);font-size:12px;}
+.simple-task .editor-assignees summary {display:flex;align-items:center;gap:12px;padding:12px 0;border-block:1px solid var(--border);font-size:12px;}
 .simple-task .editor-assignees summary strong {flex:1;font-size:13px;}
 .simple-task .editor-assignees summary small {color:var(--muted);}
 .simple-task .assignees {padding:12px 0;max-height:180px;overflow:auto;}
 .simple-task-fields {display:grid;grid-template-columns:1.3fr .8fr 1fr;gap:12px;}
 .simple-task-fields label {display:grid;gap:6px;min-width:0;font-size:12px;color:var(--muted);}
 .simple-task-fields input,.simple-task-fields select {width:100%;min-width:0;color:var(--text);}
-.simple-task-note {margin:10px 0 0;font-size:11px;color:var(--muted);}
+.simple-task-note {margin:12px 0 0;font-size:11px;color:var(--muted);}
 @media(max-width:600px){.simple-task-fields{grid-template-columns:1fr 1fr;}.simple-task-fields label:first-child{grid-column:1/-1;}.simple-task-title{flex-wrap:wrap;}}
 .board-surface>.board-period {padding:0;margin:0 0 20px;border:0;flex-wrap:wrap;}
 /* Compact briefing, continuous calendar ranges and collapsible board navigation. */
@@ -347,46 +347,46 @@ html[data-workplace-theme][data-style] .board-period input[type="date"] {width:1
 .nav [hidden],.board-week [hidden],.task-board-lane [hidden]{display:none!important}
 .nav .nav-label{font-size:13px}
 .briefing-stats{display:flex;gap:12px;align-items:center;margin:0 0 16px}
-.briefing-stats>button,.briefing-stats>span{padding:10px 16px;border:1px solid var(--line,#e2e5ea);border-radius:10px;background:#fff;color:#475569}
+.briefing-stats>button,.briefing-stats>span{padding:12px 16px;border:1px solid var(--line,#e2e5ea);border-radius:10px;background:#fff;color:#475569}
 .briefing-stats strong{color:#172033;margin-left:8px}
 .compact-calendar{background:#fff!important;border:1px solid #cbd5e1!important;box-shadow:0 4px 18px #18223808;padding:16px!important}
 .compact-calendar .sectionhead{margin:0 0 12px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;gap:16px}
 .compact-calendar .calendar-scroll{border:1px solid #dce2e9;border-radius:8px;overflow:auto}
 .calendar-weekdays,.calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:560px}
 .calendar-weekdays{background:#eef2f6;text-align:center;font-size:12px;font-weight:600;padding:8px 0;color:#526072}
-.calendar-week{grid-template-rows:20px 22px 22px 18px;gap:2px 0;padding:3px 0;border-top:1px solid #e2e8f0;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100% / 7 - 1px),#edf0f4 calc(100% / 7 - 1px),#edf0f4 calc(100% / 7))}
-.calendar-date{font-size:11px;padding:2px 8px;color:#475569}.calendar-date.outside{color:#aab3c0}.calendar-date.today{font-weight:800;color:#2563eb}
-.compact-calendar .calendar-span{display:block;min-height:0;height:22px;margin:0 3px;padding:2px 8px;border:0;border-radius:5px;text-align:left;font-size:11px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#dbeafe;color:#1e40af}
+.calendar-week{grid-template-rows:20px 22px 22px 18px;gap:2px 0;padding:4px 0;border-top:1px solid #e2e8f0;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100% / 7 - 1px),#edf0f4 calc(100% / 7 - 1px),#edf0f4 calc(100% / 7))}
+.calendar-date{font-size:11px;padding:4px 8px;color:#475569}.calendar-date.outside{color:#aab3c0}.calendar-date.today{font-weight:800;color:#2563eb}
+.compact-calendar .calendar-span{display:block;min-height:0;height:22px;margin:0 4px;padding:4px 8px;border:0;border-radius:5px;text-align:left;font-size:11px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#dbeafe;color:#1e40af}
 .compact-calendar .calendar-span.memo{background:#ede9fe;color:#5b21b6}.compact-calendar .continues-before{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}.compact-calendar .continues-after{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
 .compact-calendar .calendar-overflow{min-height:0;height:18px;padding:0 8px;border:0;background:transparent;font-size:10px;text-align:left;color:#64748b}
 .board-collapse{display:flex!important;align-items:center;justify-content:space-between;width:100%;background:transparent!important;border:0!important;padding:8px 0!important;text-align:left;color:inherit;font-weight:700}
-.board-week h3{margin:0 0 10px}.board-week{margin-bottom:18px}
+.board-week h3{margin:0 0 12px}.board-week{margin-bottom:20px}
 .board-surface .status-board{max-height:calc(100dvh - 265px);min-height:300px;overflow:auto;align-items:stretch;grid-auto-columns:max-content;scrollbar-width:thin;scrollbar-color:#aab6c5 #edf1f5}
 .status-board .task-board-lane{width:290px;min-height:100%;padding-top:0;box-sizing:border-box}
 .status-board .task-board-lane>h3{position:sticky;top:0;z-index:3;background:#eef1f5;margin:0 -12px 12px;padding:12px;border-bottom:1px solid #dbe1e8;min-height:52px;display:flex;align-items:center;gap:8px}
 .status-board .task-board-lane.is-collapsed{width:170px}.status-board .lane-toggle{border:0;background:transparent;padding:4px;min-width:24px;min-height:24px}.status-board .lane-content{min-height:160px}
-.board-layout-toggle{display:flex!important;gap:2px!important;padding:3px!important;background:#edf0f4!important;border:1px solid #d7dee7!important;border-radius:9px!important}
-.view-option{padding:6px 12px;border-radius:6px;font-size:12px;color:#677387}.view-option.selected{background:#fff;color:#172033;box-shadow:0 1px 3px #17203320}
+.board-layout-toggle{display:flex!important;gap:2px!important;padding:4px!important;background:#edf0f4!important;border:1px solid #d7dee7!important;border-radius:9px!important}
+.view-option{padding:8px 12px;border-radius:6px;font-size:12px;color:#677387}.view-option.selected{background:#fff;color:#172033;box-shadow:0 1px 3px #17203320}
 .task-board-controls .board-period{display:flex;align-items:center;gap:6px;margin:0;padding:0;border:0;background:transparent;flex-wrap:nowrap}
 .task-board-controls .board-period input{width:118px;min-width:118px;font-size:12px}.task-board-controls .board-period button{white-space:nowrap;font-size:11px}
 .task-board-controls #boardName{width:170px;min-width:150px}
 @media(max-width:760px){.sidebar{width:168px!important;min-width:168px!important}.nav .nav-parent,.nav .nav-label{font-size:12px!important}.nav .nav-children{padding-left:4px}.compact-calendar .sectionhead{flex-wrap:wrap}.briefing-stats{gap:6px}.briefing-stats>button,.briefing-stats>span{padding:8px;font-size:11px}}
 .board-table-section [hidden]{display:none!important}
-.compact-calendar{margin:0!important}.compact-calendar .sectionhead{padding:0 0 12px!important;flex-wrap:nowrap}.compact-calendar .sectionhead h2{font-size:16px}.compact-calendar .calendar-week{grid-template-rows:18px 19px 19px 14px;padding:2px 0}.compact-calendar .calendar-span{height:19px;line-height:15px;font-size:11px}.compact-calendar .calendar-overflow{height:14px;font-size:10px}
+.compact-calendar{margin:0!important}.compact-calendar .sectionhead{padding:0 0 12px!important;flex-wrap:nowrap}.compact-calendar .sectionhead h2{font-size:16px}.compact-calendar .calendar-week{grid-template-rows:18px 19px 19px 14px;padding:4px 0}.compact-calendar .calendar-span{height:19px;line-height:15px;font-size:11px}.compact-calendar .calendar-overflow{height:14px;font-size:10px}
 .calendar-week-list article{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}.calendar-week-list small{color:var(--muted);white-space:nowrap}
 html[data-theme="dark"] .compact-calendar,html[data-style="midnight"] .compact-calendar{background:#202a38!important;border-color:#465468!important}.calendar-week-list{padding:16px}
 html[data-theme="dark"] .calendar-weekdays,html[data-style="midnight"] .calendar-weekdays,html[data-theme="dark"] .status-board .task-board-lane>h3,html[data-style="midnight"] .status-board .task-board-lane>h3{background:#2a3545;color:#e2e8f0}
 html[data-theme="dark"] .calendar-date,html[data-style="midnight"] .calendar-date{color:#cbd5e1}
 /* Keep calendar ranges within their own rows despite global button sizing. */
 html[data-workplace-theme][data-style] .compact-calendar .calendar-week{grid-template-rows:18px 22px 22px 16px;row-gap:4px;padding:4px 0}
-html[data-workplace-theme][data-style] .compact-calendar .calendar-span{box-sizing:border-box;display:block;position:relative;align-self:stretch;min-width:0!important;max-width:100%;min-height:0!important;height:22px!important;max-height:22px;line-height:18px!important;padding:2px 7px!important;margin:0 3px!important;border:0!important;border-radius:4px;font-size:11px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:var(--event-bg)!important;color:var(--event-ink)!important;box-shadow:none!important}
+html[data-workplace-theme][data-style] .compact-calendar .calendar-span{box-sizing:border-box;display:block;position:relative;align-self:stretch;min-width:0!important;max-width:100%;min-height:0!important;height:22px!important;max-height:22px;line-height:18px!important;padding:4px 8px!important;margin:0 4px!important;border:0!important;border-radius:4px;font-size:11px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:var(--event-bg)!important;color:var(--event-ink)!important;box-shadow:none!important}
 .calendar-tone-0{--event-bg:#dbeafe;--event-ink:#1e40af}.calendar-tone-1{--event-bg:#dcfce7;--event-ink:#166534}.calendar-tone-2{--event-bg:#fef3c7;--event-ink:#92400e}.calendar-tone-3{--event-bg:#ede9fe;--event-ink:#5b21b6}.calendar-tone-4{--event-bg:#fce7f3;--event-ink:#9d174d}.calendar-tone-5{--event-bg:#cffafe;--event-ink:#155e75}
 html[data-workplace-theme][data-style] .compact-calendar .calendar-overflow{box-sizing:border-box;min-height:0!important;height:16px!important;line-height:16px!important;padding:0 8px!important;font-size:10px!important;margin:0!important;border:0!important}
 .revision-required{display:flex!important;align-items:center;gap:8px;padding:8px 0;font-size:12px;font-weight:600}.revision-required input[type=checkbox]{width:16px!important;height:16px;min-height:0;margin:0;accent-color:var(--color-info)}
-.board-layout-toggle .view-option{display:flex;align-items:center;justify-content:center;padding:6px 9px}.board-layout-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.board-layout-toggle .view-option{display:flex;align-items:center;justify-content:center;padding:8px 8px}.board-layout-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .compact-calendar+.home-layout-tools{margin-top:24px}
 /* Revision progress is independent of the original blue work gauge. */
-.card-revision-summary{margin:10px 0 4px;padding:10px;border-radius:8px;background:#f3efff}.card-revision-summary .task-board-progress{margin:0 0 6px;color:#6d28d9}
+.card-revision-summary{margin:12px 0 4px;padding:12px;border-radius:8px;background:#f3efff}.card-revision-summary .task-board-progress{margin:0 0 8px;color:#6d28d9}
 html[data-workplace-theme][data-style] .revision-control input[type="range"],html[data-workplace-theme][data-style] progress.revision-progress{accent-color:#8b5cf6}
 html[data-workplace-theme][data-style] progress.revision-progress{display:block;width:100%;height:6px;overflow:hidden;border:0;border-radius:6px;background:#e9ddff}
 progress.revision-progress::-webkit-progress-bar{background:#e9ddff;border-radius:6px}progress.revision-progress::-webkit-progress-value{background:#8b5cf6;border-radius:6px}progress.revision-progress::-moz-progress-bar{background:#8b5cf6;border-radius:6px}

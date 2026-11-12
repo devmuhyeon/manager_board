@@ -18,11 +18,11 @@ html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div:nth-c
 .leave-workspace .leave-schedule-panel .panel-note {padding:16px 24px;}
 .leave-workspace .allowance-form {padding:16px 0 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
 .leave-workspace .table-wrap {padding:0;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table th {background:var(--color-background-muted);color:var(--color-text-secondary);font-size:12px;font-weight:600;padding:14px 20px;border-inline:0;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table td {padding:18px 20px;border-inline:0;background:var(--color-background-surface);border-bottom:1px solid var(--color-border);font-size:13px;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table th {background:var(--color-background-muted);color:var(--color-text-secondary);font-size:12px;font-weight:600;padding:16px 20px;border-inline:0;}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table td {padding:20px 20px;border-inline:0;background:var(--color-background-surface);border-bottom:1px solid var(--color-border);font-size:13px;}
 html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:last-child td {border-bottom:0;}
 html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:hover td {background:var(--color-background-muted);}
-.leave-type-badge {display:inline-flex;align-items:center;border-radius:var(--radius-element);background:var(--color-info-muted);color:var(--color-on-info-muted);padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap;}
+.leave-type-badge {display:inline-flex;align-items:center;border-radius:var(--radius-element);background:var(--color-info-muted);color:var(--color-on-info-muted);padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap;}
 .leave-date-cell {font-variant-numeric:tabular-nums;white-space:nowrap;}
 #leaveForm .modal-body {display:grid;gap:16px;}
 #leaveForm .field {margin:0;}

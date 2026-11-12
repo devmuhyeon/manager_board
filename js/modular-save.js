@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const LEGACY='통합관리 대시보드.json',ID=/^[a-f0-9-]{36}$/;
- const group=key=>key==='projects'?'work':key==='personal'?'memo':/leave/i.test(key)?'leave':/post|board/i.test(key)?'board':/member|account|remov/i.test(key)?'people':'settings';
+ const group=key=>key==='customAvatars'?'assets':key==='projects'?'work':key==='personal'?'memo':/leave/i.test(key)?'leave':/post|board/i.test(key)?'board':/member|account|remov/i.test(key)?'people':'settings';
  async function optional(dir,name,kind='file'){try{return await dir[kind==='file'?'getFileHandle':'getDirectoryHandle'](name);}catch(e){if(e.name==='NotFoundError')return null;throw e;}}
  async function read(file){return (await file.getFile()).text();}
  async function write(dir,name,text){const file=await dir.getFileHandle(name,{create:true}),stream=await file.createWritable();try{await stream.write(text);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}}
@@ -20,7 +20,7 @@
    if(!heads.length){if(records.length)throw Error('저장 이력 연결이 손상되었습니다.');const legacy=await optional(directory,LEGACY);return {text:legacy?await read(legacy):'',manifest:null};}
    const manifest=heads[0],state={};
    for(const [folder,id] of Object.entries(manifest.parts)){
-    if(!['work','memo','leave','board','people','settings'].includes(folder)||!ID.test(id))throw Error('잘못된 저장 경로입니다.');
+    if(!['work','memo','leave','board','people','settings','assets'].includes(folder)||!ID.test(id))throw Error('잘못된 저장 경로입니다.');
     const dir=await save.getDirectoryHandle(folder),part=JSON.parse(await read(await dir.getFileHandle(id+'.json')));
     for(const key of Object.keys(part))if(group(key)!==folder||['__proto__','constructor','prototype'].includes(key))throw Error('잘못된 저장 항목입니다.');
     Object.assign(state,part);

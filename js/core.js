@@ -125,8 +125,9 @@
       for(const task of [e,...(e.tasks||[])])if(['progress','revisionProgress'].some(key=>task[key]!==undefined&&(!Number.isInteger(task[key])||task[key]<0||task[key]>100)))throw new Error('진행률은 0~100 사이의 정수여야 합니다.');
       for(const l of e.logs)if(typeof l.id!=='string'||!date(l.date)||typeof l.author!=='string'||typeof l.content!=='string')throw new Error('작업 내역 형식이 올바르지 않습니다.');
     }
+    const custom=Avatars.validateCustom(s.customAvatars);
     const people=s.members||MEMBERS;
-    if(Array.isArray(people)&&people.some(m=>m.avatar!==undefined&&![...Avatars.keys,...Avatars.legacyKeys].includes(m.avatar)))throw Error('사용자 캐릭터 정보가 올바르지 않습니다.');
+    if(Array.isArray(people)&&people.some(m=>m.avatar!==undefined&&![...Avatars.keys.filter(key=>!key.startsWith("custom-")),...Avatars.legacyKeys,...custom.map(v=>v.id)].includes(m.avatar)))throw Error('사용자 캐릭터 정보가 올바르지 않습니다.');
     if(s.overallAdmin!==undefined&&(typeof s.overallAdmin!=='string'||!people.some(m=>m.name===s.overallAdmin&&m.active!==false)))throw new Error('전체관리자는 재직자 한 명이어야 합니다.');
     if(s.teamPosts!==undefined){if(!Array.isArray(s.teamPosts)||new Set(s.teamPosts.map(p=>p.id)).size!==s.teamPosts.length||s.teamPosts.some(p=>!p||typeof p.id!=='string'||!TEAMS.includes(p.team)||(p.type!==undefined&&!['전체공지','팀별공지','일반글'].includes(p.type))||typeof p.author!=='string'||typeof p.title!=='string'||typeof p.content!=='string'||typeof p.createdAt!=='string'||typeof p.updatedAt!=='string'))throw new Error('팀 게시판 자료 형식을 확인하세요.');}
     if(s.quickLinks!==undefined&&(!Array.isArray(s.quickLinks)||s.quickLinks.length>4||s.quickLinks.some(l=>!l||typeof l.label!=='string'||typeof l.url!=='string'||(l.url&&!/^https?:\/\//i.test(l.url)))))throw new Error('바로가기 형식을 확인하세요.');

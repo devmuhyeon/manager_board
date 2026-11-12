@@ -19,7 +19,7 @@
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
   P.upgrade(state);C.setMembers(P.orderedMembers(state));
-  if(state.demo){state.projects=state.projects.filter(p=>p.source!=='sample');state.demo=false;}
+  let developmentSamples=false;
   const heroDesign=BoardBriefingHero.create(localStorage);let heroDraft=null,heroSecretCount=0,heroSecretTime=0;
   const heroRows=()=>state.projects.filter(p=>!state.hiddenProjects?.includes(p.id)).map(C.effective);
   const heroEditorHTML=()=>BoardBriefingHero.editor({user,rows:heroRows(),C,N,esc,record:heroDraft,button});
@@ -72,6 +72,8 @@
     }catch(e){$('#loginError').textContent=e.message;$('#loginSubmit').disabled=false;}
   }
   function render(){
+    if(developmentSamples&&!demoSession&&!cacheError){const filled=BoardPreviewData.ensure(state,C,P);if(filled!==state){state=filled;changed();}}
+    BoardAvatars.sync(state.customAvatars||[]);
     presence.setSession({directory:demoSession?null:targetDir,user:demoSession?null:user,members:state.members}).catch(()=>{});
     const oldBoard=document.querySelector('.status-board'),boardScroll=oldBoard?{x:oldBoard.scrollLeft,y:oldBoard.scrollTop}:null;
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
@@ -87,19 +89,7 @@
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(C.TEAMS,selectedTeam)}</select>`:''}</div>`;}
   function filterBar(isReport=false){return `<div class="filters"><input class="search" type="search" placeholder="과업명, 담당자, 고객 검색" aria-label="업무 검색" data-filter="search" value="${esc(filters.search)}"><select aria-label="진행상태" data-filter="status">${options(C.STATUSES,filters.status,'전체 상태')}</select><select aria-label="담당팀" data-filter="teamFilter">${options(C.TEAMS,filters.teamFilter,'전체 담당팀')}</select><div class="date-filter">${isReport?'<span>작업일</span>':`<select aria-label="기간 기준" data-filter="dateField">${[['due','마감일'],['requestedDue','요청완료일'],['requested','요청일']].map(([v,t])=>`<option value="${v}" ${filters.dateField===v?'selected':''}>${t}</option>`).join('')}</select>`}<input type="date" aria-label="시작 날짜" data-filter="from" value="${filters.from}"><span>–</span><input type="date" aria-label="종료 날짜" data-filter="to" value="${filters.to}">${button('week','이번 주')}${button('clearFilters','초기화')}</div></div>`;}
-  function dashboard(){
-    const sections=schedulePanel(),memoItems=(state.personal[user.name]||[]),rows=state.projects.map(C.effective),revisionRows=rows.filter(p=>p.parentProjectId);
-    const panels={...sections,memo:'<section class="card"><div class="sectionhead"><h2>메모 & 일정</h2>'+button('newMemo','＋ 메모 추가')+'</div>'+BoardMemoCarousel.render('home-memos',memoItems.map(i=>'<article class="agenda-item">'+button('editMemo',esc(i.title),'project-button','data-id="'+esc(i.id)+'"')+'<small>'+esc(i.date||'날짜 없는 메모')+'</small></article>').join(''),'<div class="agenda-list">'+D.illustratedHint(user.avatar,'기억할 일을 메모해 보세요','날짜를 넣으면 일정에서도 확인할 수 있어요.')+'</div>')+'</section>',work:'<section class="card"><div class="sectionhead"><h2>업무 현황</h2></div><div class="overview-counts"><span>전체 <strong>'+rows.length+'</strong></span><span>미완료 <strong>'+rows.filter(p=>!C.isComplete(p.status)).length+'</strong></span><span>수정작업 <strong>'+revisionRows.length+'</strong></span></div>'+button('page','수정작업 모아보기','','data-page="revisions"')+'</section>'};
-    const destinations={memo:'memo',thisWeek:'schedule',nextWeek:'schedule',deadlines:'deadlines',leaves:'leaves',work:'work'};
-    function homePanel(key){
-      const detail=button('page','상세 보기 →','home-detail-button','data-page="'+destinations[key]+'"');
-      return panels[key].replace(/(<div class="sectionhead">)([\s\S]*?)(<\/div>)(?=<div class="(?:agenda-list|overview-counts|memo-carousel)")/,(_,start,content,end)=>{
-        const actions=[];const heading=content.replace(/<button[\s\S]*?<\/button>/g,action=>{actions.push(action);return '';});
-        return start+'<div class="home-panel-heading">'+heading+'</div><div class="home-panel-actions">'+(key==='memo'?BoardMemoCarousel.controls('home-memos',memoItems.length):'')+actions.join('')+detail+'</div>'+end;
-      });
-    }
-    return BoardBriefingHero.render({rows:heroRows(),user,C,N,esc,record:heroDesign.get(user)})+BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,esc,button})+'<div class="home-panels">'+BoardDisplayStyles.home({style:styles.current(),state,user,C,B,N,esc,button,badge,hint:D.illustratedHint,table:projectTable,orderNames:names=>P.orderNames(state,names)})+P.homeOrder(state,user.name).filter(key=>!['work','memo'].includes(key)).map(key=>'<div class="home-panel '+(['memo','work'].includes(key)?'home-wide':'')+'" data-home-section="'+key+'" data-home-target="'+destinations[key]+'">'+homePanel(key)+'</div>').join('')+'</div>';
-  }
+  function dashboard(){return '<div class="briefing-layout">'+BoardBriefingHero.render({rows:heroRows(),user,C,N,esc,record:heroDesign.get(user)})+BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,esc,button})+BoardBriefingDashboard.render({state,user,C,P,B,N,esc,button,table:projectTable,hint:D.illustratedHint,weekBlocks,leaveItems})+'</div>';}
   function viewTabs(){return '<div class="tabs" role="group" aria-label="업무 보기">'+(page==='work'?button('view','보드',view==='board'?'active':'','data-view="board"'):'')+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
   function categorizedTable(rows){return W.group(rows).map(([label,group])=>'<section class="category-group"><h3>'+esc(label.replace(/^퍼블(?= >|$)/,'퍼블리싱'))+' <span class="count">'+group.length+'</span></h3>'+sheetTable(group)+'</section>').join('')||'<p class="empty">조회 조건에 맞는 과업이 없습니다.</p>';}
   const boardAssignee=()=>boardName||(scope==='personal'?user.name:'');
@@ -296,6 +286,7 @@
     else if(a==='refreshAll'||a==='refreshSource')await refreshAll();
     else if(a==='displayStyle'){const saved=styles.select(el.dataset.style);render();preferences();toast(saved?'화면 스타일을 변경했습니다.':'화면 스타일을 변경했지만 브라우저에 기억하지 못했습니다.');}
     else if(a==='preferences')preferences();
+    else if(a==='addAvatar')showDialog('<div class="modal-head"><h2>캐릭터 추가</h2>'+button('close','닫기')+'</div><form id="addAvatarForm"><div class="modal-body"><div class="field"><label for="avatarName">캐릭터 이름</label><input id="avatarName" name="name" maxlength="40" required></div><div class="field"><label for="avatarFile">캐릭터 이미지</label><input id="avatarFile" name="image" type="file" accept="image/png,image/jpeg,image/webp" required></div><p>PNG·JPG·WebP, 최대 10MB. 추가하면 내 캐릭터로 선택되고 핑크 브리핑이 생성됩니다.</p><div id="avatarError" class="error" role="alert"></div></div><div class="modal-foot"><button class="primary" id="avatarSubmit">추가하고 사용</button></div></form>');
     else if(a==='avatarSettings')showDialog(D.avatarPicker(user));
     else if(a==='setAvatar'){state=P.setAvatar(state,user.name,el.dataset.avatar);changed();$('#editor').close();render();toast('내 캐릭터를 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');}
     else if(a==='adminSettings')adminSettings();
@@ -467,6 +458,8 @@
   document.addEventListener('input',e=>{const el=e.target;if(!heroDraft||!el.closest?.('#heroDesignForm'))return;const config=heroDraft[heroDraft.mode];if(el.dataset.heroColor){config[el.dataset.heroColor]=el.value;const check=document.querySelector('[data-hero-transparent="'+el.dataset.heroColor+'"]');if(check)check.checked=false;}else if(el.dataset.heroTransparent){const key=el.dataset.heroTransparent;config[key]=el.checked?'transparent':document.querySelector('[data-hero-color="'+key+'"]').value;}else if(el.dataset.heroPosition){config[el.dataset.heroPosition]=Number(el.value);const output=document.querySelector('[data-hero-output="'+el.dataset.heroPosition+'"]');if(output)output.textContent=el.value+(el.dataset.heroPosition==='scale'?'%':'px');}else return;heroDraft[heroDraft.mode]=BoardBriefingHero.clean(config,BoardBriefingHero.defaults(user,heroDraft.mode));$('#heroPreview').innerHTML=BoardBriefingHero.render({user,rows:heroRows(),C,N,esc,record:heroDraft,preview:true});BoardBriefingHero.mount(document);});
   document.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
   document.addEventListener('submit',e=>{
+    if(e.target.id==='addAvatarForm'){e.preventDefault();const name=$('#avatarName').value.trim(),file=$('#avatarFile').files[0],owner=user.name;$('#avatarSubmit').disabled=true;BoardAvatars.imageFile(file).then(src=>{if(!user||user.name!==owner)throw Error('다시 로그인해 주세요.');const item={id:'custom-'+crypto.randomUUID(),name,src},items=[...(state.customAvatars||[]),item];BoardAvatars.validateCustom(items);state.customAvatars=items;state=P.setAvatar(state,owner,item.id);changed();$('#editor').close();render();toast('캐릭터와 핑크 브리핑을 추가했습니다. 공용 반영은 내용 저장을 눌러 주세요.');}).catch(err=>{if($('#avatarError'))$('#avatarError').textContent=err.message;if($('#avatarSubmit'))$('#avatarSubmit').disabled=false;});return;}
+
     if(e.target.id==='heroDesignForm'){e.preventDefault();try{heroDesign.save(user,heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
     if(e.target.id==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(e.target.id==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
@@ -558,5 +551,5 @@
   window.addEventListener('focus',()=>{if(user&&!demoSession)checkConnections().then(()=>{const bar=$('.workspace-tools');if(bar)bar.outerHTML=connectionBar();});});
   const previewMode=window.location&&new URLSearchParams(window.location.search).get('preview')==='1';
   if(previewMode){state=BoardPreviewData.create(C,P);user=state.members.find(m=>m.name==='김무현');demoSession=true;setupDone=true;deferredConnection=true;dirty=false;cacheError='';C.setMembers(P.orderedMembers(state));}
-  jQuery(()=>{render();if(previewMode)return;restoreFolders().catch(e=>toast('기억된 폴더를 자동 연결하지 못했습니다. '+e.message));});
+  jQuery(async()=>{render();if(previewMode)return;try{await restoreFolders();}catch(e){toast('기억된 폴더를 자동 연결하지 못했습니다. '+e.message);}developmentSamples=true;render();});
 })();

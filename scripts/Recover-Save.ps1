@@ -15,7 +15,7 @@ New-Item -ItemType Directory -Path $exports -Force | Out-Null
 foreach($head in $heads){
  $state=[ordered]@{}
  foreach($part in $head.parts.PSObject.Properties){
-  if($part.Name -notin @('work','memo','leave','board','people','settings') -or $part.Value -notmatch '^[a-f0-9-]{36}$'){throw 'Invalid module path'}
+  if($part.Name -notin @('work','memo','leave','board','people','settings','assets') -or $part.Value -notmatch '^[a-f0-9-]{36}$'){throw 'Invalid module path'}
   $data=Get-Content -LiteralPath (Join-Path (Join-Path $root $part.Name) ($part.Value+'.json')) -Raw -Encoding UTF8 | ConvertFrom-Json
   foreach($item in $data.PSObject.Properties){$state[$item.Name]=$item.Value}
  }

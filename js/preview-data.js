@@ -26,5 +26,23 @@
   state.teamPosts=C.TEAMS.flatMap((team,i)=>Array.from({length:9},(_,j)=>['전체공지','팀별공지','일반글'][j%3]).map((type,j)=>({id:'ux-post:'+i+':'+j,team,type,author:state.members.find(m=>m.team===team).name,title:'[샘플] '+['UI/UX 검토 안내','이번 주 팀 업무 공유','화면 개선 의견 모음'][j%3]+' '+(j+1),content:['업무보드와 주간 일정의 연동을 확인해 주세요.\n카드형과 도표형을 전환하고 진행률 40% 입력도 확인합니다.','이번 주 마감 과업과 담당자를 확인해 주세요.\n휴가 일정과 업무량을 함께 점검합니다.','발견한 불편사항을 기록하는 샘플 게시글입니다.\n1. 버튼 위치\n2. 글자 크기\n3. 모바일 가로 스크롤'][j%3],pinned:j===0,createdAt:day(-j)+'T09:00:00Z',updatedAt:day(-j)+'T09:00:00Z'})));
   state.customerTeams=['샘플 서비스팀','샘플 운영팀','샘플 콘텐츠팀'];return C.validateState(state);
  }
- const api={create};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
+ function ensure(input,C,P){
+  if(input.developmentSamplesVersion===1)return input;
+  const state=P.upgrade(structuredClone(input)),sample=create(C,P),active=state.members.filter(m=>m.active!==false);
+  for(const project of sample.projects){
+   if(state.projects.some(p=>p.id===project.id))continue;
+   project.tasks.forEach(task=>{task.assignees=task.assignees.filter(name=>active.some(m=>m.name===name));if(!task.assignees.length){const team=task.role==='디자인'?'디자인':task.role==='퍼블'?'퍼블':'기획';task.assignees=active.filter(m=>m.team===team).slice(0,1).map(m=>m.name);}});
+   state.projects.push(project);
+  }
+  for(const person of active){
+   state.personal[person.name]??=[];
+   const templates=sample.personal[person.name]||Object.values(sample.personal)[0];
+   for(const [index,item] of templates.entries()){const id='dev-memo:'+person.name+':'+index;if(!state.personal[person.name].some(m=>m.id===item.id||m.id===id))state.personal[person.name].push({...item,id,sampleFixture:true});}
+  }
+  for(const leave of sample.leaves)if(active.some(m=>m.name===leave.owner)&&!state.leaves.some(l=>l.id===leave.id))state.leaves.push({...leave,sampleFixture:true});
+  state.teamPosts??=[];
+  for(const post of sample.teamPosts)if(!state.teamPosts.some(p=>p.id===post.id)){const author=active.find(m=>m.team===post.team);if(author)state.teamPosts.push({...post,author:author.name,sampleFixture:true});}
+  state.developmentSamplesVersion=1;state.demo=false;return state;
+ }
+ const api={create,ensure};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
 })(typeof window!=='undefined'?window:globalThis);
