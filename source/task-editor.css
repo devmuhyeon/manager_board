@@ -1,0 +1,37 @@
+/* Compact, labelled form groups; no framework runtime dependency. */
+html[data-workplace-theme][data-style] dialog:has(.simple-project-form){width:760px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface,#fff);color:var(--text,#25324a);box-shadow:0 24px 80px #11182733}
+html[data-workplace-theme][data-style] dialog:has(.simple-project-form)>.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;margin:0;border-bottom:1px solid var(--border);background:var(--surface,#fff)}
+dialog:has(.simple-project-form)>.modal-head h2{font-size:20px;line-height:28px;font-weight:700;margin:0}
+html[data-workplace-theme][data-style] dialog:has(.simple-project-form)>.modal-head button{width:32px;height:32px;min-height:32px;padding:0;border:0;background:transparent;font-size:16px}
+html[data-workplace-theme][data-style] .simple-project-form{display:flex;flex-direction:column;min-height:0;margin:0}
+html[data-workplace-theme][data-style] .simple-project-form .modal-body{display:grid;gap:24px;max-height:calc(100dvh - 208px);overflow:auto;padding:24px!important;scrollbar-width:thin;scrollbar-color:#a7b3c3 transparent}
+html[data-workplace-theme][data-style] .simple-project-form .simple-field{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0;font-size:13px;line-height:20px;font-weight:600;color:var(--text)}
+.simple-project-form .simple-field>.muted{font-weight:400;font-size:12px}
+html[data-workplace-theme][data-style] .simple-project-form :is(input:not([type=checkbox]),select,textarea){box-sizing:border-box;min-height:40px;height:40px;min-width:0;margin:0;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface,#fff);color:var(--text);font-size:14px;font-weight:400;line-height:20px;box-shadow:none}
+html[data-workplace-theme][data-style] .simple-project-form .simple-field>:is(input,textarea){flex-basis:100%;width:100%}
+html[data-workplace-theme][data-style] .simple-project-form textarea{height:80px;min-height:80px;resize:vertical}
+html[data-workplace-theme][data-style] .simple-project-form :is(input,select,textarea):focus-visible{outline:2px solid var(--primary_blue_50,#3f58d4);outline-offset:2px}
+html[data-workplace-theme][data-style] .simple-project-form :is(input,select):disabled{background:var(--surface-soft,#f1f5f9);color:var(--muted);opacity:1;cursor:not-allowed}
+html[data-workplace-theme][data-style] .simple-task-title{display:flex;align-items:center;justify-content:space-between;gap:16px;border:0;padding:0;margin:0 0 -8px}
+.simple-task-title h3{font-size:15px;font-weight:700;line-height:24px;margin:0}
+html[data-workplace-theme][data-style] .simple-task-title button{min-height:32px;padding:4px 12px;font-size:12px;border:1px solid var(--border);background:var(--surface,#fff)}
+html[data-workplace-theme][data-style] #taskList{display:grid;gap:16px}
+html[data-workplace-theme][data-style] .simple-task{display:grid;gap:20px;padding:20px;margin:0;border:1px solid var(--border);border-radius:12px;background:var(--surface,#fff)}
+html[data-workplace-theme][data-style] .simple-task-head{display:flex;align-items:center;gap:12px;margin:0;padding:0;border:0}
+.simple-task-head>label{font-size:12px;font-weight:600;color:var(--muted)}
+html[data-workplace-theme][data-style] .simple-task-head select{width:160px;max-width:160px;font-weight:600}
+html[data-workplace-theme][data-style] .simple-task-head .quiet-button{margin-left:auto;padding:4px 8px;border:0;background:transparent;color:var(--muted);font-size:12px;min-height:32px}
+html[data-workplace-theme][data-style] .simple-task .editor-assignees{min-width:0;padding:0;margin:0;border:0}
+.simple-task .editor-assignees legend{padding:0;margin:0 0 8px;font-size:12px;font-weight:600;line-height:20px;color:var(--muted)}
+html[data-workplace-theme][data-style] .simple-task .assignees{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0;max-height:160px;overflow:auto}
+html[data-workplace-theme][data-style] .simple-task .assignees .check{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:8px 12px;margin:0;border:1px solid var(--border);border-radius:8px;background:var(--surface,#fff);font-size:13px;line-height:20px;cursor:pointer}
+html[data-workplace-theme][data-style] .simple-task .assignees .check:has(:checked){border-color:var(--primary_blue_50,#3f58d4);background:var(--accent-soft,#eef2ff);color:var(--accent-text,#3348b0)}
+html[data-workplace-theme][data-style] .simple-task input[type=checkbox]{width:16px;height:16px;min-height:16px;padding:0;margin:0;accent-color:var(--primary_blue_50,#3f58d4);flex:none}
+html[data-workplace-theme][data-style] .simple-task-fields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr);gap:16px;padding:0;margin:0}
+html[data-workplace-theme][data-style] .simple-task-fields>label{display:grid;gap:8px;font-size:12px;font-weight:600;color:var(--muted);line-height:20px}
+html[data-workplace-theme][data-style] .simple-task-fields .revision-required{display:flex;align-items:center;grid-column:1/-1}
+html[data-workplace-theme][data-style] .simple-task-note{margin:0;font-size:12px;line-height:20px;color:var(--muted)}
+html[data-workplace-theme][data-style] .simple-project-form .modal-foot{display:flex;justify-content:flex-end;gap:8px;flex:none;padding:16px 24px;margin:0;border-top:1px solid var(--border);background:var(--surface,#fff)}
+html[data-workplace-theme][data-style] .simple-project-form .modal-foot button{min-width:80px;min-height:40px;padding:8px 16px;font-size:14px;font-weight:600}
+.simple-project-form #projectError:empty{display:none}
+@media(max-width:600px){html[data-workplace-theme][data-style] .simple-project-form .modal-body{padding:16px!important}.simple-project-form .simple-task{padding:16px!important}html[data-workplace-theme][data-style] .simple-task-fields{grid-template-columns:minmax(0,1fr)}html[data-workplace-theme][data-style] .simple-task-fields>label{grid-column:1/-1}}

@@ -12,7 +12,7 @@ test('브리핑 색상과 위치는 유효 범위만 허용하며 미리보기�
 });
 test('업무별 담당자 목록은 해당 팀만 표시하고 콘텐츠 업무를 구분한다',()=>{
  const members=[{name:'기획자',team:'기획'},{name:'디자이너',team:'디자인'},{name:'퍼블리셔',team:'퍼블'},{name:'콘텐츠',team:'콘텐츠'},{name:'퇴사자',team:'디자인',active:false}];
- assert.deepEqual(Editor.candidates({role:'디자인',assignees:[]},members).map(m=>m.name),['디자이너']);assert.deepEqual(Editor.candidates({role:'퍼블',assignees:[]},members).map(m=>m.name),['퍼블리셔']);assert.deepEqual(Editor.candidates({role:'콘텐츠 기획',assignees:[]},members).map(m=>m.name),['콘텐츠']);assert.equal(Editor.roleOf({role:'디자인',assignees:['콘텐츠']},members),'콘텐츠 디자인');assert.equal(Editor.candidates({role:'기타',assignees:[]},members).length,4);
+ assert.deepEqual(Editor.candidates({role:'디자인',assignees:[]},members).map(m=>m.name),['디자이너']);assert.deepEqual(Editor.candidates({role:'퍼블',assignees:[]},members).map(m=>m.name),['퍼블리셔']);assert.deepEqual(Editor.candidates({role:'콘텐츠 기획',assignees:[]},members).map(m=>m.name),['콘텐츠']);assert.equal(Editor.roleOf({role:'디자인',assignees:['콘텐츠']},members),'콘텐츠');assert.equal(Editor.candidates({role:'기타',assignees:[]},members).length,4);
 });
 test('클릭한 보기 모드는 재렌더·프로필 변경·새 세션에서도 유지된다',()=>{
  const store=storage(),controller=Hero.create(store);controller.setMode(user,'big');assert.equal(controller.get(user).mode,'big');assert.equal(controller.get({...user,avatar:'frog'}).mode,'big');assert.equal(Hero.create(store).get(user).mode,'big');controller.setMode(user,'normal');assert.equal(Hero.create(store).get(user).mode,'normal');
@@ -26,3 +26,5 @@ test('한 모드 저장은 다른 모드와 다른 사용자·캐릭터를 보�
  assert.notEqual(controller.get({...user,name:'다른 사용자'}).normal.x,-12);
  assert.notEqual(controller.get({...user,avatar:'frog'}).normal.x,-12);
 });
+
+test('편집기 콘텐츠 파트는 통합하고 담당자만 전문 분야를 표시한다',()=>{const members=[{name:'홍소영',team:'디자인'},{name:'김민재',team:'디자인'},{name:'최완이',team:'디자인'},{name:'김아영',team:'콘텐츠'},{name:'김다솔',team:'콘텐츠'},{name:'최지안',team:'콘텐츠'}];assert.deepEqual(members.map(Editor.assigneeLabel),['홍소영','김민재','최완이','김아영 · 기획','김다솔 · 디자인','최지안 · 디자인']);for(const role of ['콘텐츠','콘텐츠 기획','콘텐츠 디자인']){const task={role,assignees:['김아영']};assert.equal(Editor.roleOf(task,members),'콘텐츠');assert.deepEqual(Editor.candidates(task,members).map(m=>m.name),['김아영','김다솔','최지안']);}const html=Editor.tasks({draft:[{role:'콘텐츠 디자인',assignees:['최지안'],due:'',status:'접수'}],members,canEdit:()=>false,C:{},Board:{progress:()=>0},esc:v=>String(v),options:(values,selected)=>values.map(v=>'<option'+(v===selected?' selected':'')+'>'+v+'</option>').join(''),button:()=>''});assert.ok(html.includes('김아영 · 기획'));assert.ok(!html.includes('콘텐츠 디자인</option>'));assert.ok(!html.includes('<details'));assert.ok(html.includes('disabled title="담당자 본인만 변경 가능"'));});
