@@ -41,7 +41,7 @@
     s.leaves=(s.leaves||[]).filter(l=>l.owner!==name);if(s.homeLayouts)delete s.homeLayouts[name];for(const values of Object.values(s.leaveAllowances||{}))delete values[name];delete s.personal[name];delete s.accounts[name];return s;
   }
   function removeMember(state,name,retention){
-    if(name===overallAdmin(state))throw new Error('전체관리자는 먼저 권한을 이전한 후 퇴사 처리할 수 있습니다.');
+    if(isOverallAdmin(state,name))throw new Error('전체관리자는 먼저 권한을 이전한 후 퇴사 처리할 수 있습니다.');
     if(!['keep','purge'].includes(retention))throw new Error('자료 보관 방식을 선택해 주세요.');
     const next=upgrade(structuredClone(state)),m=next.members.find(m=>m.name===name&&m.active!==false);
     if(!m)throw new Error('재직 중인 인원을 선택해 주세요.');
@@ -67,16 +67,16 @@
   }
   function isLeader(s,name){return s.members.some(m=>m.name===name&&m.active!==false&&s.teamLeaders?.[m.team]===name);}
   function overallAdmin(s){return s.overallAdmin===undefined?'김무현':s.overallAdmin;}
-  function isOverallAdmin(s,name){return name===overallAdmin(s)&&s.members.some(m=>m.name===name&&m.active!==false);}
-  function transferAdmin(s,actor,target){if(!isOverallAdmin(s,actor))throw new Error('현재 전체관리자만 권한을 이전할 수 있습니다.');if(target===actor||!s.members.some(m=>m.name===target&&m.active!==false))throw new Error('본인 이외의 재직자를 선택하세요.');const next=structuredClone(s);next.overallAdmin=target;next.teamAdmins=(next.teamAdmins||[]).filter(n=>n!==actor&&n!==target);return next;}
-  function canManage(s,name){return s.members.some(m=>m.name===name&&m.active!==false)&&(isOverallAdmin(s,name)||(s.teamAdmins||[]).includes(name));}
+  function isOverallAdmin(s,name){return (Array.isArray(s.overallAdmins)?s.overallAdmins.includes(name):name===overallAdmin(s))&&s.members.some(m=>m.name===name&&m.active!==false);}
+  function transferAdmin(s,actor,target){if(!isOverallAdmin(s,actor))throw new Error('현재 전체관리자만 권한을 이전할 수 있습니다.');if(target===actor||!s.members.some(m=>m.name===target&&m.active!==false))throw new Error('본인 이외의 재직자를 선택하세요.');const next=structuredClone(s);next.overallAdmin=target;if(next.overallAdmins)next.overallAdmins=[...new Set([...next.overallAdmins.filter(n=>n!==actor),target])];next.teamAdmins=(next.teamAdmins||[]).filter(n=>n!==actor&&n!==target);return next;}
+  function canManage(s,name){return s.members.some(m=>m.name===name&&m.active!==false)&&(isOverallAdmin(s,name)||!Array.isArray(s.overallAdmins)&&(s.teamAdmins||[]).includes(name));}
   function canEditLeave(s,actor,owner){const me=s.members.find(m=>m.name===actor&&m.active!==false),target=s.members.find(m=>m.name===owner);return Boolean(me&&target&&(actor===owner||canManage(s,actor)||(isLeader(s,actor)&&me.team===target.team)));}
   const HOME_SECTIONS=['memo','thisWeek','nextWeek','deadlines','leaves','work'];
   function homeOrder(s,actor){const saved=s.homeLayouts?.[actor]||[];return [...new Set([...saved.filter(k=>HOME_SECTIONS.includes(k)),...HOME_SECTIONS])];}
   function saveHomeOrder(s,actor,order){if(!s.members.some(m=>m.name===actor&&m.active!==false))throw new Error('로그인이 필요합니다.');if(!Array.isArray(order)||order.length!==HOME_SECTIONS.length||new Set(order).size!==HOME_SECTIONS.length||order.some(k=>!HOME_SECTIONS.includes(k)))throw new Error('배치 순서를 확인하세요.');const next=structuredClone(s);next.homeLayouts??={};next.homeLayouts[actor]=order.slice();return next;}
   function weekRemaining(end,today=C.today()){const days=Math.max(0,Math.round((Date.parse(end+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000));return {days,filled:Math.min(7,days),label:days?'D-'+days:'D-day'};}
-  function resetPassword(s,actor,name){if(!canManage(s,actor))throw new Error('비밀번호 초기화는 전체관리자와 팀관리자만 가능합니다.');if(!s.members.some(m=>m.name===name&&m.active!==false))throw new Error('재직자를 선택하세요.');const next=structuredClone(s);delete next.accounts[name];return next;}
-  function setTeamAdmins(s,actor,names){if(!isOverallAdmin(s,actor))throw new Error('팀관리자 지정은 전체관리자만 가능합니다.');if(!Array.isArray(names)||names.some(n=>!s.members.some(m=>m.name===n&&m.active!==false)))throw new Error('재직자만 팀관리자로 지정할 수 있습니다.');return {...structuredClone(s),teamAdmins:[...new Set(names)].filter(n=>n!==overallAdmin(s))};}
+  function resetPassword(s,actor,name){if(!canManage(s,actor))throw new Error('비밀번호 초기화는 전체관리자만 가능합니다.');if(!s.members.some(m=>m.name===name&&m.active!==false))throw new Error('재직자를 선택하세요.');const next=structuredClone(s);delete next.accounts[name];return next;}
+  function setTeamAdmins(s,actor,names){if(!isOverallAdmin(s,actor))throw new Error('전체관리자 지정은 전체관리자만 가능합니다.');if(!Array.isArray(names)||names.some(n=>!s.members.some(m=>m.name===n&&m.active!==false)))throw new Error('재직자만 팀관리자로 지정할 수 있습니다.');return Array.isArray(s.overallAdmins)?{...structuredClone(s),overallAdmins:[...new Set([overallAdmin(s),actor,...names])]}:{...structuredClone(s),teamAdmins:[...new Set(names)].filter(n=>n!==overallAdmin(s))};}
   function addSamples(s){
     const next=upgrade(structuredClone(s)),sample=C.sampleState();
     for(const p of sample.projects){const id='preview:'+p.id;if(!next.projects.some(x=>x.id===id))next.projects.push({...p,id,source:'manual',sampleFixture:true,title:'[샘플] '+p.title});}
@@ -88,7 +88,7 @@
       const id='preview:leave:'+m.name;if(!next.leaves.some(l=>l.id===id)){const date=day(ranges[1].start,index%5);next.leaves.push({id,owner:m.name,start:date,end:date,type:index%2?'오후 반차':'연차',note:'화면 확인용 샘플 휴가',sampleFixture:true});}
     }return next;
   }
-  function setLeaders(s,leaders){const next=upgrade(structuredClone(s));next.teamLeaders={};for(const team of C.TEAMS){const name=leaders[team];if(!name)continue;if(!s.members.some(m=>m.name===name&&m.team===team&&m.active!==false))throw new Error('팀장은 해당 팀의 재직자 중에서 선택하세요.');next.teamLeaders[team]=name;}return next;}
+  function setLeaders(s,leaders){const next=upgrade(structuredClone(s));next.teamLeaders={};for(const team of C.TEAMS){const name=leaders[team];if(!name)continue;if(!s.members.some(m=>m.name===name&&m.team===team&&m.active!==false))throw new Error('팀관리자는 해당 팀의 재직자 중에서 선택하세요.');next.teamLeaders[team]=name;}return next;}
   function validDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value)&&!isNaN(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;}
   function saveLeave(s,actor,input){
     const next=upgrade(structuredClone(s)),old=next.leaves.find(l=>l.id===input.id),owner=String(input.owner||actor);
@@ -125,5 +125,15 @@
   }
   function dday(date,today=C.today()){const n=Math.round((Date.parse(date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000);return n===0?'D-day':n>0?'D-'+n:'D+'+Math.abs(n);}
   function setAvatar(s,actor,avatar){if(!Avatars.keys.filter(key=>!key.startsWith('custom-')).includes(avatar)&&!(s.customAvatars||[]).some(v=>v.id===avatar))throw Error('캐릭터를 선택하세요.');const next=structuredClone(s),person=next.members.find(m=>m.name===actor&&m.active!==false);if(!person)throw Error('로그인이 필요합니다.');person.avatar=avatar;return next;}
-  const api={compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,addSamples,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
+  function migrateRoles(input){
+    if(input.rolePolicyVersion===1)return input;
+    const s=upgrade(structuredClone(input)),active=name=>s.members.some(m=>m.name===name&&m.active!==false);
+    s.overallAdmins=[...new Set(['김무현','성아미',overallAdmin(s),...(s.teamAdmins||[])])].filter(active);
+    if(!s.overallAdmins.length)s.overallAdmins=[s.members.find(m=>m.active!==false).name];
+    if(!active(s.overallAdmin))s.overallAdmin=s.overallAdmins[0];
+    s.teamAdmins=[];s.teamLeaders={};
+    for(const [team,name] of Object.entries({기획:'성아미',디자인:'홍소영',퍼블:'임정규',콘텐츠:'김아영'}))if(s.members.some(m=>m.name===name&&m.team===team&&m.active!==false))s.teamLeaders[team]=name;
+    s.rolePolicyVersion=1;return s;
+  }
+  const api={migrateRoles,compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,addSamples,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
 })(typeof window!=='undefined'?window:globalThis);

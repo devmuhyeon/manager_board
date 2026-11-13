@@ -64,3 +64,12 @@ html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="leav
 .briefing-panels .sectionhead{display:flex;justify-content:space-between;align-items:center;gap:16px}
 .briefing-panels .sectionhead h2{margin:0}.briefing-panels .briefing-agenda{max-height:400px;overflow:auto}
 @media(max-width:900px){html[data-workplace-theme][data-style] .briefing-panels{grid-template-columns:minmax(0,1fr);grid-template-areas:"progress" "schedule" "team" "leaves"}}
+
+html[data-workplace-theme][data-style] .weekly-schedule-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;width:100%;align-items:stretch;min-height:calc(100dvh - 232px)}
+html[data-workplace-theme][data-style] .weekly-schedule-panels>.card{min-width:0;display:flex;flex-direction:column;margin:0;grid-column:auto}
+.weekly-schedule-panels .agenda-list{flex:1;min-width:0}.weekly-schedule-panels .agenda-item>div{min-width:0;overflow-wrap:anywhere}
+.weekly-schedule-panels .empty{display:grid;place-items:center;min-height:240px}
+html[data-workplace-theme][data-style] .simple-project-form .task-delete{margin-right:auto;background:transparent;color:#b42318;border-color:var(--border)}
+.status-board .task-board-lane{transition:width .24s ease,min-width .24s ease}
+@media(max-width:760px){html[data-workplace-theme][data-style] .weekly-schedule-panels{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.status-board .task-board-lane{transition:none}}

@@ -114,6 +114,7 @@
   if(mode==='project')return list.map(card=>({id:card.project.id,label:card.project.title,entries:[card]}));
   const keys=task=>mode==='person'?(task.assignees.length?task.assignees:['담당자 미지정']):(task.assignees.length?[...new Set(task.assignees.map(name=>members.find(m=>m.name===name)?.team||'팀 미지정'))]:['팀 미지정']);
   const labels=[...new Set(list.flatMap(card=>card.tasks.flatMap(keys)))];
+  if(mode==='team'){const order=['기획','디자인','퍼블','콘텐츠'];labels.sort((a,b)=>(order.includes(a)?order.indexOf(a):99)-(order.includes(b)?order.indexOf(b):99));}
   if(mode==='person'){
    const me=members.find(member=>member.name===actor),ranks=['대표','사장','부사장','전무','상무','이사','부장','차장','과장','대리','주임','사원','인턴'];
    const teamIndex=member=>member?.team===me?.team&&me?-1:(C.TEAMS.indexOf(member?.team)<0?C.TEAMS.length:C.TEAMS.indexOf(member?.team));
