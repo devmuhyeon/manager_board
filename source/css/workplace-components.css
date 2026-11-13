@@ -1,0 +1,221 @@
+/* Standalone workplace component styles using local semantic tokens. */
+html[data-workplace-theme="neutral"] {
+  --font-family-body: Pretendard, "Malgun Gothic", sans-serif;
+  --font-family-heading: var(--font-family-body);
+  --bg: var(--color-background-body);
+  --surface: var(--color-background-surface);
+  --surface-soft: var(--color-background-muted);
+  --border: var(--color-border);
+  --text: var(--color-text-primary);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-accent);
+  --accent-text: var(--color-text-accent);
+  --accent-soft: var(--color-neutral);
+  --danger: var(--color-text-error);
+  --good: var(--color-text-success);
+  --panel-radius: var(--radius-container);
+  --control-radius: var(--radius-element);
+  --panel-shadow: none;
+  --type-title: clamp(25px, 3vw, 36px);
+  --type-section: 16px;
+  --type-body: 14px;
+  --table-head: var(--color-background-muted);
+  --table-group: var(--color-background-muted);
+  --table-hover: var(--color-neutral);
+  --table-line: var(--color-border);
+  font-family: var(--font-family-body);
+}
+html[data-workplace-theme][data-style] .main .content {
+  max-width: 1540px;
+  padding-block: clamp(24px, 4vw, 56px);
+}
+html[data-workplace-theme][data-style] .content > .heading {
+  border: 0;
+  padding-bottom: 0;
+  margin-bottom: 24px;
+}
+html[data-workplace-theme][data-style] .content > .heading h1 {
+  font-weight: 720;
+  letter-spacing: -.055em;
+}
+html[data-workplace-theme][data-style]:not([data-style="navy"]):not([data-style="midnight"]) .sidebar {
+  background: var(--color-background-card);
+  color: var(--text);
+  border-inline-end: 1px solid var(--border);
+}
+html[data-workplace-theme][data-style]:not([data-style="navy"]):not([data-style="midnight"]) .sidebar :is(.brand, .nav button) {
+  color: var(--text);
+}
+html[data-workplace-theme][data-style]:not([data-style="navy"]):not([data-style="midnight"]) .sidebar :is(.nav-group, .subbrand, .user .muted, .user [data-action="logout"]) {
+  color: var(--muted);
+}
+html[data-workplace-theme][data-style] .sidebar .nav button {
+  border-radius: var(--radius-element);
+  font-size: 14px;
+}
+html[data-workplace-theme][data-style]:not([data-style="navy"]):not([data-style="midnight"]) .sidebar .nav button:is(:hover,.active) {
+  background: var(--color-neutral);
+  color: var(--text);
+  box-shadow: none;
+}
+html[data-workplace-theme][data-style] .sidebar .nav button.active::after {
+  background: currentColor;
+}
+html[data-workplace-theme][data-style="rail"] .sidebar .nav button {
+  font-size: 0;
+}
+html[data-workplace-theme][data-style] .sidebar .user .character-avatar {
+  background: var(--color-neutral);
+}
+html[data-workplace-theme][data-style] :is(button.primary,.topbar .topright button.primary,button.black-button),
+html[data-workplace-theme][data-style] :is(button.primary,.topbar .topright button.primary,button.black-button):hover {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+html[data-workplace-theme][data-style] :is(button.primary,button.black-button):hover {
+  box-shadow: inset 0 0 0 40px var(--color-overlay-hover);
+}
+html[data-workplace-theme] .topbar .reconnect-icon {
+  margin-inline-start: 2px;
+  font-size: 14px;
+}
+html[data-workplace-theme][data-style] [data-action="save"] .button-icon {
+  filter: none;
+}
+html[data-workplace-theme][data-style] :is(.card,.home-panel,.table-wrap,.memo-card,.connect-card,.setup-box,.login-box) {
+  border-color: var(--color-border);
+  border-radius: var(--radius-container);
+  box-shadow: none;
+}
+html[data-workplace-theme][data-style] .home-panel > .card {
+  border-radius: 0;
+}
+html[data-workplace-theme][data-style] :is(.sectionhead,.modal-head) {
+  background: var(--color-background-card);
+}
+html[data-workplace-theme][data-style] :is(.work-table th, .table-wrap thead th) {
+  background: var(--color-background-muted);
+  color: var(--color-text-secondary);
+}
+html[data-workplace-theme][data-style] .badge {
+  border-radius: var(--radius-full);
+}
+html[data-workplace-theme][data-style] .badge.진행중 {
+  background: var(--color-info-muted);
+  color: var(--color-on-info-muted);
+}
+html[data-workplace-theme][data-style] .badge.완료 {
+  background: var(--color-success-muted);
+  color: var(--color-on-success-muted);
+}
+html[data-workplace-theme][data-style] .badge:is(.대기,.보류) {
+  background: var(--color-warning-muted);
+  color: var(--color-on-warning-muted);
+}
+html[data-workplace-theme][data-style] .login {
+  background: radial-gradient(ellipse at 15% 5%, var(--color-success-muted), transparent 55%), var(--bg);
+}
+html[data-workplace-theme][data-style] :is(.login-box,.setup-box,dialog) {
+  background: var(--color-background-popover);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-med);
+}
+html[data-workplace-theme][data-style] .step-number {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.workspace-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 52px);
+  margin-block-end: 24px;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-page);
+  background: linear-gradient(120deg, var(--color-background-surface), var(--color-success-muted));
+  color: var(--text);
+}
+.workspace-kicker {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-muted);
+  color: var(--color-on-success-muted);
+  font-weight: 650;
+  font-size: 12px;
+}
+.workspace-overview h2 {
+  margin: 12px 0 8px;
+  font-size: clamp(24px, 3vw, 40px);
+  letter-spacing: -.05em;
+  line-height: 1.2;
+}
+.workspace-overview p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.workspace-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+  margin: 0;
+}
+.workspace-metrics > div {
+  min-width: 0;
+  padding: clamp(12px, 1.5vw, 20px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+}
+.workspace-metrics dt {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.workspace-metrics dd {
+  margin: 8px 0 0;
+  font-size: clamp(22px, 3vw, 40px);
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.workspace-metrics [data-tone="overdue"] dd {
+  color: var(--color-text-error);
+}
+
+/* Mockups use the same theme and keep all toolbar content in one strip. */
+html[data-workplace-theme] .mock {
+  --surface: var(--color-background-surface);
+  --line: var(--color-border);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-accent);
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+}
+html[data-workplace-theme] .mock.midnight { color-scheme: dark; }
+html[data-workplace-theme] .mock :is(.panel,.stats > div,.mock-top) {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-workplace-theme] .mock .mock-top {
+  min-width: 0;
+  gap: 12px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+html[data-workplace-theme] .mock .mock-top > span { flex: none; }
+html[data-workplace-theme] .mock .primary {
+  background: var(--accent);
+  color: var(--color-on-accent);
+}
+@media (max-width: 1050px) {
+  .workspace-overview { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .workspace-overview { border-radius: var(--radius-container); }
+  html[data-workplace-theme][data-style] .topbar .topright > .muted { display: inline; }
+}

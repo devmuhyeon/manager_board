@@ -27,3 +27,11 @@ dist/
 # Shared modular saves contain work and account data
 save/
 *.lnk
+
+# Private working data and personal saves
+process/
+test/samples/
+prg/releases/
+
+# Request history, per-user view state and private records
+data/

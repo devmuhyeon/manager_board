@@ -1,0 +1,6 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),server=require('../prg/server.cjs');
+test('독립 실행은 신규 모듈과 한글 이미지를 제공하고 업무 파일은 노출하지 않는다',async()=>{
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
+ try{const html=await(await fetch(base+'/source/html/index.html')).text();assert.ok(!html.includes('astryx'));const resources=JSON.parse(html.match(/<script id="runtimeResources" type="application\/json">(.*?)<\/script>/s)[1]);const refs=[...resources.styles.map(s=>s.path),...resources.scripts];for(const ref of refs)assert.equal((await fetch(base+'/'+ref)).status,200,ref);assert.equal((await fetch(base+'/source/images/keis/'+encodeURIComponent('펭귄.png'))).status,200);assert.equal((await fetch(base+'/'+encodeURIComponent('통합관리 대시보드.json'))).status,404);assert.equal((await fetch(base+'/.workboard-presence/session-a.json')).status,404);}finally{await new Promise(resolve=>server.close(resolve));}
+ const pkg=JSON.parse(fs.readFileSync(path.join(__dirname,'../prg/package.json'),'utf8'));assert.ok(!pkg.dependencies&&!pkg.devDependencies);assert.ok(!fs.existsSync(path.join(__dirname,'../node_modules')));
+});

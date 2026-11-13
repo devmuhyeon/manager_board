@@ -1,0 +1,11 @@
+{
+  "name": "manager-board",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline team management dashboard",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test ../test/*.test.cjs",
+    "package": "powershell -NoProfile -File scripts/package-offline.ps1"
+  }
+}
