@@ -25,3 +25,25 @@ html[data-workplace-theme][data-style] .request-row{display:flex;flex-direction:
 @media(max-width:640px){.request-title-row{grid-template-columns:100px minmax(0,1fr);gap:8px}.request-url-row{grid-template-columns:minmax(0,1fr) 48px}.request-url-row input:first-child{grid-column:1/-1}.recipient-team{grid-template-columns:48px minmax(0,1fr);gap:8px;padding:12px}#workRequestForm .request-form-body{padding:16px}}
 @media(prefers-reduced-motion:reduce){.recipient-collapse{transition:none}}
 html[data-workplace-theme][data-style] .request-row>.request-favorite{flex:none;align-self:flex-start;width:28px;height:28px;min-height:0;margin:12px 0 0 8px;padding:4px;border:0;background:transparent;color:#94a3b8;font-size:16px;line-height:20px}html[data-workplace-theme][data-style] .request-row>.request-favorite[aria-pressed=true]{color:#d58b00}.request-row .request-select{padding-left:8px}.request-row-tools{margin-left:auto;align-self:flex-start}.request-row-tools button:first-child{font-size:11px}
+/* One continuous request card; icon actions never inherit outlined button styles. */
+#requestsView .request-items{padding:4px 8px 12px;display:flex;flex-direction:column;gap:4px}
+html[data-workplace-theme][data-style] #requestsView .request-row{display:flex;align-items:flex-start;gap:0;width:100%;padding:4px;border:0;border-radius:12px;background:transparent;box-shadow:none;transition:background .15s ease}
+html[data-workplace-theme][data-style] #requestsView .request-row:hover{background:#f6f8fb}
+html[data-workplace-theme][data-style] #requestsView .request-row[data-selected=true]{background:#edf4ff;box-shadow:none}
+html[data-workplace-theme][data-style] #requestsView .request-row button{border:0!important;box-shadow:none!important;background:transparent!important;outline-offset:0;transform:none}
+html[data-workplace-theme][data-style] #requestsView .request-row button:focus-visible{outline:2px solid #2563eb;outline-offset:-2px;border-radius:8px}
+html[data-workplace-theme][data-style] #requestsView .request-select{display:flex;flex:1;min-width:0;align-items:flex-start;gap:8px;padding:12px 8px;text-align:left;border-radius:8px;color:#334155}
+#requestsView .request-card-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;font-weight:600;line-height:1.6;letter-spacing:-.2px;text-align:left}
+#requestsView .request-row.is-read .request-card-title{color:#7b8798;font-weight:500}
+#requestsView .request-row.is-unread .request-card-title{color:#172033;font-weight:700}
+#requestsView .request-unread-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;margin:0 8px 0 0;vertical-align:middle}
+#requestsView .request-card-people{display:block;font-size:12px;line-height:1.5;color:#64748b;text-align:left;overflow-wrap:anywhere}
+#requestsView .request-card-people>span{color:#a0aaba;padding:0 4px}
+#requestsView .request-card-date{display:block;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;color:#94a3b8;text-align:left}
+html[data-workplace-theme][data-style] #requestsView .request-row>.request-favorite{display:grid;place-items:center;flex:none;align-self:flex-start;width:28px;height:28px;min-height:28px;margin:12px 0 0 4px;padding:0;font-size:18px;line-height:1;color:#a5afbd;border-radius:8px}
+html[data-workplace-theme][data-style] #requestsView .request-row>.request-favorite[aria-pressed=true]{color:#d69b21}
+#requestsView .request-row-tools{display:flex;flex:none;align-self:flex-start;padding:12px 4px 0 0;margin:0}
+html[data-workplace-theme][data-style] #requestsView .request-row-tools button{display:grid;place-items:center;width:28px;height:28px;min-height:28px;padding:0;border-radius:8px;opacity:.5;transition:opacity .15s ease}
+#requestsView .request-row-tools .tossface{font-size:17px;line-height:1}
+html[data-workplace-theme][data-style] #requestsView .request-row:hover .request-row-tools button,html[data-workplace-theme][data-style] #requestsView .request-row:focus-within .request-row-tools button{opacity:1}
+@media(prefers-reduced-motion:reduce){#requestsView .request-row,#requestsView .request-row-tools button{transition:none}}

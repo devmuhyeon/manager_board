@@ -11,3 +11,13 @@ test('legacy request files are read-only and extend into the new per-task folder
 test('custom rank order and renames are authorized and reorder people',()=>{let s=P.migrateRoles(P.upgrade(C.emptyState()));s.members.find(m=>m.name==='김무현').rank='대리';s=P.setRanks(s,'김무현',[{old:'대리',name:'선임'},{old:'과장',name:'과장'}]);assert.deepEqual(s.rankOrder,['선임','과장']);assert.equal(s.members.find(m=>m.name==='김무현').rank,'선임');assert.throws(()=>P.setRanks(s,'정윤정',[]),/전체관리자/);assert.throws(()=>P.setRanks(s,'김무현',[{name:'a'},{name:'a'}]),/중복/);});
 test('hero flip and XYZ rotations are isolated by user, character and mode',()=>{const store=storage(),h=H.create(store),u={name:'A',avatar:'yongyong'},record=h.get(u);h.saveMode(u,'normal',{...record.normal,flip:true,rx:25,ry:-30,rz:10});assert.equal(h.get(u).normal.flip,true);assert.equal(h.get(u).big.flip,false);assert.equal(h.get({...u,name:'B'}).normal.rx,0);assert.equal(h.get({...u,avatar:'bbiyak'}).normal.rx,0);});
 module.exports={directory};
+
+test('Korean IME composition survives request polling and filters only after composition ends',async()=>{
+ const listeners={},input={id:'requestSearch',value:'',selectionStart:0,selectionEnd:0,focus(){},setSelectionRange(){},replaceWith(){}},host={_html:'',writes:0,get innerHTML(){return this._html;},set innerHTML(value){this._html=value;this.writes++;},querySelector:q=>q==='#requestSearch'?input:null};
+ const doc={activeElement:input,hidden:false,querySelector:q=>q==='#requestsView'?host:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)};
+ const sample=(id,from,title)=>({version:1,id,rootId:id,from,to:['A'],title,body:'확인',createdAt:1,sample:true});
+ const ui=R.ui({document:doc,storage:storage(),getSession:()=>({user:{name:'A'},members:[{name:'A'},{name:'김무현'},{name:'홍소영'}],demo:true,samples:[sample('one','김무현','퍼블 확인'),sample('two','홍소영','디자인 확인')]}),toast(){},openPage(){},showDialog(){}});
+ ui.sync();await ui.service.refresh();const writes=host.writes;
+ for(const fn of listeners.compositionstart)fn({target:input});input.value='김무';for(const fn of listeners.input)fn({target:input,isComposing:true});await ui.service.refresh();assert.equal(host.writes,writes);
+ input.value='김무현';for(const fn of listeners.compositionend)fn({target:input});assert.equal(host.writes,writes+1);assert.match(host.innerHTML,/퍼블 확인/);assert.doesNotMatch(host.innerHTML,/디자인 확인/);await ui.service.refresh();assert.equal(host.writes,writes+1);
+});
