@@ -97,7 +97,7 @@ html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
 /* The calendar sets the height of the shared desktop row. */
 html[data-workplace-theme][data-style] .briefing-panels {
   display: grid;
-  grid-template-columns: minmax(0,3fr) minmax(340px,2fr);
+  grid-template-columns: minmax(0,3fr) minmax(280px,1fr);
   grid-template-areas: "calendar schedules" "progress progress" "team team";
   gap: 20px;
   align-items: stretch;
@@ -112,8 +112,8 @@ html[data-workplace-theme][data-style] .briefing-panels > .compact-calendar {
 html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
   grid-area: schedules;
   display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  grid-template-rows: minmax(0,1fr);
+  grid-template-columns: minmax(0,1fr);
+  grid-template-rows: repeat(2,minmax(0,1fr));
   gap: 20px;
   min-width: 0;
   min-height: 0;
@@ -151,15 +151,10 @@ html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda:focu
   }
   html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
     contain: none;
-    grid-template-rows: auto;
+    grid-template-rows: auto auto;
   }
   html[data-workplace-theme][data-style] .briefing-schedules > .card > .briefing-agenda {
     max-height: 200px;
-  }
-}
-@media(max-width:640px){
-  html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
-    grid-template-columns: minmax(0,1fr);
   }
 }
 .week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
