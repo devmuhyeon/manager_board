@@ -231,3 +231,9 @@ test('각 담당 업무 영역에 자기 수정 체크와 게이지만 포함된
  assert.throws(()=>Board.setRevisionRequired(raw,'design',true,C,'김무현'));
  const selected=C.effective(Board.setRevisionRequired(raw,'design',true,C,'정윤정'));assert.equal(selected.tasks[0].status,'완료 후 수정');assert.equal(selected.tasks[0].progress,100);assert.equal(selected.tasks[1].revisionProgress,40);
 });
+
+test('weekly groups retain week headings, default cards hide details, expanded state is explicit',()=>{
+ const opts={rows:[C.effective(project)],name:'',showDone:true,C,N:{teamLabel:x=>x},esc:x=>String(x||''),button:(a,t,c='',extra='')=>'<button data-action="'+a+'" '+extra+'>'+t+'</button>',dday:()=>'',orderNames:x=>x,actor:'김무현',mode:'project',members:[{name:'김무현',team:'퍼블'},{name:'정윤정',team:'기획'}]};
+ const html=Board.render({...opts,weekGrouping:'team'});assert.match(html,/board-week/);assert.match(html,/week-subgroup/);assert.match(html,/board-card-details" inert aria-hidden="true"/);assert.match(html,/data-action="toggleCardDetails"[^>]*aria-expanded="false"/);assert.match(html,/task-board-assignees/);assert.match(html,/task-board-due/);assert.match(html,/data-card-percent/);
+ const open=Board.render({...opts,expandedCards:[project.id]});assert.match(open,/board-card-details" aria-hidden="false"/);assert.match(open,/aria-expanded="true"/);
+});

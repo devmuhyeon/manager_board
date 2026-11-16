@@ -7,13 +7,14 @@
  const keys=characters.map(([key])=>key),legacyKeys=['kirby','pikachu','charmander'];
  const builtins=characters.map(row=>row.slice());
  function validateCustom(items=[]){
-  if(!Array.isArray(items)||items.length>100||new Set(items.map(v=>v?.id)).size!==items.length||items.some(v=>!v||!/^custom-[a-f0-9-]{36}$/.test(v.id)||typeof v.name!=='string'||!v.name.trim()||v.name.length>40||typeof v.src!=='string'||v.src.length>350000||!/^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(v.src)))throw Error('추가 캐릭터 이미지 형식을 확인해 주세요.');
+  if(!Array.isArray(items)||items.length>100||new Set(items.map(v=>v?.id)).size!==items.length||items.some(v=>!v||!/^custom-[a-f0-9-]{36}$/.test(v.id)||typeof v.name!=='string'||!v.name.trim()||v.name.length>40||typeof v.src!=='string'||v.src.length>(v.src.startsWith('data:image/gif;')?2800000:350000)||!/^data:image\/(png|webp|jpeg|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(v.src)))throw Error('추가 캐릭터 이미지 형식을 확인해 주세요.');
   return items;
  }
  function sync(items=[]){validateCustom(items);characters.splice(0,characters.length,...builtins,...items.map(v=>[v.id,v.name,v.src]));keys.splice(0,keys.length,...characters.map(v=>v[0]));}
  const src=value=>value?.startsWith('data:image/')?value:(root.BoardPaths?root.BoardPaths.asset('source/images/keis/'+value):'../images/keis/'+value);
  async function imageFile(file){
-  if(!file||!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('10MB 이하 PNG·JPG·WebP 이미지를 선택하세요.');
+  if(!file||!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)||file.size>10*1024*1024)throw Error('10MB 이하 PNG·JPG·WebP 또는 2MB 이하 GIF 이미지를 선택하세요.');
+  if(file.type==='image/gif'){if(file.size>2*1024*1024)throw Error('움직이는 GIF는 2MB 이하로 선택해 주세요.');const bytes=new Uint8Array(await file.arrayBuffer()),header=String.fromCharCode(...bytes.slice(0,6));if(!['GIF87a','GIF89a'].includes(header)||bytes.length<13)throw Error('올바른 GIF 파일을 선택해 주세요.');let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));return 'data:image/gif;base64,'+btoa(binary);}
   const bitmap=await createImageBitmap(file);
   try{const ratio=Math.min(1,512/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);const value=canvas.toDataURL('image/webp',.85);if(value.length>350000)throw Error('이미지가 너무 복잡합니다. 더 작은 이미지를 선택하세요.');return value;}finally{bitmap.close();}
  }

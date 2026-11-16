@@ -12,8 +12,8 @@
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
-  let closedNav=[],closedWeeks=[],closedLanes=[];
-  let boardName='',boardMode='project',boardLayout='cards';
+  let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
+  let boardName='',boardMode='project',weekGrouping='all',boardLayout='cards';
   let boardTeam='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   let rankDraft=[];
   let selectedProject='',leaveView='date',leavePerson='';
@@ -28,7 +28,7 @@
   window.addEventListener('storage',e=>{if(e.key===BoardDisplayStyles.KEY||e.key==='workplace-theme'||e.key===null){styles.restore();render();}});
   const presence=BoardPresence.create({onChange:()=>{const host=$('#onlineProfiles');if(host)host.innerHTML=BoardPresence.render(presence.snapshot(),esc);liveCursors?.paint();requests?.paint();}});
   const requests=BoardWorkRequests.ui({getSession:()=>({directory:demoSession?null:targetDir,user,members:state.members.map(m=>{const online=presence.snapshot().people.find(p=>p.name===m.name);return online&&m.name!==user?.name?{...m,avatar:online.avatar}:m;}),orderNames:names=>P.orderNames(state,names),demo:demoSession,samples:typeof BoardRequestSamples!=='undefined'?BoardRequestSamples.create(user,state.members):[]}),document,storage:localStorage,showDialog,toast,openPage:()=>{page='requests';render();}});
-  const liveCursors=BoardLiveCursors.create({document,window,getView:()=>page==='work'?JSON.stringify([boardMode,boardLayout,boardName,filters]):'',setCursor:c=>presence.setCursor(c),getPeople:()=>presence.snapshot().people,getUser:()=>user});
+  const liveCursors=BoardLiveCursors.create({document,window,getView:()=>page==='work'?JSON.stringify([boardMode,weekGrouping,boardLayout,boardName,filters]):'',setCursor:c=>presence.setCursor(c),getPeople:()=>presence.snapshot().people,getUser:()=>user});
   window.addEventListener('pagehide',()=>{presence.stop().catch(()=>{});});
   window.addEventListener('pageshow',()=>{presence.setSession({directory:demoSession?null:targetDir,user:demoSession?null:user,members:state.members}).catch(()=>{});});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)presence.refresh().catch(()=>{});});
@@ -93,7 +93,7 @@
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(C.TEAMS,selectedTeam)}</select>`:''}</div>`;}
   function filterBar(isReport=false){return `<div class="filters"><input class="search" type="search" placeholder="과업명, 담당자, 고객 검색" aria-label="업무 검색" data-filter="search" value="${esc(filters.search)}"><select aria-label="진행상태" data-filter="status">${options(C.STATUSES,filters.status,'전체 상태')}</select><select aria-label="담당팀" data-filter="teamFilter">${options(C.TEAMS,filters.teamFilter,'전체 담당팀')}</select><div class="date-filter">${isReport?'<span>작업일</span>':`<select aria-label="기간 기준" data-filter="dateField">${[['due','마감일'],['requestedDue','요청완료일'],['requested','요청일']].map(([v,t])=>`<option value="${v}" ${filters.dateField===v?'selected':''}>${t}</option>`).join('')}</select>`}<input type="date" aria-label="시작 날짜" data-filter="from" value="${filters.from}"><span>–</span><input type="date" aria-label="종료 날짜" data-filter="to" value="${filters.to}">${button('week','이번 주')}${button('clearFilters','초기화')}</div></div>`;}
-  function dashboard(){return '<div class="briefing-layout">'+BoardBriefingHero.render({rows:heroRows(),user,C,N,esc,record:heroDesign.get(user)})+BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,filter:calendarFilter,esc,button})+BoardBriefingDashboard.render({state,user,C,P,B,N,esc,button,table:projectTable,hint:D.illustratedHint,weekBlocks,leaveItems})+'</div>';}
+  function dashboard(){const calendar=BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,filter:calendarFilter,esc,button});return '<div class="briefing-layout">'+BoardBriefingHero.render({rows:heroRows(),user,C,N,esc,record:heroDesign.get(user)})+BoardBriefingDashboard.render({state,user,C,P,B,N,esc,button,table:projectTable,hint:D.illustratedHint,weekBlocks,leaveItems,calendar})+'</div>';}
   function viewTabs(){return '<div class="tabs" role="group" aria-label="업무 보기">'+(page==='work'?button('view','보드',view==='board'?'active':'','data-view="board"'):'')+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
   function categorizedTable(rows){return W.group(rows).map(([label,group])=>'<section class="category-group"><h3>'+esc(label.replace(/^퍼블(?= >|$)/,'퍼블리싱'))+' <span class="count">'+group.length+'</span></h3>'+sheetTable(group)+'</section>').join('')||'<p class="empty">조회 조건에 맞는 과업이 없습니다.</p>';}
   const boardAssignee=()=>boardName||(scope==='personal'?user.name:'');
@@ -102,13 +102,13 @@
     const rows=projects();
     const isBoard=page==='work'&&view==='board';
     const showDone=boardIncludesDone();
-    const boardControls=isBoard?'<div class="board-control-row"><div class="tabs board-view-tabs" role="group" aria-label="보드 기준">'+[['project','주차별'],['status','진행별'],['team','팀별'],['person','개인별']].map(([mode,label])=>button('boardMode',label,boardMode===mode?'active':'','data-mode="'+mode+'" aria-pressed="'+(boardMode===mode)+'"')).join('')+'</div><div class="task-board-controls">'
+    const boardControls=isBoard?'<div class="board-control-row"><div class="tabs board-view-tabs" role="group" aria-label="보드 기준">'+[['project','주차별'],['status','진행별']].map(([mode,label])=>button('boardMode',label,boardMode===mode?'active':'','data-mode="'+mode+'" aria-pressed="'+(boardMode===mode)+'"')).join('')+'</div>'+(boardMode==='project'?'<label class="week-group-control">주차 안에서 <select id="weekGrouping">'+[['all','전체 과업'],['team','팀별'],['person','개인별']].map(([key,label])=>'<option value="'+key+'" '+(weekGrouping===key?'selected':'')+'>'+label+'</option>').join('')+'</select></label>':'')+'<div class="task-board-controls">'
       +'<div class="board-period" role="group" aria-label="마감일 기간 조회"><input id="boardFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="from" aria-label="마감일 시작 날짜" value="'+esc(filters.from)+'" max="'+esc(filters.to)+'"><span>~</span><input id="boardTo" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="to" aria-label="마감일 종료 날짜" value="'+esc(filters.to)+'" min="'+esc(filters.from)+'">'+button('resetBoardDates','날짜 초기화','','')+'</div><label class="sr-only" for="boardName">과업명 또는 담당자</label><input type="search" id="boardName" list="boardPeople" placeholder="과업명 · 담당자 검색" value="'+esc(boardName)+'">'
       +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
       +'</div></div>':'';
-    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,layout:boardLayout,closedWeeks,closedLanes,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
+    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,layout:boardLayout,weekGrouping,closedWeeks,closedLanes,expandedCards,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
       +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+(isBoard?'':scopeTabs()+viewTabs())
@@ -210,6 +210,7 @@
     if(demoSession&&['connect','reload','restore','import','sourceFolder','sourceFile','targetFolder','permitFolders','refreshAll','refreshSource','logout','save'].includes(a)){toast('샘플 검토 모드입니다. 변경은 이 화면에서만 유지되며 새로고침하면 초기화됩니다.');return;}
     if(a==='boardMineFromBriefing'){page='work';view='board';boardName=user.name;render();return;}
     if(a==='navSection'){const key=el.dataset.section;closedNav=closedNav.includes(key)?closedNav.filter(x=>x!==key):[...closedNav,key];const children=$('#nav-'+key),closed=closedNav.includes(key);if(children?.classList&&el.setAttribute){children.classList.toggle('is-collapsed',closed);children.inert=closed;children.setAttribute('aria-hidden',String(closed));el.setAttribute('aria-expanded',String(!closed));el.querySelector('[aria-hidden]').textContent=closed?'⌄':'⌃';}else render();return;}
+    if(a==='toggleCardDetails'){const id=el.dataset.id,open=!expandedCards.includes(id);expandedCards=open?[...expandedCards,id]:expandedCards.filter(x=>x!==id);document.querySelectorAll('[data-card-id]').forEach(card=>{if(card.dataset.cardId!==id)return;card.classList.toggle('is-expanded',open);const details=card.querySelector('.board-card-details'),toggle=card.querySelector('[data-action="toggleCardDetails"]');details.inert=!open;details.setAttribute('aria-hidden',String(!open));toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'⌃':'⌄';});return;}
     if(a==='toggleWeek'){const key=el.dataset.key;closedWeeks=closedWeeks.includes(key)?closedWeeks.filter(x=>x!==key):[...closedWeeks,key];if(!BoardFold.toggle(el,closedWeeks.includes(key)))render();return;}
     if(a==='toggleLane'){const key=el.dataset.key;closedLanes=closedLanes.includes(key)?closedLanes.filter(x=>x!==key):[...closedLanes,key];if(!BoardFold.toggle(el,closedLanes.includes(key)))render();return;}
     if(a==='calendarFilter'){calendarFilter=['all','project','memo'].includes(el.dataset.filter)?el.dataset.filter:'all';render();return;}
@@ -239,7 +240,7 @@
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
     else if(a==='boardLayout'){boardLayout=boardLayout==='cards'?'table':'cards';render();}
-    else if(a==='boardMode'){boardMode=el.dataset.mode;render();}
+    else if(a==='boardMode'){boardMode=['project','status'].includes(el.dataset.mode)?el.dataset.mode:'project';render();}
     else if(a==='editBoardTask'){if($('#editor').open)$('#editor').close();openEditor(el.dataset.id);const index=taskDraft.findIndex(task=>task.id===el.dataset.taskId);const field=$('#task-progress-'+Math.max(0,index));field?.scrollIntoView?.({block:'center'});field?.focus?.();}
     else if(a==='boardDetail')boardDetail(el.dataset.id);
     else if(a==='boardAdd'){openEditor();const status=BoardTaskBoard.lanes.find(lane=>lane.id===el.dataset.lane)?.statuses[0]||'예정';taskDraft.forEach(task=>task.status=status);$('#taskList').innerHTML=taskForms();}
@@ -292,7 +293,7 @@
     else if(a==='refreshAll'||a==='refreshSource')await refreshAll();
 
     else if(a==='preferences')preferences();
-    else if(a==='addAvatar')showDialog('<div class="modal-head"><h2>캐릭터 추가</h2>'+button('close','닫기')+'</div><form id="addAvatarForm"><div class="modal-body"><div class="field"><label for="avatarName">캐릭터 이름</label><input id="avatarName" name="name" maxlength="40" required></div><div class="field"><label for="avatarFile">캐릭터 이미지</label><input id="avatarFile" name="image" type="file" accept="image/png,image/jpeg,image/webp" required></div><p>PNG·JPG·WebP, 최대 10MB. 추가하면 내 캐릭터로 선택되고 핑크 브리핑이 생성됩니다.</p><div id="avatarError" class="error" role="alert"></div></div><div class="modal-foot"><button class="primary" id="avatarSubmit">추가하고 사용</button></div></form>');
+    else if(a==='addAvatar')showDialog('<div class="modal-head"><h2>캐릭터 추가</h2>'+button('close','닫기')+'</div><form id="addAvatarForm"><div class="modal-body"><div class="field"><label for="avatarName">캐릭터 이름</label><input id="avatarName" name="name" maxlength="40" required></div><div class="field"><label for="avatarFile">캐릭터 이미지</label><input id="avatarFile" name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div><p>PNG·JPG·WebP 최대 10MB, 움직이는 GIF 최대 2MB. 추가하면 내 캐릭터로 선택되고 핑크 브리핑이 생성됩니다.</p><div id="avatarError" class="error" role="alert"></div></div><div class="modal-foot"><button class="primary" id="avatarSubmit">추가하고 사용</button></div></form>');
     else if(a==='avatarSettings')showDialog(D.avatarPicker(user));
     else if(a==='setAvatar'){state=P.setAvatar(state,user.name,el.dataset.avatar);changed();$('#editor').close();render();toast('내 캐릭터를 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');}
     else if(a==='adminSettings')adminSettings();
@@ -490,6 +491,7 @@
   document.addEventListener('change',async e=>{
     const el=e.target;
     if(el.dataset.revisionRequired){try{const index=state.projects.findIndex(p=>p.id===el.dataset.revisionRequired);state.projects[index]=BoardTaskBoard.setRevisionRequired(state.projects[index],el.dataset.taskId,el.checked,C,user.name);changed();render();}catch(err){toast(err.message);render();}return;}
+    if(el.id==='weekGrouping'){weekGrouping=['all','team','person'].includes(el.value)?el.value:'all';render();return;}
     if(el.id==='leavePerson'){leavePerson=el.value;render();return;}
     if(el.dataset.boardDate){if(el.value&&(!/^\d{4}-\d{2}-\d{2}$/.test(el.value)||Number.isNaN(Date.parse(el.value+'T00:00:00Z'))||new Date(el.value+'T00:00:00Z').toISOString().slice(0,10)!==el.value)){toast('날짜를 YYYY-MM-DD 형식으로 입력해 주세요.');el.value=filters[el.dataset.boardDate];return;}const next={...filters,[el.dataset.boardDate]:el.value};if(next.from&&next.to&&next.from>next.to){toast('시작 날짜는 종료 날짜보다 늦을 수 없습니다.');el.value=filters[el.dataset.boardDate];return;}filters=next;render();$('#'+el.id)?.focus?.();return;}
     if(el.dataset.taskField==='role'){collectTasks();const task=taskDraft[Number(el.closest('[data-task-index]').dataset.taskIndex)],team=BoardSimpleEditor.teamOf(el.value);task.assignees=task.assignees.filter(name=>!team||member(name)?.team===team);$('#taskList').innerHTML=taskForms();return;}

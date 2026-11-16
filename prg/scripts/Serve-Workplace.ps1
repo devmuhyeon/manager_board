@@ -3,7 +3,7 @@ param([int]$Port=49271)
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $sha=[Security.Cryptography.SHA256]::Create();try{$identity=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($projectRoot))).Replace('-','')}finally{$sha.Dispose()}
-$types=@{'.html'='text/html; charset=utf-8';'.css'='text/css; charset=utf-8';'.js'='application/javascript; charset=utf-8';'.png'='image/png';'.jpg'='image/jpeg';'.jpeg'='image/jpeg';'.webp'='image/webp';'.svg'='image/svg+xml';'.ico'='image/x-icon';'.woff2'='font/woff2'}
+$types=@{'.html'='text/html; charset=utf-8';'.css'='text/css; charset=utf-8';'.js'='application/javascript; charset=utf-8';'.png'='image/png';'.jpg'='image/jpeg';'.jpeg'='image/jpeg';'.webp'='image/webp';'.svg'='image/svg+xml';'.gif'='image/gif';'.ico'='image/x-icon';'.woff2'='font/woff2'}
 $listener=New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback,$Port)
 $listener.Start()
 try{

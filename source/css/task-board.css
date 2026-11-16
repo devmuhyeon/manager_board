@@ -393,3 +393,10 @@ progress.revision-progress::-webkit-progress-bar{background:#e9ddff;border-radiu
 .revision-control{flex-wrap:wrap;background:#f3efff}.revision-control strong{flex-basis:100%;color:#6d28d9}.task-board-checklist .revision-required{flex-basis:100%}
 html[data-theme="dark"] .card-revision-summary,html[data-theme="dark"] .revision-control,html[data-style="midnight"] .card-revision-summary,html[data-style="midnight"] .revision-control{background:#302447}
 html[data-theme="dark"] .card-revision-summary .task-board-progress,html[data-theme="dark"] .revision-control strong,html[data-style="midnight"] .card-revision-summary .task-board-progress,html[data-style="midnight"] .revision-control strong{color:#c4b5fd}
+.board-card-actions{float:right;display:flex;align-items:center;gap:4px;margin:0 0 8px 8px}
+html[data-workplace-theme][data-style] .task-board-card .board-card-actions button{float:none;min-height:28px;padding:4px 8px;font-size:11px}
+html[data-workplace-theme][data-style] .task-board-card .board-card-actions .board-card-fold{font-size:18px;width:28px;padding:0;line-height:24px}
+.board-card-details{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
+.board-card-details-inner{min-height:0;overflow:hidden}
+.task-board-card.is-expanded>.board-card-details{grid-template-rows:1fr}
+@media(prefers-reduced-motion:reduce){.board-card-details{transition:none}}

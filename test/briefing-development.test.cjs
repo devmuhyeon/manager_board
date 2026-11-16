@@ -20,3 +20,11 @@ test('my schedule merges personal dates and project deadlines without duplicates
 test('all authored margin and padding lengths follow the four pixel grid',()=>{
  for(const name of fs.readdirSync('source').filter(n=>n.endsWith('.css'))){const css=fs.readFileSync('source/css/'+name,'utf8');for(const declaration of css.matchAll(/(?:padding|margin)(?:-[a-z]+)?\s*:\s*([^;}]+)/g))for(const value of declaration[1].matchAll(/(-?(?:\d*\.)?\d+)(px|rem|em|%)/g)){assert.equal(value[2],'px',name+': '+declaration[0]);assert.equal(Math.abs(Number(value[1]))%4,0,name+': '+declaration[0]);}}
 });
+
+test('GIF upload preserves original bytes and validates size and file signature',async()=>{
+ const bytes=Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+ const uri=await Avatars.imageFile({type:'image/gif',size:bytes.length,arrayBuffer:async()=>bytes});assert.equal(uri,'data:image/gif;base64,'+bytes.toString('base64'));
+ assert.doesNotThrow(()=>Avatars.validateCustom([{id:'custom-11111111-1111-4111-8111-111111111111',name:'움직임',src:uri}]));
+ await assert.rejects(Avatars.imageFile({type:'image/gif',size:3*1024*1024}),/2MB/);
+ await assert.rejects(Avatars.imageFile({type:'image/gif',size:13,arrayBuffer:async()=>new Uint8Array(13)}),/GIF/);
+});

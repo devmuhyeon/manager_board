@@ -39,3 +39,12 @@ html[data-workplace-theme][data-style] .compact-calendar .calendar-filter{displa
 .compact-calendar .calendar-filter[data-filter="project"]::before{background:#3b82f6}.compact-calendar .calendar-filter[data-filter="memo"]::before{background:#a855f7}
 html[data-workplace-theme][data-style] .compact-calendar .calendar-filter[aria-pressed="true"]{color:var(--calendar-ink);text-decoration:underline;text-underline-offset:6px}
 @media(max-width:600px){html[data-workplace-theme][data-style] .compact-calendar .sectionhead{grid-template-columns:1fr}.compact-calendar .sectionhead .actions{grid-column:1;grid-row:2}}
+/* Preserve all seven weekdays while reducing the calendar footprint. */
+html[data-workplace-theme][data-style] .briefing-layout>.compact-calendar{width:calc(100% * 5 / 7);min-width:min(100%,600px);justify-self:center;padding:16px!important}
+html[data-workplace-theme][data-style] .compact-calendar .sectionhead{gap:12px;margin-bottom:12px;padding-bottom:12px!important}
+html[data-workplace-theme][data-style] .compact-calendar .calendar-week{grid-template-rows:16px 20px 20px 12px;row-gap:4px;padding:4px 0}
+html[data-workplace-theme][data-style] .compact-calendar .calendar-date,.compact-calendar .calendar-date-number{height:16px;line-height:16px}
+html[data-workplace-theme][data-style] .compact-calendar .calendar-span{height:20px!important;max-height:20px;padding:4px 8px!important;font-size:11px!important;line-height:12px!important}
+.compact-calendar .calendar-event-title,.compact-calendar .calendar-continuation{line-height:12px}
+html[data-workplace-theme][data-style] .compact-calendar .calendar-overflow{font-size:10px!important;line-height:12px!important}
+@media(max-width:1100px){html[data-workplace-theme][data-style] .briefing-layout>.compact-calendar{width:100%;min-width:0}}
