@@ -13,7 +13,7 @@
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
-  let boardName='',boardMode='project',boardLayout='cards';
+  let boardName='',boardMode='workflow',boardLayout='cards';
   let boardTeam='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   let rankDraft=[];
   let selectedProject='',leaveView='date',leavePerson='';
@@ -72,6 +72,7 @@
       user=member(name);page='dashboard';demoSession=false;selectedTeam=user.team;scope='all';
       try{if(data.get('remember'))await V.remember({name,team:user.team,password});else await V.forget();}catch{toast('이 브라우저에서 로그인 정보를 기억하지 못했습니다. 로그인은 계속 진행합니다.');}
       render();
+      await refreshWorkflowSource();
     }catch(e){$('#loginError').textContent=e.message;$('#loginSubmit').disabled=false;}
   }
   function render(){
@@ -102,13 +103,15 @@
     const rows=projects();
     const isBoard=page==='work'&&view==='board';
     const showDone=boardIncludesDone();
-    const boardControls=isBoard?'<div class="board-control-row"><div class="tabs board-view-tabs" role="group" aria-label="보드 기준">'+[['project','주차별'],['status','진행별']].map(([mode,label])=>button('boardMode',label,boardMode===mode?'active':'','data-mode="'+mode+'" aria-pressed="'+(boardMode===mode)+'"')).join('')+'</div>'+'<div class="task-board-controls">'
+    const boardControls=isBoard?'<div class="board-control-row"><div class="tabs board-view-tabs" role="group" aria-label="보드 기준">'+[['workflow','4열 보드'],['project','주차별'],['status','진행별']].map(([mode,label])=>button('boardMode',label,boardMode===mode?'active':'','data-mode="'+mode+'" aria-pressed="'+(boardMode===mode)+'"')).join('')+'</div>'+'<div class="task-board-controls">'
       +'<div class="board-period" role="group" aria-label="마감일 기간 조회"><input id="boardFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="from" aria-label="마감일 시작 날짜" value="'+esc(filters.from)+'" max="'+esc(filters.to)+'"><span>~</span><input id="boardTo" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="to" aria-label="마감일 종료 날짜" value="'+esc(filters.to)+'" min="'+esc(filters.from)+'">'+button('resetBoardDates','날짜 초기화','','')+'</div><label class="sr-only" for="boardName">과업명 또는 담당자</label><input type="search" id="boardName" list="boardPeople" placeholder="과업명 · 담당자 검색" value="'+esc(boardName)+'">'
       +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
       +'</div></div>':'';
-    const content=isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode,layout:boardLayout,closedWeeks,closedLanes,expandedCards,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
+    const content=isBoard&&boardMode==='workflow'&&boardLayout==='cards'
+      ?BoardTaskBoard.renderWorkflow({rows,name:boardAssignee(),C,esc,button,actor:user.name,period:{from:filters.from,to:filters.to},sourceIds:state.sourceSnapshotIds,demo:demoSession})
+      :isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode==='workflow'?'project':boardMode,layout:boardLayout,closedWeeks,closedLanes,expandedCards,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
       +(isBoard?'남은 과업 보드':'업무 목록 <span class="count">'+rows.length+'</span>')+'</h2>'+(isBoard?'':scopeTabs()+viewTabs())
@@ -133,6 +136,36 @@
     const index=state.projects.findIndex(project=>project.id===id);if(index<0)return;
     state.projects[index]=BoardTaskBoard.move(state.projects[index],lane,name,C,user.name);
     changed();render();toast('목록을 변경했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');
+  }
+  function openWorkflowDetail(id,role=''){
+    const original=state.projects.find(project=>project.id===id);
+    if(!original)return;
+    const project=C.effective(original),raw=BoardTaskBoard.sourceDetails(project,role);
+    const roles=role?[role]:['기획','디자인','퍼블'];
+    const assignments=roles.flatMap(part=>(project.sourceAssignments?.[part]||[]).map(item=>'<li>'+esc(part)+' · '+esc(item.name)+' · 시작일 '+esc(item.started||'기록 없음')+'</li>'));
+    if($('#editor').open)$('#editor').close();
+    showDialog('<div class="modal-head"><h2>'+esc(raw.title)+'</h2>'+button('close','닫기')+'</div>'
+      +'<div class="modal-body workflow-detail"><p>'+esc(raw.customer||'—')+' · 완료요청일: '+esc(raw.requestedDue||'—')+'</p>'
+      +'<p>'+esc(raw.status||'상태 미기재')+(role?' · '+esc(role):'')+'</p>'
+      +(assignments.length?'<h3>담당자 시작일</h3><ul>'+assignments.join('')+'</ul>':'')
+      +(raw.start?'<p>원문 작업시작일자: '+esc(raw.start)+'</p>':'')
+      +(raw.end?'<p>작업종료일자: '+esc(raw.end)+'</p>':'')
+      +'<h3>고객 작업 내용</h3><pre>'+esc(raw.notes||'기재된 작업 내용이 없습니다.')+'</pre></div>'
+      +'<div class="modal-foot">'+button('edit','수정','primary','data-id="'+esc(id)+'"')+'</div>');
+  }
+  async function refreshWorkflowSource(){
+    if(demoSession||!sourceHandle||!user)return;
+    const handle=sourceHandle,actor=user.name;
+    try{
+      if(handle.queryPermission&&await handle.queryPermission({mode:'read'})!=='granted')throw Error('원본 폴더를 다시 연결해 주세요.');
+      const input=JSON.parse(await (await handle.getFile()).text());
+      if(sourceHandle!==handle||user?.name!==actor)return;
+      const result=C.importRows(state,input);
+      const previous=new Map(state.projects.filter(project=>project.raw).map(project=>[project.id,project.raw]));
+      const ids=result.state.sourceSnapshotIds,sourceIds=new Set(ids);
+      if(JSON.stringify(state.sourceSnapshotIds)===JSON.stringify(ids)&&result.state.projects.every(project=>!sourceIds.has(project.id)||JSON.stringify(previous.get(project.id))===JSON.stringify(project.raw)))return;
+      state=P.enforceRemovals(result.state);syncRoster();changed();render();
+    }catch(error){toast('최신 고객 요청을 읽지 못했습니다. '+error.message);}
   }
   function boardDetail(id){if(!state.projects.some(p=>p.id===id)||state.hiddenProjects?.includes(id))return;if($('#editor').open)$('#editor').close();selectedProject=id;page='projects';closedNav=closedNav.filter(key=>key!=='reports');render();}
   function openEditor(id,parentId){
@@ -236,12 +269,19 @@
     if(a==='heroReset'&&heroDraft){heroDraft[heroDraft.mode]=BoardBriefingHero.defaults(user,heroDraft.mode);$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
     if(a==='allProjects'){selectedProject='';render();return;}
     if(a==='leaveView'){leaveView=el.dataset.view;render();return;}
-    if(a==='page'){selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();}
+    if(a==='page'){selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){scope='all';if(!filters.from&&!filters.to)setWeek();}render();if(page==='work')await refreshWorkflowSource();}
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
     else if(a==='boardLayout'){boardLayout=boardLayout==='cards'?'table':'cards';render();}
-    else if(a==='boardMode'){boardMode=['project','status'].includes(el.dataset.mode)?el.dataset.mode:'project';render();}
+    else if(a==='boardMode'){boardMode=['workflow','project','status'].includes(el.dataset.mode)?el.dataset.mode:'workflow';render();}
     else if(a==='editBoardTask'){if($('#editor').open)$('#editor').close();openEditor(el.dataset.id);const index=taskDraft.findIndex(task=>task.id===el.dataset.taskId);const field=$('#task-progress-'+Math.max(0,index));field?.scrollIntoView?.({block:'center'});field?.focus?.();}
+    else if(a==='workflowDetail')openWorkflowDetail(el.dataset.id,el.dataset.role);
+    else if(a==='workflowRelease'){
+      const index=state.projects.findIndex(project=>project.id===el.dataset.id);
+      if(index<0)throw Error('과업을 찾을 수 없습니다.');
+      state.projects[index]=BoardTaskBoard.recordRelease(state.projects[index],el.dataset.taskId,el.dataset.stage,C,user.name);
+      changed();render();toast('반영 이력을 기록했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
+    }
     else if(a==='boardDetail')boardDetail(el.dataset.id);
     else if(a==='boardAdd'){openEditor();const status=BoardTaskBoard.lanes.find(lane=>lane.id===el.dataset.lane)?.statuses[0]||'예정';taskDraft.forEach(task=>task.status=status);$('#taskList').innerHTML=taskForms();}
     else if(a==='boardMine'){boardName=boardName===user.name?'':user.name;render();}

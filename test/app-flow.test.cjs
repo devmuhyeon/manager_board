@@ -135,7 +135,7 @@ test('첫 화면은 홈이며 프로젝트 클릭은 과업별 도표로 연결�
 test('모든 보드 보기에서 카드와 하위 업무 수정이 같은 편집기를 연다',async()=>{
  const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');
  const p=h.api.read().state.projects.find(p=>p.tasks?.length);
- for(const mode of ['person','status','team','project']){
+ for(const mode of ['status','project']){
   await h.api.act({dataset:{action:'boardMode',mode}});
   assert.match(h.element('#app').innerHTML,/data-action="editBoardTask"/);
   assert.match(h.element('#app').innerHTML,/카드 편집/);
@@ -152,7 +152,7 @@ test('화면 이벤트에서도 타인의 완료 체크를 차단하고 원본 �
  const task=p.tasks.find(t=>!t.assignees.includes('김무현')),before=JSON.stringify(state.projects);
  await assert.rejects(h.api.act({dataset:{action:'toggleBoardTask',id:p.id,taskId:task.id}}),/본인이 담당/);
  assert.equal(JSON.stringify(h.api.read().state.projects),before);
- h.api.render();assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
+ await h.api.act({dataset:{action:'boardMode',mode:'project'}});assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
 });
 
 test('도표형 전환은 네 탭에서 같은 과업을 표시하고 신규 버튼 왼쪽에 위치한다',async()=>{
@@ -189,7 +189,7 @@ test('메뉴 그룹과 주차는 각각 독립적으로 접고 펼친다',async(
  await h.api.act({dataset:{action:'navSection',section:'schedule'}});await h.api.act({dataset:{action:'page',page:'memo'}});
  assert.match(h.element('#app').innerHTML,/id="nav-schedule" class="nav-children is-collapsed" inert/);
  await h.api.act({dataset:{action:'navSection',section:'schedule'}});assert.ok(!h.element('#app').innerHTML.includes('id="nav-schedule" class="nav-children is-collapsed" inert'));
- await h.api.act({dataset:{action:'page',page:'work'}});const key=h.element('#app').innerHTML.match(/data-action="toggleWeek"[^>]*data-key="([^"]+)"/)[1];
+ await h.api.act({dataset:{action:'page',page:'work'}});await h.api.act({dataset:{action:'boardMode',mode:'project'}});const key=h.element('#app').innerHTML.match(/data-action="toggleWeek"[^>]*data-key="([^"]+)"/)[1];
  await h.api.act({dataset:{action:'toggleWeek',key}});assert.match(h.element('#app').innerHTML,/class="board-week-cards" hidden/);
  await h.api.act({dataset:{action:'boardMode',mode:'status'}});await h.api.act({dataset:{action:'toggleLane',key:'done'}});assert.match(h.element('#app').innerHTML,/task-board-lane is-collapsed" data-lane="done"/);
 });
@@ -239,3 +239,17 @@ test('브리핑은 달력과 일정·전체 휴가 다음에 진행과 팀브리
 
 test('다른 사람의 담당 업무와 전체 과업도 재직 사용자가 삭제할 수 있다',async()=>{const h=harness(),s=P.upgrade(C.sampleState());const project=s.projects[0];project.tasks=[{id:'other-a',role:'디자인',assignees:['김민재'],status:'진행중',progress:40,due:''},{id:'other-b',role:'퍼블',assignees:['김무현'],status:'접수',progress:0,due:''}];project.assignees=['김민재','김무현'];h.api.seed(s);h.api.session('김다솔');await h.api.act({dataset:{action:'edit',id:project.id}});assert.match(h.element('#editor').innerHTML,/data-action="deleteProject"/);assert.match(h.element('#editor').innerHTML,/data-action="removeTask"/);await h.api.act({dataset:{action:'removeTask',index:'0'}});h.api.saveProject({title:project.title,description:project.description,logContent:'',logDate:C.today()});assert.equal(C.effective(h.api.read().state.projects.find(p=>p.id===project.id)).tasks.length,1);await h.api.act({dataset:{action:'deleteProject',id:project.id}});assert.ok(!h.api.read().state.projects.some(p=>p.id===project.id));assert.ok(h.api.read().state.hiddenProjects.includes(project.id));});
 test('홈 메뉴가 먼저이고 주차별은 기존 project 모드이며 주간 일정은 전용 2열이다',async()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;const nav=html.match(/<nav[\s\S]*?<\/nav>/)[0];assert.ok(nav.indexOf('data-page="dashboard"')<nav.indexOf('data-page="work"'));for(const title of ['홈','업무관리','일정관리','조회·보고','조직관리'])assert.ok(nav.includes(title));assert.match(html,/data-mode="project"[^>]*>주차별/);await h.api.act({dataset:{action:'page',page:'schedule'}});assert.match(h.element('#app').innerHTML,/weekly-schedule-panels/);});
+
+test('the normal work page opens the customer workflow and its read-only detail popup',async()=>{
+ const h=harness(),source={id:'workflow-source',프로젝트명:'고객 원문 과업',고객명:'요청 고객',완료요청일:'2026.11.20',진행상태:'진행 중',담당자_퍼블:'김무현',작업내용_퍼블:'고객이 작성한 원문'};
+ h.api.seed(C.importRows(fixture(),[source]).state);
+ h.api.session('김무현','work');
+ h.api.render();
+ const html=h.element('#app').innerHTML;
+ assert.match(html,/class="workflow-board"/);
+ assert.match(html,/고객 원문 과업/);
+ assert.match(html,/요청 고객 \| 완료요청일: 2026\.11\.20/);
+ await h.api.act({dataset:{action:'workflowDetail',id:'source:workflow-source',role:'퍼블'}});
+ assert.equal(h.element('#editor').open,true);
+ assert.match(h.element('#editor').innerHTML,/고객이 작성한 원문/);
+});

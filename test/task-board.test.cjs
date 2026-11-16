@@ -237,3 +237,29 @@ test('weekly groups retain week headings, default cards hide details, expanded s
  const html=Board.render({...opts,weekGrouping:'team'});assert.match(html,/board-week/);assert.match(html,/week-subgroup/);assert.match(html,/board-card-details" inert aria-hidden="true"/);assert.match(html,/data-action="toggleCardDetails"[^>]*aria-expanded="false"/);assert.match(html,/task-board-assignees/);assert.match(html,/task-board-due/);assert.match(html,/data-card-percent/);
  const open=Board.render({...opts,expandedCards:[project.id]});assert.match(open,/board-card-details" aria-hidden="false"/);assert.match(open,/aria-expanded="true"/);
 });
+
+test('customer assignment dates track additions per role without mutating customer rows',()=>{
+ const row={id:'customer-01',프로젝트명:'고객 원본',담당자_기획:'정윤정',담당자_디자인:'',담당자_퍼블:'김무현'};
+ const before=JSON.stringify(row);
+ const baseline=Core.importRows(Core.emptyState(),[row],'2026-11-15').state;
+ assert.equal(baseline.projects[0].sourceAssignments.기획[0].started,'');
+ const update={...row,담당자_디자인:'홍소영',담당자_퍼블:'김무현, 임정규'};
+ const next=Core.importRows(baseline,[update],'2026-11-16').state;
+ assert.deepEqual(next.projects[0].sourceAssignments.퍼블,[{name:'김무현',started:''},{name:'임정규',started:'2026-11-16'}]);
+ assert.equal(next.projects[0].sourceAssignments.디자인[0].started,'2026-11-16');
+ assert.equal(Core.importRows(next,[update],'2026-11-17').state.projects[0].sourceAssignments.디자인[0].started,'2026-11-16');
+ assert.equal(JSON.stringify(row),before);
+ assert.deepEqual(next.projects[0].raw,update);
+});
+
+test('four-column cards show customer values while release records are stored separately',()=>{
+ const original={id:'customer-01',프로젝트명:'고객 원문 제목',고객명:'고객 원문 이름',완료요청일:'2026.11.17',진행상태:'진행 중',담당자_퍼블:'김무현'};
+ const project=Core.importRows(Core.emptyState(),[original]).state.projects[0];
+ const recorded=Board.recordRelease(project,'source-task:퍼블','development',C,'김무현');
+ assert.deepEqual(recorded.raw,original);
+ assert.equal(recorded.overrides.workflowRelease['source-task:퍼블'].development.by,'김무현');
+ const html=Board.renderWorkflow({rows:[C.effective({...recorded,overrides:{...recorded.overrides,title:'내부 이름'}})],name:'',C,esc:String,button:(a,t,c,d)=>'<button data-action="'+a+'" '+d+'>'+t+'</button>',actor:'김무현'});
+ for(const label of ['대시보드','기획','디자인','퍼블','고객 원문 제목','고객 원문 이름','2026.11.17','개발 반영됨'])assert.ok(html.includes(label),label);
+ assert.doesNotMatch(html,/내부 이름/);
+ assert.throws(()=>Board.recordRelease(project,'source-task:퍼블','production',C,'정윤정'),/본인이 담당/);
+});

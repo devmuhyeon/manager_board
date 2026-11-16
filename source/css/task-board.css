@@ -400,3 +400,73 @@ html[data-workplace-theme][data-style] .task-board-card .board-card-actions .boa
 .board-card-details-inner{min-height:0;overflow:hidden}
 .task-board-card.is-expanded>.board-card-details{grid-template-rows:1fr}
 @media(prefers-reduced-motion:reduce){.board-card-details{transition:none}}
+
+/* Customer requests and three parallel production columns. */
+html[data-workplace-theme][data-style] .workflow-board {
+  display: grid;
+  grid-template-columns: minmax(240px,1.1fr) repeat(3,minmax(205px,1fr));
+  gap: 12px;
+  padding: 4px 0;
+  overflow-x: auto;
+  align-items: start;
+}
+.workflow-column {
+  min-width: 0;
+  border: 1px solid #e0e6ef;
+  border-radius: 12px;
+  background: #f3f6fa;
+  overflow: hidden;
+}
+.workflow-column > h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 12px;
+  border-bottom: 1px solid #e0e6ef;
+  font-size: 14px;
+}
+.workflow-column > h3 span { color: #526178; font-size: 12px; }
+.workflow-scroll {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 8px;
+  max-height: max(360px,calc(100dvh - 220px));
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.workflow-card {
+  min-width: 0;
+  border: 1px solid #e0e6ef;
+  border-radius: 8px;
+  background: #fff;
+}
+html[data-workplace-theme][data-style] .workflow-board :is(.workflow-card-summary,.workflow-dashboard-row) {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  box-shadow: none;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+html[data-workplace-theme][data-style] .workflow-board :is(.workflow-card-summary,.workflow-dashboard-row):hover { background: #edf4ff; }
+.workflow-board :is(.workflow-card-summary,.workflow-dashboard-row) strong { font-size: 13px; line-height: 1.35; }
+.workflow-board :is(.workflow-card-summary,.workflow-dashboard-row) :is(small,span) { color: #526178; font-size: 11px; line-height: 1.45; }
+.workflow-card-actions,.workflow-card-release { display: flex; align-items: center; gap: 4px; padding: 4px 8px; }
+.workflow-card-actions > span { margin-inline-start: auto; font-size: 11px; text-align: right; overflow-wrap: anywhere; }
+html[data-workplace-theme][data-style] .workflow-board :is(.workflow-card-actions,.workflow-card-release) button {
+  min-height: 24px;
+  padding: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.workflow-card-release { border-top: 1px solid #e0e6ef; }
+.workflow-card-release > button { flex: 1; }
+.workflow-empty { margin: 0; padding: 12px; color: #526178; font-size: 12px; }
+.workflow-detail pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }

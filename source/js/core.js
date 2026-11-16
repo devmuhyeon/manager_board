@@ -39,16 +39,39 @@
       assignees:names([r.담당자_기획,r.담당자_디자인,r.담당자_퍼블,r.담당자,r.작업자,r.assignees]),description,
       link:text(pick(r,['작업링크','퍼블링크','퍼블작업링크','퍼블_작업링크','link'])),logs:[],raw:row};
   }
-  function importRows(state, input) {
+  const assignmentRoles=['기획','디자인','퍼블'];
+  function sourceAssignees(row,role){
+    const nested=row.처리결과||row.처리정보;
+    const value=nested?.['담당자_'+role]??row['담당자_'+role];
+    return [...new Set((Array.isArray(value)?value:[value]).flatMap(name=>typeof name==='string'?name.split(/[,/;|\n]/).map(part=>part.trim()).filter(Boolean):[]))];
+  }
+  function trackSourceAssignments(project,previous,alreadyImported,seenOn){
+    return Object.fromEntries(assignmentRoles.map(role=>{
+      const oldNames=new Set(previous?.raw?sourceAssignees(previous.raw,role):[]);
+      const oldDates=new Map((previous?.sourceAssignments?.[role]||[]).map(item=>[item.name,item.started]));
+      const entries=sourceAssignees(project.raw,role).map(name=>({
+        name,started:oldNames.has(name)?oldDates.get(name)||'':alreadyImported?seenOn:''
+      }));
+      return [role,entries];
+    }));
+  }
+  function importRows(state, input, seenOn=today()) {
     const arr=Array.isArray(input)?input:pick(input||{},['요청목록','요청관리','requests','projects','data']);
     if(!Array.isArray(arr)) throw new Error('JSON은 요청 배열 또는 requests·projects·data 배열을 포함해야 합니다.');
     const normalized=arr.map(normalize);
     if(new Set(normalized.map(p=>p.id)).size!==normalized.length) throw new Error('중복된 프로젝트 ID가 있습니다. 원본의 식별자를 확인해 주세요.');
     const next=structuredClone(state);next.projects=next.projects.filter(p=>p.source!=='sample');
     let added=0,updated=0;
-    for(const p of normalized){const i=next.projects.findIndex(x=>x.id===p.id);if(i<0){next.projects.push(p);added++;}else{
-      const old=next.projects[i];next.projects[i]={...p,overrides:old.overrides||{},logs:old.logs||[]};updated++;
-    }}
+    const previousIds=new Set(state.sourceSnapshotIds||state.projects.filter(p=>p.raw).map(p=>p.id));
+    const alreadyImported=Array.isArray(state.sourceSnapshotIds)||Boolean(state.importedAt)||previousIds.size>0;
+    for(const project of normalized){
+      const index=next.projects.findIndex(item=>item.id===project.id);
+      const previous=next.projects[index];
+      project.sourceAssignments=trackSourceAssignments(project,previousIds.has(project.id)?previous:null,alreadyImported,seenOn);
+      if(index<0){next.projects.push(project);added++;}
+      else{next.projects[index]={...project,overrides:previous.overrides||{},logs:previous.logs||[]};updated++;}
+    }
+    next.sourceSnapshotIds=normalized.map(project=>project.id);
     next.demo=false;next.importedAt=new Date().toISOString();return {state:next,added,updated};
   }
   function effective(p){

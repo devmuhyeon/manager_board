@@ -207,6 +207,60 @@
      +'<div class="lane-content"'+(closed?' hidden':'')+'>'+(entries.map(renderCard).join('')||'<p class="task-board-empty">'+(lane.id==='done'&&!showDone?'완료 포함을 켜면 완료 카드가 표시됩니다.':'카드를 이곳으로 옮겨 보세요.')+'</p>')+(mode==='status'?button('boardAdd','＋ 카드 추가','board-add','data-lane="'+lane.id+'"'):'')+'</div></section>';
    }).join('')+'</div></div>';
  }
- const api={cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,setRevisionRequired,canProgress,guardEdit,orderedTasks,weekGroups};
+
+ const workflowRoles=['기획','디자인','퍼블'];
+ function sourceDetails(project,role=''){
+  const raw=project.raw;
+  if(!raw)return {title:project.title,customer:project.requester||project.customer,requestedDue:project.requestedDue,status:project.status,assignees:project.assignees?.join(', '),notes:project.description};
+  const nested=raw.처리결과||raw.처리정보;
+  const fields={...raw,...(nested&&typeof nested==='object'?nested:{})};
+  const value=(...keys)=>keys.map(key=>fields[key]).find(x=>x!==undefined&&x!==null&&x!=='')??'';
+  const notes=value('작업내용_'+role,role+'작업내용','작업내용','작업 내용','description','요청사항','요청내용');
+  const lines=String(notes).split(/\r?\n/);
+  const start=lines[0].match(/^\uFEFF?작업시작일자\s*[:：]\s*(\d{4}-\d{2}-\d{2})\s*$/)?.[1];
+  const end=lines.map(line=>line.match(/^작업종료일자\s*[:：]\s*(\d{4}-\d{2}-\d{2})\s*$/)?.[1]).find(Boolean);
+  return {
+   title:value('프로젝트명','과업명','요청제목','제목','요청명','사업명','title','name'),
+   customer:value('고객명','요청자','requester','요청팀','고객팀','customer'),
+   requestedDue:value('요청완료일','완료요청일','완료요청일자','requestedDue'),
+   status:value('상태_'+role,'진행상태_'+role,'상태','진행상태','처리상태','status'),
+   assignees:value('담당자_'+role,'담당자','작업자','assignees'),
+   notes,start,end
+  };
+ }
+ function renderWorkflow({rows,name,C,esc,button,actor,period,sourceIds,demo}){
+  const available=rows.filter(project=>demo||(project.source==='import'&&(!sourceIds||sourceIds.includes(project.id))));
+  const entries=cards(available,name,true,C,period);
+  const panels=workflowRoles.map(role=>{
+   const tasks=entries.flatMap(({project,tasks})=>tasks.filter(task=>project.raw?task.id==='source-task:'+role:task.role===role||task.role==='과업'&&project.taskCategory===role).map(task=>({project,task})));
+   return '<section class="workflow-column"><h3>'+role+' <span>'+tasks.length+'</span></h3><div class="workflow-scroll">'+(tasks.map(({project,task})=>{
+    const raw=sourceDetails(project,role),data='data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" data-role="'+role+'"';
+    const own=canProgress(task,actor),done=isDone(task.status),release=project.workflowRelease?.[task.id];
+    const status=project.raw?raw.status:task.status;
+    const started=(project.sourceAssignments?.[role]||[]).map(item=>item.started).filter(Boolean).sort()[0];
+    return '<article class="workflow-card" data-card-id="'+esc(project.id)+'">'
+     +button('workflowDetail','<small>'+esc(status||'상태 미기재')+' / '+role+'</small><strong>'+esc(raw.title)+'</strong><span>'+esc(raw.customer||'—')+' | 완료요청일: '+esc(raw.requestedDue||'—')+'</span>'+(started?'<span>작업시작일자: '+esc(started)+'</span>':''),'workflow-card-summary',data)
+     +'<div class="workflow-card-actions">'+button('toggleBoardTask',done?'완료 취소':'완료','',data+(own?'':' disabled'))
+     +button('editBoardTask','수정','',data)+'<span>'+esc(raw.assignees||(!project.raw?task.assignees.join(', '):'')||'미배정')+'</span></div>'
+     +'<div class="workflow-card-release">'+button('workflowRelease',release?.development?'개발 반영됨':'개발 반영','',data+' data-stage="development"'+(own&&!release?.development?'':' disabled'))
+     +button('workflowRelease',release?.production?'운영 반영됨':'운영 반영','',data+' data-stage="production"'+(own&&!release?.production?'':' disabled'))+'</div></article>';
+   }).join('')||'<p class="workflow-empty">표시할 작업이 없습니다.</p>')+'</div></section>';
+  }).join('');
+  const list=entries.map(({project})=>{
+   const raw=sourceDetails(project);
+   return button('workflowDetail','<strong>'+esc(raw.title)+'</strong><span>'+esc(raw.status||'—')+' · '+esc(raw.customer||'—')+'</span>','workflow-dashboard-row','data-id="'+esc(project.id)+'"');
+  }).join('');
+  return '<div class="workflow-board"><section class="workflow-column"><h3>대시보드 <span>'+entries.length+'</span></h3><div class="workflow-scroll">'+(list||'<p class="workflow-empty">표시할 과업이 없습니다.</p>')+'</div></section>'+panels+'</div>';
+ }
+ function recordRelease(raw,taskId,stage,C,actor){
+  const project=C.effective(raw),task=items(project).find(item=>item.id===taskId);
+  if(!task||!['development','production'].includes(stage))throw new Error('반영할 담당 업무를 확인해 주세요.');
+  requireOwner(task,actor);
+  const previous=project.workflowRelease?.[taskId]||{};
+  if(previous[stage])return raw;
+  const workflowRelease={...project.workflowRelease,[taskId]:{...previous,[stage]:{by:actor,at:new Date().toISOString()}}};
+  return raw.source==='import'?{...raw,overrides:{...raw.overrides,workflowRelease}}:{...raw,workflowRelease};
+ }
+ const api={sourceDetails,renderWorkflow,recordRelease,cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,setRevisionRequired,canProgress,guardEdit,orderedTasks,weekGroups};
  if(typeof module!=='undefined')module.exports=api;else root.BoardTaskBoard=api;
 })(typeof window!=='undefined'?window:globalThis);
