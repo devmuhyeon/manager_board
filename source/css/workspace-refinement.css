@@ -88,7 +88,7 @@ html[data-workplace-theme][data-style] .weekly-schedule-panels .agenda-list{max-
 .weekly-schedule-panels .agenda-item{flex-wrap:wrap;min-width:0}.weekly-schedule-panels .agenda-item .week-countdown{margin-left:auto}
 html[data-workplace-theme][data-style] .briefing-panels [data-home-section="progress"] .briefing-progress-scroll{height:240px;max-height:240px;overflow:visible;min-height:0}
 html[data-workplace-theme][data-style] .briefing-progress-scroll>.table-wrap{height:240px;max-height:240px;overflow:auto}
-html[data-workplace-theme][data-style] .briefing-panels :is([data-home-section="progress"],[data-home-section="schedule"]){align-self:start;min-height:0;height:auto}
+html[data-workplace-theme][data-style] .briefing-panels > [data-home-section="progress"]{align-self:start;min-height:0;height:auto}
 
 html[data-workplace-theme][data-style] .sidebar .nav button{width:100%;box-sizing:border-box}
 html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
@@ -128,17 +128,30 @@ html[data-workplace-theme][data-style] .briefing-schedules > .card {
   max-height: none;
   margin: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
-html[data-workplace-theme][data-style] .briefing-schedules > .card > .briefing-agenda {
-  align-self: stretch;
-  width: 100%;
+html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda-slot {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda-slot > .briefing-agenda {
+  position: absolute;
+  inset: 0;
+  width: auto;
   height: auto;
+  min-width: 0;
   min-height: 0;
   max-height: none;
+  margin: 0;
   box-sizing: border-box;
   overflow: auto;
   padding-block-end: 12px;
   scrollbar-gutter: stable;
+}
+html[data-workplace-theme][data-style] .briefing-schedules .illustrated-hint {
+  min-height: 0;
 }
 html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda:focus-visible {
   outline: 2px solid var(--color-info);
@@ -153,8 +166,8 @@ html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda:focu
     contain: none;
     grid-template-rows: auto auto;
   }
-  html[data-workplace-theme][data-style] .briefing-schedules > .card > .briefing-agenda {
-    max-height: 200px;
+  html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda-slot {
+    height: 200px;
   }
 }
 .week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
