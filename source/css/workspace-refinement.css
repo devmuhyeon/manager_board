@@ -52,18 +52,15 @@ html[data-workplace-theme][data-style] .avatar-choices .avatar-choice[aria-press
 /* Briefing hierarchy is fixed across display themes. */
 html[data-workplace-theme][data-style] .briefing-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
 html[data-workplace-theme][data-style] .briefing-layout>.briefing-hero-frame,html[data-workplace-theme][data-style] .briefing-layout>.compact-calendar{width:100%;margin:0}
-html[data-workplace-theme][data-style] .briefing-panels{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-areas:"progress schedule" "team leaves";gap:24px;margin:0}
+.briefing-panels{margin:0}
 html[data-workplace-theme][data-style] .briefing-panels>.card{order:0;min-width:0;margin:0}
 html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="progress"]{grid-area:progress}
-html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="schedule"]{grid-area:schedule}
 html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="team"]{grid-area:team}
-html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="leaves"]{grid-area:leaves}
 .briefing-panels :is([data-home-section="schedule"],[data-home-section="leaves"]) .sectionhead{flex-wrap:wrap}
 .briefing-panels .briefing-agenda .agenda-item{flex-wrap:wrap;gap:12px}
 .briefing-panels .briefing-agenda .agenda-item>div{min-width:0;overflow-wrap:anywhere}
 .briefing-panels .sectionhead{display:flex;justify-content:space-between;align-items:center;gap:16px}
-.briefing-panels .sectionhead h2{margin:0}.briefing-panels .briefing-agenda{max-height:400px;overflow:auto}
-@media(max-width:900px){html[data-workplace-theme][data-style] .briefing-panels{grid-template-columns:minmax(0,1fr);grid-template-areas:"progress" "schedule" "team" "leaves"}}
+.briefing-panels .sectionhead h2{margin:0}
 
 html[data-workplace-theme][data-style] .weekly-schedule-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;width:100%;align-items:stretch;min-height:calc(100dvh - 232px)}
 html[data-workplace-theme][data-style] .weekly-schedule-panels>.card{min-width:0;display:flex;flex-direction:column;margin:0;grid-column:auto}
@@ -75,9 +72,8 @@ html[data-workplace-theme][data-style] .simple-project-form .task-delete{margin-
 @media(prefers-reduced-motion:reduce){.status-board .task-board-lane{transition:none}}
 
 .briefing-panels .briefing-progress-scroll{max-height:240px;overflow:auto}
-.briefing-panels [data-home-section="schedule"] .briefing-agenda{height:240px;max-height:240px;overflow:auto}
 .briefing-panels [data-home-section="schedule"] .agenda-item{min-height:80px;box-sizing:border-box}
-.briefing-panels .briefing-posts,.briefing-panels [data-home-section="leaves"] .briefing-agenda{height:208px;max-height:208px;overflow:auto}
+.briefing-panels .briefing-posts{height:208px;max-height:208px;overflow:auto}
 .briefing-panels .briefing-posts{display:grid;grid-template-columns:1fr;grid-auto-rows:104px;gap:0}
 .briefing-panels .briefing-posts article{min-height:0;overflow:hidden;padding:8px 0}
 .briefing-panels .briefing-posts article p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:4px 0}
@@ -92,36 +88,48 @@ html[data-workplace-theme][data-style] .weekly-schedule-panels .agenda-list{max-
 .weekly-schedule-panels .agenda-item{flex-wrap:wrap;min-width:0}.weekly-schedule-panels .agenda-item .week-countdown{margin-left:auto}
 html[data-workplace-theme][data-style] .briefing-panels [data-home-section="progress"] .briefing-progress-scroll{height:240px;max-height:240px;overflow:visible;min-height:0}
 html[data-workplace-theme][data-style] .briefing-progress-scroll>.table-wrap{height:240px;max-height:240px;overflow:auto}
-html[data-workplace-theme][data-style] .briefing-panels [data-home-section="schedule"] .briefing-agenda{height:240px;max-height:240px;min-height:0;overflow:auto;flex:none}
 html[data-workplace-theme][data-style] .briefing-panels :is([data-home-section="progress"],[data-home-section="schedule"]){align-self:start;min-height:0;height:auto}
 
 html[data-workplace-theme][data-style] .sidebar .nav button{width:100%;box-sizing:border-box}
 html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
 .rank-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}.rank-row input{min-width:0;flex:1}.admin-rank-action{padding:16px 24px}
 .page-actions:empty{display:none}.page-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px}.content:focus{outline:none}
-/* Home: calendar and two schedule panels, then full-width work and news. */
-html[data-workplace-theme][data-style] .briefing-panels{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,1fr);grid-template-areas:"calendar schedule" "calendar leaves" "progress progress" "team team";gap:20px;align-items:stretch}
-html[data-workplace-theme][data-style] .briefing-panels>.compact-calendar{grid-area:calendar;width:100%;min-width:0;align-self:start;margin:0}
-html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="schedule"],html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="leaves"]{min-height:0;align-self:stretch}
-html[data-workplace-theme][data-style] .briefing-panels :is([data-home-section="schedule"],[data-home-section="leaves"]) .briefing-agenda{height:160px;max-height:160px;min-height:0;overflow:auto;flex:none}
-html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="progress"],html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="team"]{width:100%;min-width:0}
-@media(max-width:1000px){html[data-workplace-theme][data-style] .briefing-panels{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"calendar calendar" "schedule leaves" "progress progress" "team team"}}
-@media(max-width:640px){html[data-workplace-theme][data-style] .briefing-panels{grid-template-columns:minmax(0,1fr);grid-template-areas:"calendar" "schedule" "leaves" "progress" "team"}}
-.week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
-.week-subgroup{grid-column:1/-1;min-width:0}.week-subgroup>h4{font-size:14px;font-weight:600;margin:8px 0 12px}.week-subgroup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
-@media(max-width:600px){.week-subgroup-cards{grid-template-columns:minmax(0,1fr)}}
-html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) {
-  display: flex;
-  flex-direction: column;
+/* The calendar sets the height of the shared desktop row. */
+html[data-workplace-theme][data-style] .briefing-panels {
+  display: grid;
+  grid-template-columns: minmax(0,3fr) minmax(280px,1fr);
+  grid-template-areas: "calendar schedules" "progress progress" "team team";
+  gap: 20px;
+  align-items: stretch;
+}
+html[data-workplace-theme][data-style] .briefing-panels > .compact-calendar {
+  grid-area: calendar;
+  width: 100%;
   min-width: 0;
-  block-size: 240px;
+  margin: 0;
   box-sizing: border-box;
 }
-html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) > .sectionhead {
-  flex: none;
+html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
+  grid-area: schedules;
+  display: grid;
+  grid-template-rows: repeat(2,minmax(0,1fr));
+  gap: 20px;
+  min-width: 0;
+  min-height: 0;
+  contain: size;
 }
-html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) > .briefing-agenda {
-  flex: 1 1 0;
+html[data-workplace-theme][data-style] .briefing-schedules > .card {
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr);
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+html[data-workplace-theme][data-style] .briefing-schedules > .card > .briefing-agenda {
+  align-self: stretch;
   width: 100%;
   height: auto;
   min-height: 0;
@@ -131,6 +139,32 @@ html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section
   padding-block-end: 12px;
   scrollbar-gutter: stable;
 }
+html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: -2px;
+}
+@media(max-width:1000px){
+  html[data-workplace-theme][data-style] .briefing-panels {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-areas: "calendar" "schedules" "progress" "team";
+  }
+  html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
+    contain: none;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-template-rows: auto;
+  }
+  html[data-workplace-theme][data-style] .briefing-schedules > .card > .briefing-agenda {
+    max-height: 200px;
+  }
+}
+@media(max-width:640px){
+  html[data-workplace-theme][data-style] .briefing-panels > .briefing-schedules {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+.week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
+.week-subgroup{grid-column:1/-1;min-width:0}.week-subgroup>h4{font-size:14px;font-weight:600;margin:8px 0 12px}.week-subgroup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
+@media(max-width:600px){.week-subgroup-cards{grid-template-columns:minmax(0,1fr)}}
 /* Shared disclosure arrows. Full-row controls keep their larger click target. */
 html[data-workplace-theme][data-style] :is(.sidebar .nav .nav-parent,.board-week .board-collapse,#workRequestForm .request-people button[data-request="recipients"]) {
   display: flex;
