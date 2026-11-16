@@ -110,3 +110,83 @@ html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="prog
 .week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
 .week-subgroup{grid-column:1/-1;min-width:0}.week-subgroup>h4{font-size:14px;font-weight:600;margin:8px 0 12px}.week-subgroup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
 @media(max-width:600px){.week-subgroup-cards{grid-template-columns:minmax(0,1fr)}}
+html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  block-size: 240px;
+  box-sizing: border-box;
+}
+html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) > .sectionhead {
+  flex: none;
+}
+html[data-workplace-theme][data-style] .briefing-panels > :is([data-home-section="schedule"],[data-home-section="leaves"]) > .briefing-agenda {
+  flex: 1 1 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  box-sizing: border-box;
+  overflow: auto;
+  padding-block-end: 12px;
+  scrollbar-gutter: stable;
+}
+/* Shared disclosure arrows. Full-row controls keep their larger click target. */
+html[data-workplace-theme][data-style] :is(.sidebar .nav .nav-parent,.board-week .board-collapse,#workRequestForm .request-people button[data-request="recipients"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  box-shadow: none;
+  text-align: left;
+}
+html[data-workplace-theme][data-style] :is(.nav-parent > [aria-hidden],.board-collapse > [aria-hidden],.request-people .request-chevron,.task-board-card .board-card-actions .board-card-fold,.status-board .lane-toggle,.board-table-section .lane-toggle) {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 16px;
+  line-height: 1;
+}
+html[data-workplace-theme][data-style] :is(.status-board .task-board-lane > h3,.board-table-section > h3) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+html[data-workplace-theme][data-style] :is(.status-board,.board-table-section) .lane-toggle {
+  order: 1;
+}
+html[data-workplace-theme][data-style] :is(.content, #editor) details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+html[data-workplace-theme][data-style] :is(.content, #editor) details > summary::-webkit-details-marker {
+  display: none;
+}
+html[data-workplace-theme][data-style] :is(.content, #editor) details > summary::after {
+  content: '⌄' / '';
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-inline-start: auto;
+  font-size: 16px;
+  line-height: 1;
+}
+html[data-workplace-theme][data-style] :is(.content, #editor) details[open] > summary::after {
+  content: '⌃' / '';
+}

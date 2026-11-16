@@ -25,7 +25,8 @@ foreach($head in $heads){
    if($person.Value -notmatch '^[a-f0-9-]{36}$'){throw 'Invalid personal path'}
    # Match encodeURIComponent used by the browser, including its unescaped punctuation.
    $encoded=[Uri]::EscapeDataString($person.Name).Replace('%21','!').Replace('%27',"'").Replace('%28','(').Replace('%29',')').Replace('%2A','*')
-   $userFolder=Join-Path (Join-Path (Split-Path $root -Parent) 'dist/users') $encoded
+   $personalPath=if($head.personalStore -eq 'save'){'save/users'}else{'dist/users'}
+   $userFolder=Join-Path (Join-Path (Split-Path $root -Parent) $personalPath) $encoded
    $state.personal[$person.Name]=@(Get-Content -LiteralPath (Join-Path $userFolder ($person.Value+'.json')) -Raw -Encoding UTF8 | ConvertFrom-Json)
   }
  }
@@ -33,7 +34,7 @@ foreach($head in $heads){
 }
 $id=[Guid]::NewGuid().ToString()
 $record=@{version=1;id=$id;parents=@($heads | ForEach-Object {$_.id});parts=$selected.parts;savedAt=[DateTime]::UtcNow.ToString('o');savedBy='manual recovery'}
-if($selected.personalParts){$record.personalParts=$selected.personalParts}
+if($selected.personalParts){$record.personalParts=$selected.personalParts;if($selected.personalStore){$record.personalStore=$selected.personalStore}}
 $temp=Join-Path $commits ($id+'.pending')
 [IO.File]::WriteAllText($temp,($record | ConvertTo-Json -Depth 100),(New-Object Text.UTF8Encoding($false)))
 Move-Item -LiteralPath $temp -Destination (Join-Path $commits ($id+'.json'))

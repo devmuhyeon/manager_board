@@ -78,3 +78,16 @@ html[data-workplace-theme] #workRequestForm .request-form-body{display:flex;flex
 #workRequestForm .modal-foot{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid #e8edf3;background:#fff}
 #workRequestForm .modal-foot button{min-width:80px;min-height:36px;border-radius:8px}
 @media(max-width:600px){#workRequestForm .request-title-row{grid-template-columns:104px minmax(0,1fr);gap:8px}html[data-workplace-theme] #workRequestForm .request-form-body{padding:16px}#workRequestForm .request-url-row{grid-template-columns:minmax(0,1fr) 40px}#workRequestForm .request-url-row input:first-child{grid-column:1/-1}#workRequestForm .recipient-team{padding:12px;grid-template-columns:48px minmax(0,1fr)}}
+.request-project-picker {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+.request-project-picker select {
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+}

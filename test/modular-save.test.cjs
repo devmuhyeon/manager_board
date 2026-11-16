@@ -12,7 +12,7 @@ test('legacy migration preserves original, splits modules and reuses unchanged d
  await save(h,{revision:1,projects:[{id:'a'}],personal:{A:[]},members:[]});
  const first=JSON.parse(await read(h));assert.equal(first.projects[0].id,'a');
  await save(h,{...first,revision:2,personal:{A:[{id:'memo'}]}});
- const folder=dir.children.get('process');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('dist').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);assert.equal(JSON.parse(await read(h)).revision,2);
+ const folder=dir.children.get('process');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);assert.equal(JSON.parse(await read(h)).revision,2);
 });
 test('stale writer is rejected and interrupted module save never publishes',async()=>{
  const dir=directory(),h=await M.open(dir);await save(h,{revision:1,projects:[]});const base=await read(h),stale=await h.createWritable({expectedText:base});await stale.write('{"revision":2,"projects":[1]}');
@@ -46,8 +46,26 @@ test('complete existing application state survives split save and validation',as
  assert.deepEqual(restored,state);
 });
 
-test('previous save modules migrate without modifying old files, with personal data under dist',async()=>{
+test('previous save modules migrate without modifying old files, with personal data under save/users',async()=>{
  const dir=directory(),old=await dir.getDirectoryHandle('save',{create:true}),work=await old.getDirectoryHandle('work',{create:true}),memo=await old.getDirectoryHandle('memo',{create:true}),commits=await old.getDirectoryHandle('commits',{create:true}),id='11111111-1111-4111-8111-111111111111';
  const w=await work.getFileHandle(id+'.json',{create:true}),m=await memo.getFileHandle(id+'.json',{create:true}),c=await commits.getFileHandle(id+'.json',{create:true});w.value=JSON.stringify({projects:[{id:'old'}]});m.value=JSON.stringify({personal:{'김무현':[{id:'a',title:'보존'}]}});c.value=JSON.stringify({version:1,id,parents:[],parts:{work:id,memo:id}});const before=[w.value,m.value,c.value];
- const h=await M.open(dir),state=JSON.parse(await read(h));assert.equal(state.personal['김무현'][0].title,'보존');await save(h,{...state,revision:1});assert.deepEqual([w.value,m.value,c.value],before);assert.ok(dir.children.get('dist').children.get('users').children.has(encodeURIComponent('김무현')));assert.deepEqual(JSON.parse(await read(h)).personal,state.personal);
+ const h=await M.open(dir),state=JSON.parse(await read(h));assert.equal(state.personal['김무현'][0].title,'보존');await save(h,{...state,revision:1});assert.deepEqual([w.value,m.value,c.value],before);assert.ok(dir.children.get('save').children.get('users').children.has(encodeURIComponent('김무현')));assert.deepEqual(JSON.parse(await read(h)).personal,state.personal);
+});
+
+test('existing dist personal history stays readable and the next save migrates JSON without overwriting it',async()=>{
+ const dir=directory(),handle=await M.open(dir);
+ await save(handle,{revision:1,personal:{A:[{id:'memo'}]}});
+ const old=dir.children.get('save').children.get('users');
+ const dist=await dir.getDirectoryHandle('dist',{create:true});
+ dist.children.set('users',old);
+ dir.children.get('save').children.delete('users');
+ const manifest=[...dir.children.get('process').children.get('commits').children.values()][0];
+ const {personalStore,...previous}=JSON.parse(manifest.value);
+ manifest.value=JSON.stringify(previous);
+ const data=JSON.parse(await read(handle));
+ assert.deepEqual(data.personal.A,[{id:'memo'}]);
+ await save(handle,{...data,revision:2});
+ assert.equal(old.children.get('A').children.size,1);
+ assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,1);
+ assert.deepEqual(JSON.parse(await read(handle)).personal,data.personal);
 });

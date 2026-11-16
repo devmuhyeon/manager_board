@@ -21,3 +21,17 @@ test('Korean IME composition survives request polling and filters only after com
  for(const fn of listeners.compositionstart)fn({target:input});input.value='김무';for(const fn of listeners.input)fn({target:input,isComposing:true});await ui.service.refresh();assert.equal(host.writes,writes);
  input.value='김무현';for(const fn of listeners.compositionend)fn({target:input});assert.equal(host.writes,writes+1);assert.match(host.innerHTML,/퍼블 확인/);assert.doesNotMatch(host.innerHTML,/디자인 확인/);await ui.service.refresh();assert.equal(host.writes,writes+1);
 });
+
+test('project association persists in the shared folder and is inherited by replies',async()=>{
+ const dir=directory(),projects=[{id:'source:42',title:'과업'}];
+ const author=R.create({storage:storage()}),recipient=R.create({storage:storage()});
+ author.setSession({directory:dir,user:{name:'기획'},members,projects});
+ recipient.setSession({directory:dir,user:{name:'디자인'},members,projects});
+ await assert.rejects(author.send({to:['디자인'],projectId:'missing',title:'확인 요청',body:'내용'}),/연결할 과업/);
+ const request=await author.send({to:['디자인'],projectId:'source:42',title:'확인 요청',body:'내용'});
+ await recipient.refresh();
+ const reply=await recipient.send({to:['기획'],parentId:request.id,body:'응답'});
+ assert.equal(reply.projectId,'source:42');
+ await author.refresh();
+ assert.deepEqual(author.snapshot().rows.map(row=>row.projectId),['source:42','source:42']);
+});

@@ -14,9 +14,9 @@
     const m=JSON.parse(raw);if(m.version!==1||m.id!==name.slice(0,-5)||!Array.isArray(m.parents)||!m.parts)throw Error('저장 이력이 손상되었습니다: '+name);records.push(m);
    }
    const ids=new Set(records.map(m=>m.id));
-   if(records.some(m=>m.parents.some(id=>!ID.test(id)||!ids.has(id))))throw Error('저장 이력 일부가 없습니다. process 및 dist 폴더 전체를 복구해 주세요.');
+   if(records.some(m=>m.parents.some(id=>!ID.test(id)||!ids.has(id))))throw Error('저장 이력 일부가 없습니다. process 및 save/users 폴더 전체를 복구해 주세요.');
    const parents=new Set(records.flatMap(m=>m.parents)),heads=records.filter(m=>!parents.has(m.id));
-   if(heads.length>1)throw Error('동시 저장 충돌: 양쪽 자료는 process와 dist에 보존되었습니다. 현재 내용을 JSON 백업하고 관리자에게 저장 이력 복구를 요청하세요. 이력: '+heads.map(m=>m.id).join(', '));
+   if(heads.length>1)throw Error('동시 저장 충돌: 양쪽 자료는 process와 save/users에 보존되었습니다. 현재 내용을 JSON 백업하고 관리자에게 저장 이력 복구를 요청하세요. 이력: '+heads.map(m=>m.id).join(', '));
    if(!heads.length){if(records.length)throw Error('저장 이력 연결이 손상되었습니다.');if(folder==='process'){const old=await open(directory,{folder:'save',readOnly:true});if(old){const text=await (await old.getFile()).text();if(text)return {text,manifest:null};}}let legacy=await optional(directory,LEGACY);if(!legacy&&folder==='process'){const archive=await optional(save,'legacy','directory');if(archive)legacy=await optional(archive,LEGACY);}return {text:legacy?await read(legacy):'',manifest:null};}
    const manifest=heads[0],state={};
    for(const [folder,id] of Object.entries(manifest.parts)){
@@ -25,7 +25,7 @@
     for(const key of Object.keys(part))if(group(key)!==folder||['__proto__','constructor','prototype'].includes(key))throw Error('잘못된 저장 항목입니다.');
     Object.assign(state,part);
    }
-   if(manifest.personalParts){const users=await (await directory.getDirectoryHandle('dist')).getDirectoryHandle('users');state.personal={};for(const [name,id] of Object.entries(manifest.personalParts)){if(!ID.test(id)||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 개인 저장 항목입니다.');const person=await users.getDirectoryHandle(encodeURIComponent(name));state.personal[name]=JSON.parse(await read(await person.getFileHandle(id+'.json')));}}return {text:JSON.stringify(state,null,2),manifest};
+   if(manifest.personalParts){const users=await (await directory.getDirectoryHandle(manifest.personalStore==='save'?'save':'dist')).getDirectoryHandle('users');state.personal={};for(const [name,id] of Object.entries(manifest.personalParts)){if(!ID.test(id)||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 개인 저장 항목입니다.');const person=await users.getDirectoryHandle(encodeURIComponent(name));state.personal[name]=JSON.parse(await read(await person.getFileHandle(id+'.json')));}}return {text:JSON.stringify(state,null,2),manifest};
   }
   return {name:folder,modular:true,queryPermission:options=>directory.queryPermission(options),requestPermission:options=>directory.requestPermission(options),
    async getFile(){const s=await snapshot();return {text:async()=>s.text};},
@@ -35,7 +35,7 @@
      if(aborted||value===undefined)throw Error('저장이 취소되었습니다.');
      const state=JSON.parse(value),parts={},old=base.text.trim()?JSON.parse(base.text):{},buckets={};
      for(const [key,item] of Object.entries(state))if(key!=='personal')(buckets[group(key)]??={})[key]=item;
-     const id=crypto.randomUUID(),personalParts={};if(state.personal){const users=await (await directory.getDirectoryHandle('dist',{create:true})).getDirectoryHandle('users',{create:true});for(const [name,items] of Object.entries(state.personal)){if(!name||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 사용자 이름입니다.');if(base.manifest?.personalParts?.[name]&&JSON.stringify(old.personal?.[name])===JSON.stringify(items))personalParts[name]=base.manifest.personalParts[name];else{const person=await users.getDirectoryHandle(encodeURIComponent(name),{create:true});await write(person,id+'.json',JSON.stringify(items,null,2));personalParts[name]=id;}}}
+     const id=crypto.randomUUID(),personalParts={};if(state.personal){const users=await (await directory.getDirectoryHandle('save',{create:true})).getDirectoryHandle('users',{create:true});for(const [name,items] of Object.entries(state.personal)){if(!name||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 사용자 이름입니다.');if(base.manifest?.personalStore==='save'&&base.manifest.personalParts?.[name]&&JSON.stringify(old.personal?.[name])===JSON.stringify(items))personalParts[name]=base.manifest.personalParts[name];else{const person=await users.getDirectoryHandle(encodeURIComponent(name),{create:true});await write(person,id+'.json',JSON.stringify(items,null,2));personalParts[name]=id;}}}
      for(const [folder,data] of Object.entries(buckets)){
       const previous=Object.fromEntries(Object.entries(old).filter(([key])=>group(key)===folder));
       if(base.manifest?.parts[folder]&&JSON.stringify(previous)===JSON.stringify(data))parts[folder]=base.manifest.parts[folder];
@@ -43,7 +43,7 @@
      }
      if((await snapshot()).text!==base.text)throw Error('다른 사용자가 먼저 저장했습니다. 변경사항을 백업한 뒤 새로 읽어 주세요.');
      // Publish last: incomplete module writes never become visible; concurrent commits never overwrite each other.
-     await write(commits,id+'.json',JSON.stringify({version:1,id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts}:{}),savedAt:state.savedAt,savedBy:state.savedBy},null,2));
+     await write(commits,id+'.json',JSON.stringify({version:1,id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts,personalStore:'save'}:{}),savedAt:state.savedAt,savedBy:state.savedBy},null,2));
      await snapshot();
     }
    };}
