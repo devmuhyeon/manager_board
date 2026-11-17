@@ -178,8 +178,19 @@
       if(post.comments===undefined)continue;
       const valid=Array.isArray(post.comments)&&post.comments.every(comment=>comment&&typeof comment.id==='string'&&typeof comment.author==='string'&&typeof comment.content==='string'&&comment.content.trim()&&comment.content.length<=2000&&typeof comment.createdAt==='string'&&(comment.team===undefined||TEAMS.includes(comment.team))&&(comment.parentId===undefined||typeof comment.parentId==='string'));
       if(!valid)throw new Error('게시글 댓글 형식을 확인하세요.');
-      const roots=new Set(post.comments.filter(comment=>!comment.parentId).map(comment=>comment.id));
-      if(new Set(post.comments.map(comment=>comment.id)).size!==post.comments.length||post.comments.some(comment=>comment.parentId&&!roots.has(comment.parentId)))throw new Error('답글의 연결된 댓글을 확인하세요.');
+      const byId=new Map(post.comments.map(comment=>[comment.id,comment]));
+      if(byId.size!==post.comments.length)throw new Error('중복된 댓글이 있습니다.');
+      const checked=new Set();
+      for(const comment of post.comments){
+        const path=new Set();
+        let current=comment;
+        while(current&&!checked.has(current.id)){
+          if(path.has(current.id)||(current.parentId&&!byId.has(current.parentId)))throw new Error('답글의 연결된 댓글을 확인하세요.');
+          path.add(current.id);
+          current=current.parentId?byId.get(current.parentId):null;
+        }
+        for(const id of path)checked.add(id);
+      }
     }
     if(s.quickLinks!==undefined&&(!Array.isArray(s.quickLinks)||s.quickLinks.length>4||s.quickLinks.some(l=>!l||typeof l.label!=='string'||typeof l.url!=='string'||(l.url&&!/^https?:\/\//i.test(l.url)))))throw new Error('바로가기 형식을 확인하세요.');
     if(s.contentOptions!==undefined&&(!s.contentOptions||typeof s.contentOptions!=='object'||['level2','level3'].some(k=>!Array.isArray(s.contentOptions[k])||s.contentOptions[k].some(v=>typeof v!=='string'||v.length>100))))throw new Error('콘텐츠 선택 항목 형식이 올바르지 않습니다.');

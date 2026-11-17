@@ -30,7 +30,7 @@
   const text=String(content||'').trim();
   if(!text||text.length>2000)throw Error('댓글을 1~2,000자로 입력하세요.');
   const comments=post.comments||[];
-  if(parentId&&!comments.some(comment=>comment.id===parentId&&!comment.parentId))throw Error('답글을 달 댓글을 찾을 수 없습니다.');
+  if(parentId&&!comments.some(comment=>comment.id===parentId))throw Error('답글을 달 댓글을 찾을 수 없습니다.');
   const comment={id:C.uid(),author:actor,team:state.members.find(member=>member.name===actor).team,content:text,createdAt:new Date().toISOString(),...(parentId?{parentId}:{})};
   return {...state,teamPosts:posts.map((item,i)=>i===index?{...item,comments:[...comments,comment]}:item)};
  }

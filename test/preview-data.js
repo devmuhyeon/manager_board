@@ -60,7 +60,11 @@
   }));
   state.teamPosts[0].comments=[
    {id:'sample-comment-1',author:'김무현',team:'퍼블',content:'모바일 화면도 함께 확인하겠습니다.',createdAt:day(0)+'T09:10:00Z',sampleFixture:true},
-   {id:'sample-comment-2',parentId:'sample-comment-1',author:'홍소영',team:'디자인',content:'오류 안내 문구가 길어지는 경우도 같이 봐 주세요.',createdAt:day(0)+'T09:24:00Z',sampleFixture:true}
+   {id:'sample-comment-2',parentId:'sample-comment-1',author:'홍소영',team:'디자인',content:'오류 안내 문구가 길어지는 경우도 같이 봐 주세요.',createdAt:day(0)+'T09:24:00Z',sampleFixture:true},
+   {id:'sample-comment-3',parentId:'sample-comment-2',author:'김무현',team:'퍼블',content:'작은 화면에서도 문구가 줄바꿈되는지 확인했습니다.',createdAt:day(0)+'T09:31:00Z',sampleFixture:true},
+   {id:'sample-comment-4',parentId:'sample-comment-3',author:'성아미',team:'기획',content:'다음 검토 때도 이 문구를 기준으로 확인하면 좋겠습니다.',createdAt:day(0)+'T09:42:00Z',sampleFixture:true},
+   {id:'sample-comment-5',parentId:'sample-comment-4',author:'홍소영',team:'디자인',content:'검토 항목에 추가했습니다. 긴 문구로도 확인할 수 있게 샘플을 남길게요.',createdAt:day(0)+'T09:51:00Z',sampleFixture:true},
+   {id:'sample-comment-6',parentId:'sample-comment-2',author:'임정규',team:'퍼블',content:'키보드로 이동할 때도 오류 위치를 바로 찾을 수 있는지 확인하겠습니다.',createdAt:day(0)+'T10:02:00Z',sampleFixture:true}
   ];
   state.customerTeams=['샘플 서비스팀','샘플 운영팀','샘플 콘텐츠팀'];return C.validateState(state);
  }

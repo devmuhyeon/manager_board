@@ -52,7 +52,7 @@
   const commentClock=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   function commentTime(comment){
     const date=new Date(comment.createdAt);
-    return Number.isNaN(date.getTime())?'<span>—</span>':'<time datetime="'+esc(date.toISOString())+'">'+esc(postDate(comment)+' '+commentClock.format(date))+'</time>';
+    return Number.isNaN(date.getTime())?'<span>—</span>':'<time datetime="'+esc(date.toISOString())+'">'+esc(postDate(comment)+', '+commentClock.format(date))+'</time>';
   }
   function commentComposer(postId,parentId=''){
     const id=parentId?'postReplyForm-'+parentId:'postCommentForm';
@@ -61,20 +61,25 @@
   }
   function postComments(post){
     const comments=post.comments||[];
-    const replies=new Map();
+    const replies=new Map(),roots=[];
     for(const comment of comments){
-      if(!comment.parentId)continue;
+      if(!comment.parentId){roots.push(comment);continue;}
       if(!replies.has(comment.parentId))replies.set(comment.parentId,[]);
       replies.get(comment.parentId).push(comment);
     }
-    const body=comment=>'<div class="bulletin-comment-meta">'+postByline(comment,true)+commentTime(comment)+'</div><p>'+esc(comment.content)+'</p>';
-    const rowStart=comment=>'<li data-comment-id="'+esc(comment.id)+'" tabindex="-1">';
-    const list=comments.filter(comment=>!comment.parentId).map(comment=>{
-      const thread=replies.get(comment.id)||[];
-      return rowStart(comment)+body(comment)+(thread.length?'<ol class="bulletin-replies">'+thread.map(reply=>rowStart(reply)+body(reply)+'</li>').join('')+'</ol>':'')+
-        '<details class="bulletin-reply-form"><summary>답글</summary>'+commentComposer(post.id,comment.id)+'</details></li>';
-    }).join('');
-    return '<section class="bulletin-comments" aria-labelledby="bulletinCommentsTitle"><h3 id="bulletinCommentsTitle">댓글 <span>'+comments.length+'</span></h3>'+(list?'<ol>'+list+'</ol>':'<p class="muted">아직 댓글이 없습니다.</p>')+commentComposer(post.id)+'</section>';
+    const pending=roots.reverse().map(comment=>({comment,parent:null,depth:0}));
+    const list=[];
+    while(pending.length){
+      const {comment,parent,depth}=pending.pop();
+      const children=replies.get(comment.id)||[];
+      for(let index=children.length-1;index>=0;index--)pending.push({comment:children[index],parent:comment,depth:depth+1});
+      const marker=parent?'<span class="bulletin-reply-marker" aria-hidden="true">↳</span>':'';
+      const target=parent?'<span class="bulletin-reply-target">'+esc(parent.author)+'<span class="sr-only">에게 답글</span></span>':'';
+      list.push('<li class="'+(parent?'bulletin-reply':'bulletin-root-comment')+'" data-comment-id="'+esc(comment.id)+'" tabindex="-1" style="--reply-indent:'+Math.min(depth,7)*16+'px">'+
+        '<div class="bulletin-comment-meta">'+marker+postByline(comment,true)+commentTime(comment)+'</div><p>'+target+esc(comment.content)+'</p>'+
+        '<details class="bulletin-reply-form" name="bulletin-reply"><summary>답글</summary>'+commentComposer(post.id,comment.id)+'</details></li>');
+    }
+    return '<section class="bulletin-comments" aria-labelledby="bulletinCommentsTitle"><h3 id="bulletinCommentsTitle">댓글 <span>'+comments.length+'</span></h3>'+(list.length?'<ol>'+list.join('')+'</ol>':'<p class="muted">아직 댓글이 없습니다.</p>')+commentComposer(post.id)+'</section>';
   }
   function postTypeOptions(selected){
     const labels={'일반글':'일반글','팀별공지':'팀 공지','전체공지':'공통'};
