@@ -11,18 +11,36 @@
   const team=t=>esc(N.teamLabel(t));
   function leaves(state,user,rows,mode='person'){rows=rows.slice().sort((a,b)=>mode==='date'?b.start.localeCompare(a.start)||P.compareNames(state,a.owner,b.owner):P.compareNames(state,a.owner,b.owner)||b.start.localeCompare(a.start));return '<div class="table-wrap"><table class="leave-table"><caption class="sr-only">휴가 일정</caption><thead><tr>'+['팀','이름','직급','연차구분','연차 기간','편집'].map(t=>'<th scope="col">'+t+'</th>').join('')+'</tr></thead><tbody>'+rows.map(l=>'<tr><td>'+team(member(l.owner)?.team||'—')+'</td><td>'+esc(l.owner)+'</td><td>'+esc(member(l.owner)?.rank||'미지정')+'</td><td><span class="leave-type-badge">'+esc(l.type)+'</span></td><td class="leave-date-cell">'+esc(l.start)+(l.end!==l.start?' ~ '+esc(l.end):'')+'</td><td>'+(P.canEditLeave(state,user.name,l.owner)?button('editLeave','편집','','data-id="'+esc(l.id)+'"'):'—')+'</td></tr>').join('')+(rows.length?'':'<tr><td colspan="6" class="empty">등록된 휴가가 없습니다.</td></tr>')+'</tbody></table></div>';}
   function today(state,user){const date=C.today(),items=P.schedule(state,user.name,{start:date,end:date}),due=state.projects.map(C.effective).filter(p=>p.due===date&&p.status!=='완료'&&p.assignees.includes(user.name));return '<section class="card"><div class="sectionhead"><h2>'+date+' 오늘 일정</h2>'+button('newMemo','＋ 일정 추가','primary')+'</div><div class="agenda-list">'+items.map(i=>'<article class="agenda-item"><div><small>'+esc(i.time||'종일')+' · '+esc(i.owner)+'</small>'+(i.projectId?button('boardDetail',esc(i.title),'project-button','data-id="'+esc(i.projectId)+'"'):'<strong>'+esc(i.title)+'</strong>')+'</div>'+weekBlocks(i.date,i.done)+'</article>').join('')+due.map(p=>'<article class="agenda-item"><div><small>오늘 마감</small>'+button('boardDetail',esc(p.title),'project-button','data-id="'+esc(p.id)+'"')+'</div>'+weekBlocks(p.due)+'</article>').join('')+(!items.length&&!due.length?illustratedHint(user.avatar,'오늘 등록된 일정과 마감 과업이 없어요','필요한 일정은 위의 일정 추가 버튼으로 등록하세요.'):'')+'</div></section>';}
-  function board(state,user,selected){
+  function postTypeLabel(post){
+    const type=B.typeOf(post);
+    if(type==='전체공지')return '공통 공지';
+    if(type==='팀별공지')return '팀 공지';
+    return B.TABS.find(([key])=>key===post.team)?.[1]||post.team;
+  }
+  function postDate(post){
+    const date=new Date(post.createdAt);
+    return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+  }
+  function postByline(post){return '<span class="post-byline">'+characterImage(member(post.author)?.avatar,24,24)+'<strong>'+esc(post.author)+'</strong></span>';}
+  function board(state,user,selected,postId){
     const allowed=selected==='all'||selected==='common'||B.canRead(state,user.name,selected);
     const posts=B.boardPosts(state,user.name,selected);
+    const active=posts.find(post=>post.id===postId)||posts[0];
     const tabs=B.TABS.map(([key,label])=>button('boardTeam',label,selected===key?'active':'','data-team="'+esc(key)+'" aria-pressed="'+(selected===key)+'"')).join('');
-    const cards=posts.map(post=>{
-      const type=B.typeOf(post),label=type==='전체공지'?'공통 공지':type==='팀별공지'?'팀 공지':B.TABS.find(([key])=>key===post.team)?.[1]||post.team;
-      const id='data-id="'+esc(post.id)+'"',author=member(post.author);
-      const actions=B.canEdit(state,user.name,post)?'<div class="post-actions">'+button('postNotice','공지 설정','',id)+button('editPost','편집','',id)+'</div>':'';
-      return '<article class="board-post"><header><div><small class="post-type">'+esc(label)+(post.pinned?' · 고정':'')+'</small><h3>'+esc(post.title)+'</h3></div>'+actions+'</header>'
-       +'<div class="post-byline">'+characterImage(author?.avatar,28,28)+'<strong>'+esc(post.author)+'</strong><time datetime="'+esc(post.updatedAt.slice(0,10))+'">'+esc(post.updatedAt.slice(0,10))+'</time></div><p>'+esc(post.content)+'</p></article>';
+    const headers=['순번','구분','제목','작성자','작성일자'];
+    const rows=posts.map((post,index)=>{
+      const date=postDate(post);
+      return '<tr><td>'+(posts.length-index)+'</td><td>'+esc(postTypeLabel(post))+'</td><td>'+button('postDetail',esc(post.title),'project-button','data-id="'+esc(post.id)+'" aria-controls="bulletinDetail" aria-pressed="'+(post.id===active?.id)+'"')+(post.pinned?'<small class="bulletin-pin">고정</small>':'')+'</td><td>'+postByline(post)+'</td><td><time datetime="'+esc(date==='—'?'':date)+'">'+esc(date)+'</time></td></tr>';
     }).join('');
-    return '<section class="card bulletin-board"><div class="bulletin-toolbar"><div class="tabs" role="group" aria-label="게시판 범위">'+tabs+'</div>'+(allowed?button('newPost','＋ 글 작성','primary'):'')+'</div><div class="board-posts">'+(cards||(allowed?illustratedHint(user.avatar,'등록된 게시글이 없습니다.'):'<p class="empty">이 팀 게시판은 해당 팀원과 관리자만 볼 수 있습니다.</p>'))+'</div></section>';
+    const empty=allowed?illustratedHint(user.avatar,'등록된 게시글이 없습니다.'):'<p class="empty">이 팀 게시판은 해당 팀원과 관리자만 볼 수 있습니다.</p>';
+    return '<section class="card bulletin-board"><div class="bulletin-toolbar"><div class="tabs" role="group" aria-label="게시판 범위">'+tabs+'</div>'+(allowed?button('newPost','＋ 글 작성','primary'):'')+'</div><div class="bulletin-split"><div class="table-wrap bulletin-table-wrap" tabindex="0" aria-label="게시글 목록"><table class="bulletin-table"><caption class="sr-only">게시글 목록</caption><thead><tr>'+headers.map(header=>'<th scope="col">'+header+'</th>').join('')+'</tr></thead><tbody>'+(rows||'<tr><td colspan="5">'+empty+'</td></tr>')+'</tbody></table></div><section id="bulletinDetail" class="bulletin-pane" aria-label="게시글 상세">'+(active?postDetail(state,user,active.id):'<p class="empty">표시할 게시글이 없습니다.</p>')+'</section></div></section>';
+  }
+  function postDetail(state,user,id){
+    const post=(state.teamPosts||[]).find(item=>item.id===id);
+    if(!post||!B.canViewPost(state,user.name,post))throw Error('게시글을 볼 권한이 없습니다.');
+    const data='data-id="'+esc(id)+'"';
+    const actions=B.canEdit(state,user.name,post)?button('postNotice','공지 설정','',data)+button('editPost','편집','',data):'';
+    return '<div class="bulletin-detail"><h2>'+esc(post.title)+'</h2><div class="bulletin-meta"><span>'+esc(postTypeLabel(post))+'</span>'+postByline(post)+'<span>'+esc(postDate(post))+'</span></div><p class="bulletin-content">'+esc(post.content)+'</p></div>'+(actions?'<div class="bulletin-actions">'+actions+'</div>':'');
   }
   function noticeForm(state,user,id){
     const post=(state.teamPosts||[]).find(item=>item.id===id);
@@ -35,7 +53,7 @@
   function illustratedHint(character,title,detail=''){const file=characterFile(character);return '<div class="illustrated-hint">'+characterImage(character,64,72)+'<div><strong>'+esc(title)+'</strong>'+(detail?'<p>'+esc(detail)+'</p>':'')+'</div></div>';}
   function avatar(user){const key=characterKey(user.avatar),name=characters.find(c=>c[0]===key)[1];return button('avatarSettings',characterImage(key,38,38),'avatar character-avatar','aria-label="내 캐릭터 변경: '+esc(name)+'" title="내 캐릭터 변경"');}
   function avatarPicker(user){return '<div class="modal-head"><h2>내 캐릭터 선택</h2>'+button('close','닫기')+'</div><div class="modal-body"><p>프로필에 표시할 캐릭터를 선택하세요.</p>'+button('addAvatar','＋ 캐릭터 추가','primary')+'<div class="avatar-choices">'+characters.map(([key,name])=>button('setAvatar',characterImage(key,100,110)+'<strong>'+esc(name)+'</strong>','avatar-choice','data-avatar="'+key+'" aria-pressed="'+((user.avatar||'yongyong')===key)+'"')).join('')+'</div><p class="muted">선택은 본인에게만 적용됩니다. 내용 저장을 누르면 통합관리 파일에 반영됩니다.</p></div>';}
-  return {leaves,today,board,noticeForm,postForm,connection,illustratedHint,avatar,avatarPicker};
+  return {leaves,today,board,postDetail,noticeForm,postForm,connection,illustratedHint,avatar,avatarPicker};
  }
  const api={create};if(typeof module!=='undefined')module.exports=api;else root.BoardDetailViews=api;
 })(typeof window!=='undefined'?window:globalThis);

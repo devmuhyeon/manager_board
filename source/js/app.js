@@ -14,7 +14,7 @@
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
-  let boardTeam='all',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
+  let boardTeam='all',boardPostId='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   let rankDraft=[];
   let linkedProject='',selectedProject='',leaveView='date',leavePerson='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
@@ -29,7 +29,7 @@
       .map(project=>project.raw?{...C.normalize(project.raw),sourceHistory:project.sourceHistory,sourceAssignments:project.sourceAssignments,sourceRemoved:Boolean(snapshot&&!snapshot.has(project.id))}:C.effective(project));
   }
   const heroRows=()=>sourceRows();
-  const reportViews={work:'UIUX',report:'주간 업무',customers:'고객별',projects:'과업별'};
+  const reportViews={work:'UI·UX',report:'주간 업무',customers:'고객별',projects:'과업별'};
   function relatedRows(includeRemoved=false){
     return sourceRows({includeRemoved,forReports:true}).filter(project=>!linkedProject||project.id===linkedProject);
   }
@@ -102,7 +102,7 @@
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
-    let body=page==='workContent'?'<section class="card"><p class="empty">등록된 콘텐츠 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam):page==='today'?D.today(state,user):page==='report'?report():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?'<p class="schedule-help">업무관리의 시작일~마감일을 기준으로 표시합니다. 과업명을 누르면 같은 카드를 확인·수정할 수 있습니다.</p><div class="home-panels weekly-schedule-panels">'+schedulePanel().thisWeek+schedulePanel().nextWeek+'</div>':page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
+    let body=page==='workContent'?'<section class="card"><p class="empty">등록된 콘텐츠 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='today'?D.today(state,user):page==='report'?report():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?'<p class="schedule-help">업무관리의 시작일~마감일을 기준으로 표시합니다. 과업명을 누르면 같은 카드를 확인·수정할 수 있습니다.</p><div class="home-panels weekly-schedule-panels">'+schedulePanel().thisWeek+schedulePanel().nextWeek+'</div>':page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
     $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(user)+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">워크 플레이스 / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+BoardPresence.render(presence.snapshot(),esc)+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll','↻ 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['customers','report','revisions'].includes(page)?button('export','↓ 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
@@ -373,6 +373,16 @@
     else if(a==='transferAdmin')transferAdminDialog();
     else if(a==='editQuickLinks')quickLinksDialog();
     else if(a==='boardTeam'){if(!B.TABS.some(([key])=>key===el.dataset.team))return;boardTeam=el.dataset.team;render();}
+    else if(a==='postDetail'){
+      const post=B.boardPosts(state,user.name,boardTeam).find(item=>item.id===el.dataset.id);
+      if(!post)throw Error('게시글을 볼 권한이 없습니다.');
+      const list=$('.bulletin-table-wrap');
+      const top=list?.scrollTop||0,left=list?.scrollLeft||0;
+      boardPostId=post.id;render();
+      const active=document.querySelector('[data-action="postDetail"][aria-pressed="true"]');
+      active?.focus?.({preventScroll:true});
+      const nextList=$('.bulletin-table-wrap');if(nextList){nextList.scrollTop=top;nextList.scrollLeft=left;}
+    }
     else if(a==='postNotice')showDialog(D.noticeForm(state,user,el.dataset.id));
     else if(a==='newPost'||a==='editPost')showDialog(D.postForm(state,user,boardTeam==='common'||B.canRead(state,user.name,boardTeam)?boardTeam:user.team,el.dataset.id));
     else if(a==='deletePost'){if(confirm('게시글을 삭제하시겠습니까?')){state=B.remove(state,user.name,el.dataset.id);changed();$('#editor').close();render();}}

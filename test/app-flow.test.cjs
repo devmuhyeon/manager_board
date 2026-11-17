@@ -160,7 +160,7 @@ test('UIUX의 도표 토글과 등록 버튼은 업무관리 내부에 있고 �
  h.api.seed(C.importRows(fixture(),[original]).state);h.api.session('김무현','work');h.api.render();
  let html=h.element('#app').innerHTML;
  assert.match(html,/data-section="work"[^>]*aria-controls="nav-work"/);
- assert.match(html,/data-page="work" aria-label="UIUX"/);assert.match(html,/data-page="workContent" aria-label="콘텐츠"/);
+ assert.match(html,/data-page="work" aria-label="UI·UX"/);assert.match(html,/data-page="workContent" aria-label="콘텐츠"/);
  assert.doesNotMatch(html,/requestNotice|data-page="requests"/);
  assert.match(html,/board-control-row"><button[^>]+data-action="boardLayout"/);
  assert.match(html,/data-action="boardMine"[^>]*>내 과업<\/button><button[^>]+data-action="new"/);
@@ -285,11 +285,18 @@ test('같은 원본 ID로 UIUX, 주간 업무, 고객별, 과업별을 오간다
 
 test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 설정으로 상단 고정한다',async()=>{
  const h=harness(),s=fixture(),B=h.context.BoardTeamPosts;s.members.find(m=>m.name==='김무현').avatar='bbiyak';
- h.api.seed(B.save(s,'김무현',{team:'퍼블',type:'일반글',title:'검토 글',content:'상세 내용'}));h.api.session('김무현','board');h.api.render();
+ const saved=B.save(s,'김무현',{team:'퍼블',type:'일반글',title:'검토 글',content:'상세 내용'});
+ saved.teamPosts[0].createdAt='2026-11-15T16:00:00Z';saved.teamPosts[0].updatedAt='2026-11-17T08:00:00Z';
+ h.api.seed(saved);h.api.session('김무현','board');h.api.render();
  const html=h.element('#app').innerHTML,tabs=[...html.matchAll(/data-action="boardTeam"[^>]*>([^<]+)<\/button>/g)].map(match=>match[1]);
  assert.deepEqual(tabs,['전체','공통','기획','퍼블','디자인','콘텐츠']);assert.match(html,/post-byline"><img[^>]+><strong>김무현/);
- const post=h.api.read().state.teamPosts[0];await h.api.act({dataset:{action:'postNotice',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
+ assert.match(html,/<th scope="col">순번<\/th><th scope="col">구분<\/th><th scope="col">제목<\/th><th scope="col">작성자<\/th><th scope="col">작성일자<\/th>/);
+ assert.match(html,/datetime="2026-11-16"/);assert.doesNotMatch(html.split('</table>')[0],/상세 내용/);
+ const post=h.api.read().state.teamPosts[0];
+ h.api.session('정윤정','board');await assert.rejects(h.api.act({dataset:{action:'postDetail',id:post.id}}),/권한/);
+ h.api.session('김무현','board');await h.api.act({dataset:{action:'postDetail',id:post.id}});assert.match(h.element('#app').innerHTML,/id="bulletinDetail"[\s\S]*상세 내용/);assert.equal(h.element('#editor').open,false);assert.match(h.element('#app').innerHTML,/공지 설정/);
+ await h.api.act({dataset:{action:'postNotice',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
  h.submit({id:'postNoticeForm',fields:{id:post.id,type:'전체공지',pinned:'on'}});
- await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/공통 공지 · 고정/);assert.match(h.element('#app').innerHTML,/검토 글/);
+ await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/공통 공지/);assert.match(h.element('#app').innerHTML,/bulletin-pin">고정/);assert.match(h.element('#app').innerHTML,/검토 글/);
  assert.throws(()=>B.setNotice(h.api.read().state,'정윤정',{id:post.id,type:'일반글',pinned:false}),/권한/);
 });
