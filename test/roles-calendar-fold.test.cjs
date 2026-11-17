@@ -2,10 +2,13 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const P=require('./people-fixture.cjs'),C=require('./core-fixture.cjs'),Calendar=require('../source/js/briefing-calendar.js'),Board=require('../source/js/task-board.js');
 test('role migration is one-time, preserves data, and maps named admins without progress bypass',()=>{
  const input=P.upgrade(C.sampleState());input.teamAdmins=['정윤정'];const before=structuredClone(input),s=P.migrateRoles(input);
- assert.deepEqual(input,before);assert.deepEqual(s.overallAdmins,['김무현','성아미','정윤정']);assert.deepEqual(s.teamLeaders,{기획:'성아미',디자인:'홍소영',퍼블:'임정규',콘텐츠:'김아영'});
- assert.equal(P.isOverallAdmin(s,'성아미'),true);assert.equal(P.isLeader(s,'임정규'),true);assert.equal(P.canManage(s,'임정규'),false);assert.equal(P.canManage(s,'홍소영'),false);assert.equal(P.canEditLeave(s,'홍소영','김민재'),true);assert.equal(P.canEditLeave(s,'홍소영','김무현'),false);
+ assert.deepEqual(input,before);assert.deepEqual(s.overallAdmins,['김무현','성아미','정윤정']);assert.deepEqual(s.teamLeaders,{});
+ assert.equal(P.isOverallAdmin(s,'성아미'),true);assert.equal(P.isLeader(s,'임정규'),false);assert.equal(P.canManage(s,'임정규'),false);assert.equal(P.canManage(s,'홍소영'),false);assert.equal(P.canEditLeave(s,'홍소영','김민재'),false);assert.equal(P.canEditLeave(s,'홍소영','김무현'),false);
  assert.equal(Board.canProgress({assignees:['김민재']},'성아미'),false);assert.deepEqual(s.projects,input.projects);assert.equal(P.migrateRoles(s),s);C.validateState(s);
- const changed=P.setTeamAdmins(s,'성아미',['임정규']);assert.ok(P.isOverallAdmin(changed,'임정규'));assert.throws(()=>P.setTeamAdmins(s,'홍소영',['홍소영']));
+ const v1={...s,rolePolicyVersion:1,overallAdmins:['성아미'],overallAdmin:'성아미',teamLeaders:{디자인:'홍소영'}};
+ const updated=P.migrateRoles(v1);
+ assert.deepEqual(updated.overallAdmins,['성아미']);assert.deepEqual(updated.teamLeaders,{});
+ const changed=P.setAdministrators(s,'성아미',['임정규']);assert.ok(P.isOverallAdmin(changed,'임정규'));assert.throws(()=>P.setAdministrators(s,'홍소영',['홍소영']));
 });
 test('calendar filters before row packing and includes accessible selected state',()=>{
  const state=P.upgrade({...C.sampleState(),projects:[]}),actor='김무현';state.personal[actor]=[{id:'memo',title:'내 개인 일정',date:'2026-11-03',endDate:'2026-11-05'}];state.projects=[{id:'project',title:'내 프로젝트',assignees:[actor],status:'진행중',started:'2026-11-03',due:'2026-11-05',logs:[]}];

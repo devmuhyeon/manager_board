@@ -5,13 +5,13 @@
   function compareNames(s,a,b){
     const members=s.members||C.MEMBERS,ma=members.find(m=>m.name===a),mb=members.find(m=>m.name===b);
     const team=m=>{const i=C.TEAMS.indexOf(m?.team);return i<0?C.TEAMS.length:i;};
-    const ranks=s.rankOrder||['대표','사장','부사장','전무','상무','이사','부장','차장','과장','대리','주임','사원','인턴'];
-    const rank=m=>{const index=ranks.indexOf(m?.rank);return index<0?ranks.length:index;};
+    const order=ranks(s);
+    const rank=m=>{const index=order.indexOf(m?.rank);return index<0?order.length:index;};
     return team(ma)-team(mb)||Number(s.teamLeaders?.[mb?.team]===b)-Number(s.teamLeaders?.[ma?.team]===a)||rank(ma)-rank(mb)||a.localeCompare(b,'ko');
   }
   const orderNames=(s,names)=>names.slice().sort((a,b)=>compareNames(s,a,b));
   const orderedMembers=s=>(s.members||C.MEMBERS).slice().sort((a,b)=>compareNames(s,a.name,b.name));
-  function ranks(s){return s.rankOrder||['대표','사장','부사장','전무','상무','이사','부장','차장','과장','대리','주임','사원','인턴'];}
+  function ranks(s){return s.rankOrder||['부장','차장','과장','대리','사원'];}
   function setRanks(s,actor,entries){if(!isOverallAdmin(s,actor))throw Error('전체관리자만 직급을 관리할 수 있습니다.');if(!Array.isArray(entries)||entries.length>40)throw Error('직급은 최대 40개입니다.');const names=entries.map(e=>String(e.name||'').trim());if(names.some(n=>!n||n.length>30)||new Set(names).size!==names.length)throw Error('직급은 중복 없이 1~30자로 입력해 주세요.');const next=structuredClone(s),old=ranks(s);next.rankOrder=names;next.members=next.members.map(m=>{const e=entries.find(e=>e.old===m.rank);return e?{...m,rank:String(e.name).trim()}:old.includes(m.rank)?{...m,rank:''}:m;});return next;}
   function upgrade(s){
     s.members??=C.MEMBERS.map(m=>({...m,active:true}));s.personal??={};s.removedMembers??=[];s.hiddenProjects??=[];s.customerTeams??=[...C.CUSTOMERS];s.teamLeaders??={};s.leaves??=[];return s;
@@ -80,6 +80,14 @@
   function resetPassword(s,actor,name){if(!canManage(s,actor))throw new Error('비밀번호 초기화는 전체관리자만 가능합니다.');if(!s.members.some(m=>m.name===name&&m.active!==false))throw new Error('재직자를 선택하세요.');const next=structuredClone(s);delete next.accounts[name];return next;}
   function setTeamAdmins(s,actor,names){if(!isOverallAdmin(s,actor))throw new Error('전체관리자 지정은 전체관리자만 가능합니다.');if(!Array.isArray(names)||names.some(n=>!s.members.some(m=>m.name===n&&m.active!==false)))throw new Error('재직자만 팀관리자로 지정할 수 있습니다.');return Array.isArray(s.overallAdmins)?{...structuredClone(s),overallAdmins:[...new Set([overallAdmin(s),actor,...names])]}:{...structuredClone(s),teamAdmins:[...new Set(names)].filter(n=>n!==overallAdmin(s))};}
   function setLeaders(s,leaders){const next=upgrade(structuredClone(s));next.teamLeaders={};for(const team of C.TEAMS){const name=leaders[team];if(!name)continue;if(!s.members.some(m=>m.name===name&&m.team===team&&m.active!==false))throw new Error('팀관리자는 해당 팀의 재직자 중에서 선택하세요.');next.teamLeaders[team]=name;}return next;}
+  function setAdministrators(s,actor,names){
+    if(!isOverallAdmin(s,actor))throw Error('WorkLog 관리자만 권한을 변경할 수 있습니다.');
+    const admins=[...new Set(names)];
+    if(!admins.length)throw Error('WorkLog 관리자는 한 명 이상이어야 합니다.');
+    if(admins.some(name=>!s.members.some(m=>m.name===name&&m.active!==false)))throw Error('재직자만 관리자로 등록할 수 있습니다.');
+    const current=overallAdmin(s);
+    return {...structuredClone(s),overallAdmins:admins,overallAdmin:admins.includes(current)?current:admins[0],teamAdmins:[]};
+  }
   function validDate(value){return /^\d{4}-\d{2}-\d{2}$/.test(value)&&!isNaN(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;}
   function saveLeave(s,actor,input){
     const next=upgrade(structuredClone(s)),old=next.leaves.find(l=>l.id===input.id),owner=String(input.owner||actor);
@@ -117,14 +125,13 @@
   function dday(date,today=C.today()){const n=Math.round((Date.parse(date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000);return n===0?'D-day':n>0?'D-'+n:'D+'+Math.abs(n);}
   function setAvatar(s,actor,avatar){if(!Avatars.keys.filter(key=>!key.startsWith('custom-')).includes(avatar)&&!(s.customAvatars||[]).some(v=>v.id===avatar))throw Error('캐릭터를 선택하세요.');const next=structuredClone(s),person=next.members.find(m=>m.name===actor&&m.active!==false);if(!person)throw Error('로그인이 필요합니다.');person.avatar=avatar;return next;}
   function migrateRoles(input){
-    if(input.rolePolicyVersion===1)return input;
+    if(input.rolePolicyVersion===2)return input;
     const s=upgrade(structuredClone(input)),active=name=>s.members.some(m=>m.name===name&&m.active!==false);
-    s.overallAdmins=[...new Set(['김무현','성아미',overallAdmin(s),...(s.teamAdmins||[])])].filter(active);
+    s.overallAdmins=[...new Set(s.overallAdmins||['김무현','성아미',overallAdmin(s),...(s.teamAdmins||[])])].filter(active);
     if(!s.overallAdmins.length)s.overallAdmins=[s.members.find(m=>m.active!==false).name];
-    if(!active(s.overallAdmin))s.overallAdmin=s.overallAdmins[0];
+    if(!s.overallAdmins.includes(s.overallAdmin))s.overallAdmin=s.overallAdmins[0];
     s.teamAdmins=[];s.teamLeaders={};
-    for(const [team,name] of Object.entries({기획:'성아미',디자인:'홍소영',퍼블:'임정규',콘텐츠:'김아영'}))if(s.members.some(m=>m.name===name&&m.team===team&&m.active!==false))s.teamLeaders[team]=name;
-    s.rolePolicyVersion=1;return s;
+    s.rolePolicyVersion=2;return s;
   }
-  const api={ranks,setRanks,migrateRoles,compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
+  const api={ranks,setRanks,migrateRoles,compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,setAdministrators,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
 })(typeof window!=='undefined'?window:globalThis);

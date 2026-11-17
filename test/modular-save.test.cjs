@@ -11,8 +11,10 @@ test('legacy migration preserves original, splits modules and reuses unchanged d
  const original=legacy.value,h=await M.open(dir);assert.equal(await read(h),original);
  await save(h,{revision:1,projects:[{id:'a'}],personal:{A:[]},members:[]});
  const first=JSON.parse(await read(h));assert.equal(first.projects[0].id,'a');
- await save(h,{...first,revision:2,personal:{A:[{id:'memo'}]}});
- const folder=dir.children.get('process');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);assert.equal(JSON.parse(await read(h)).revision,2);
+ const organizationChart={levels:['조직'],nodes:[{id:'root',name:'WorkLog',parent:null}],hiddenMembers:[]};
+ await save(h,{...first,revision:2,personal:{A:[{id:'memo'}]},organizationChart});
+ const folder=dir.children.get('process');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);
+ const latest=JSON.parse(await read(h));assert.equal(latest.revision,2);assert.deepEqual(latest.organizationChart,organizationChart);assert.equal(M.group('organizationChart'),'people');
 });
 test('stale writer is rejected and interrupted module save never publishes',async()=>{
  const dir=directory(),h=await M.open(dir);await save(h,{revision:1,projects:[]});const base=await read(h),stale=await h.createWritable({expectedText:base});await stale.write('{"revision":2,"projects":[1]}');

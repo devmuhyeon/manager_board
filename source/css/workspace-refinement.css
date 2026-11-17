@@ -100,7 +100,7 @@ html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
 .content .people-section .people-sheet{border-radius:4px}
 .people-sheet th,.people-sheet td{padding:8px 12px;height:44px}
 .people-org-sheet :is(th,td):not(:last-child){border-inline-end:1px solid var(--border)}
-.people-org-group{vertical-align:top;width:24%}
+.people-org-group{vertical-align:top;min-width:144px}
 .people-cell-actions,.people-row-actions{display:flex;gap:4px;align-items:center}
 .people-cell-actions{justify-content:space-between}
 .people-row-actions{justify-content:flex-end}

@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const LEGACY='통합관리 대시보드.json',POSTS_FOLDER='게시판',ID=/^[a-f0-9-]{36}$/;
- const group=key=>key==='cardExpenses'?'cards':key==='customAvatars'?'assets':key==='projects'?'work':key==='personal'?'memo':/leave/i.test(key)?'leave':/post|board/i.test(key)?'board':/member|account|remov/i.test(key)?'people':'settings';
+ const group=key=>key==='cardExpenses'?'cards':key==='customAvatars'?'assets':key==='projects'?'work':key==='personal'?'memo':/leave/i.test(key)?'leave':/post|board/i.test(key)?'board':key==='organizationChart'||/member|account|remov/i.test(key)?'people':'settings';
  async function optional(dir,name,kind='file'){try{return await dir[kind==='file'?'getFileHandle':'getDirectoryHandle'](name);}catch(e){if(e.name==='NotFoundError')return null;throw e;}}
  async function read(file){return (await file.getFile()).text();}
  async function write(dir,name,text){const file=await dir.getFileHandle(name,{create:true}),stream=await file.createWritable();try{await stream.write(text);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}}

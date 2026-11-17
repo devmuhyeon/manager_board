@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const N=BoardNavigation,B=BoardTeamPosts,Icons=BoardArrowIcons;
-  const C=BoardCore, P=BoardPeople, W=BoardWorkspace, V=BoardVault, $=s=>document.querySelector(s), BOARD_FILE='통합관리 대시보드.json', CACHE='manager-board-v1';
+  const C=BoardCore, P=BoardPeople, W=BoardWorkspace, V=BoardVault, O=BoardOrganization, $=s=>document.querySelector(s), BOARD_FILE='통합관리 대시보드.json', CACHE='manager-board-v1';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const loadState=raw=>{const validated=C.validateState(raw);if(validated.accountResetVersion!==BoardAccountReset.VERSION)V.forget().catch(()=>{});return P.migrateRoles(BoardAccountReset.apply(validated));};
   let state,cacheError='';
@@ -346,8 +346,9 @@
     if(a==='layoutMove'){const index=layoutDraft.indexOf(el.dataset.key),next=index+Number(el.dataset.direction);if(index>=0&&next>=0&&next<layoutDraft.length){[layoutDraft[index],layoutDraft[next]]=[layoutDraft[next],layoutDraft[index]];homeLayout();}return;}
     if(a==='layoutReset'){layoutDraft=P.homeOrder({},user.name);homeLayout();return;}
     if(a==='layoutSave'){state=P.saveHomeOrder(state,user.name,layoutDraft);changed();$('#editor').close();render();toast('나의 홈 배치 순서를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');return;}
-    if(['manageMembers','addMember','rehire','removeMember','leaderSettings','passwords','resetPassword'].includes(a)&&!P.canManage(state,user?.name))throw new Error('전체관리자만 사용할 수 있습니다.');
-    if(['adminSettings','transferAdmin','editQuickLinks','rankUp','rankDown','rankEdit','rankDelete','rankAdd'].includes(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('전체관리자만 사용할 수 있습니다.');
+    if(['manageMembers','addMember','rehire','removeMember','passwords','resetPassword'].includes(a)&&!P.canManage(state,user?.name))throw new Error('관리자만 사용할 수 있습니다.');
+    if(['adminSettings','editQuickLinks','rankUp','rankDown','rankEdit','rankDelete','rankAdd',
+      'orgEdit','orgAdd','orgLevel','orgDelete','orgMove'].includes(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
     if(a==='heroMode'){const persisted=heroDesign.setMode(user,el.dataset.mode);render();if(!persisted)toast('선택한 보기는 유지됩니다. 브라우저 저장이 제한되어 새로고침 후에는 복원되지 않을 수 있습니다.');return;}
     if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(displayProfile(user));showDialog(heroEditorHTML());}return;}
     if(a==='heroPreviewMode'&&heroDraft){heroDraft.mode=el.dataset.mode==='big'?'big':'normal';$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
@@ -427,7 +428,6 @@
     else if(a==='newLeave')openLeave();
     else if(a==='editLeave')openLeave(el.dataset.id);
     else if(a==='leaveList')leaveList();
-    else if(a==='leaderSettings')leaderSettings(el.dataset.team);
     else if(a==='deleteLeave'){if(confirm('이 휴가 일정을 삭제하시겠습니까?')){state=P.deleteLeave(state,user.name,el.dataset.id);changed();$('#editor').close();render();toast('휴가를 삭제했습니다. 내용 저장으로 파일에 반영하세요.');}}
     else if(a==='permitFolders'){for(const [handle,mode] of [[sourceDir,'read'],[sourceHandle,'read'],[targetDir,'readwrite'],[targetHandle,'readwrite']])if(handle?.requestPermission)await handle.requestPermission({mode});if(await checkConnections())await finishSetup();else{render();toast('허용하지 않은 연결이 있습니다. 연결 버튼으로 다시 선택할 수 있습니다.');}}
     else if(a==='backSetup'){setupDone=false;user=null;render();}
@@ -452,6 +452,23 @@
       state=P.setAvatar(state,owner,el.dataset.avatar);changed();$('#editor').close();render();toast('내 캐릭터를 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');
     }
     else if(a==='adminSettings')adminSettings();
+    else if(a==='orgAdd'||a==='orgEdit')organizationEditor(el.dataset.id,el.dataset.parent);
+    else if(a==='orgLevel')organizationLevelEditor(Number(el.dataset.index));
+    else if(a==='orgDelete'||a==='orgMove'){
+      const chart=readOrganization(),node=chart.nodes.find(item=>item.id===el.dataset.id);
+      if(!node)return;
+      if(a==='orgDelete'){
+        if(!confirm(node.name+' 항목과 하위 항목을 조직도에서 삭제할까요?'))return;
+        O.remove(chart,node.id);
+      }else{
+        const siblings=chart.nodes.filter(item=>item.parent===node.parent);
+        const neighbor=siblings[siblings.indexOf(node)+Number(el.dataset.step)];
+        if(!neighbor||Math.abs(Number(el.dataset.step))!==1)return;
+        const from=chart.nodes.indexOf(node),to=chart.nodes.indexOf(neighbor);
+        [chart.nodes[from],chart.nodes[to]]=[chart.nodes[to],chart.nodes[from]];
+      }
+      saveOrganization(chart);
+    }
     else if(a==='rankAdd'||a==='rankEdit')rankEditor(a==='rankEdit'?el.dataset.rank:'');
     else if(['rankUp','rankDown','rankDelete'].includes(a)){
       const ranks=P.ranks(state).map(name=>({old:name,name}));
@@ -468,11 +485,10 @@
       saveRanks(ranks);
       $('.people-tabs button.active')?.focus();
     }
-    else if(a==='transferAdmin')transferAdminDialog();
     else if(a==='editQuickLinks')quickLinksDialog();
     else if(a==='expenseSelectCard'){expenseCardId=el.dataset.id;render();}
     else if(a==='expenseAddCard'||a==='expenseEditBudget'){
-      if(!expenseService.canBudget(state,user.name))throw Error('전체관리자만 월 금액을 설정할 수 있습니다.');
+      if(!expenseService.canBudget(state,user.name))throw Error('관리자만 월 금액을 설정할 수 있습니다.');
       const data=state.cardExpenses||BoardCardExpenses.empty(),card=data.cards.find(item=>item.id===el.dataset.id);
       if(a==='expenseEditBudget'&&!card)throw Error('카드 종류를 찾을 수 없습니다.');
       showDialog(BoardCardExpenses.cardForm({data,card,month:expenseMonth,esc,button}));
@@ -583,14 +599,6 @@
 
   function openLeave(id){const i=state.leaves.find(l=>l.id===id)||{id:'',owner:user.name,start:C.today(),end:C.today(),type:'연차',note:''},leader=P.isLeader(state,user.name)||P.canManage(state,user.name);if(!P.canEditLeave(state,user.name,i.owner))throw new Error('이 팀원의 휴가를 변경할 권한이 없습니다.');showDialog(`<div class="modal-head"><h2>${i.id?'휴가 수정':'휴가 등록'}</h2>${button('close','닫기')}</div><form id="leaveForm"><div class="modal-body"><input name="id" type="hidden" value="${esc(i.id)}"><div class="field"><label for="leaveOwner">이름</label><select name="owner" id="leaveOwner">${options(activeMembers().filter(m=>P.canEditLeave(state,user.name,m.name)).map(m=>m.name),i.owner)}</select></div><div class="field"><label for="leaveType">휴가 종류</label><select name="type" id="leaveType">${options(['연차','오전 반차','오후 반차','기타 휴가','추가 사용'],i.type)}</select></div><div class="form-grid"><div class="field"><label for="leaveStart">시작일</label><input name="start" id="leaveStart" type="date" required value="${esc(i.start)}"></div><div class="field"><label for="leaveEnd">종료일</label><input name="end" id="leaveEnd" type="date" required value="${esc(i.end)}"></div></div><div class="field"><label for="leaveUnits">추가 사용 시 하루 차감량</label><select id="leaveUnits" name="dailyUnits">${options(['1','0.5'],String(i.dailyUnits||1))}</select></div><div class="field"><label for="leaveNote">메모 (선택)</label><textarea name="note" id="leaveNote" maxlength="300">${esc(i.note)}</textarea></div><p class="muted">${P.canManage(state,user.name)?'모든 재직자의 휴가를 등록·수정할 수 있습니다.':leader?'소속 팀원의 휴가를 등록·수정할 수 있습니다.':'본인의 휴가를 등록·수정할 수 있습니다.'} 등록한 휴가는 팀 일정에 표시됩니다.</p><div id="leaveError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteLeave','휴가 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">휴가 저장</button></div></form>`);}
   function leaveList(){const leader=P.isLeader(state,user.name)||P.canManage(state,user.name),team=member(user.name).team;const items=state.leaves.filter(l=>P.canEditLeave(state,user.name,l.owner)).slice().sort((a,b)=>b.start.localeCompare(a.start));showDialog(`<div class="modal-head"><h2>${P.canManage(state,user.name)?'전체':leader?'우리 팀':'나의'} 휴가 관리</h2>${button('close','닫기')}</div><div class="modal-body"><div class="agenda-list">${items.map(l=>`<article class="agenda-item"><strong>${esc(l.owner)} · ${esc(l.type)}</strong><small>${esc(l.start)} ~ ${esc(l.end)}</small>${P.canEditLeave(state,user.name,l.owner)?button('editLeave','편집','',`data-id="${esc(l.id)}"`):''}</article>`).join('')||'<p class="empty">등록된 휴가가 없습니다.</p>'}</div></div><div class="modal-foot">${button('newLeave','＋ 휴가 등록','primary')}${button('close','닫기')}</div>`);}
-  function leaderSettings(team){
-    const teams=C.TEAMS.includes(team)?[team]:C.TEAMS;
-    const fields=teams.map(key=>'<div class="field"><label for="leader-'+esc(key)+'">'+esc(N.teamLabel(key))+' 팀관리자</label>'+
-      '<select id="leader-'+esc(key)+'" name="'+esc(key)+'">'+options(activeMembers().filter(m=>m.team===key).map(m=>m.name),state.teamLeaders[key]||'','미지정')+'</select></div>').join('');
-    showDialog('<div class="modal-head"><h2>팀관리자 지정</h2>'+button('close','닫기')+'</div><form id="leadersForm">'+
-      '<div class="modal-body">'+fields+'<div id="leadersError" class="error" role="alert"></div></div>'+
-      '<div class="modal-foot">'+button('close','취소')+'<button class="primary">팀관리자 지정 저장</button></div></form>');
-  }
   function rankEditor(rank){
     if(rank&&!P.ranks(state).includes(rank))return;
     showDialog('<div class="modal-head"><h2>'+(rank?'직책명 편집':'신규 직책 추가')+'</h2>'+button('close','닫기')+'</div><form id="rankOrderForm">'+
@@ -606,7 +614,13 @@
     render();
     toast('직책을 변경했습니다. 내용 저장으로 공용 반영하세요.');
   }
-  function adminSettings(){showDialog(`<div class="modal-head"><h2>전체관리자 지정</h2>${button('close','닫기')}</div><form id="adminsForm"><div class="modal-body"><p>전체관리자는 전체 조직의 인원과 설정을 관리합니다. 추가 전체관리자를 선택하세요.</p>${activeMembers().filter(m=>m.name!==P.overallAdmin(state)).map(m=>`<label class="remember-check"><input type="checkbox" name="admins" value="${esc(m.name)}" ${(state.overallAdmins||state.teamAdmins||[]).includes(m.name)?'checked':''}> ${esc(N.teamLabel(m.team))} · ${esc(m.name)}</label>`).join('')}<div id="adminsError" class="error" role="alert"></div></div><div class="modal-foot">${button('close','취소')}<button class="primary">지정 저장</button></div></form>`);}
+  function adminSettings(){
+    const choices=activeMembers().map(person=>'<label class="remember-check"><input type="checkbox" name="admins" value="'+esc(person.name)+'" '+
+      (P.isOverallAdmin(state,person.name)?'checked':'')+'> '+esc(N.teamLabel(person.team))+' · '+esc(person.name)+'</label>').join('');
+    showDialog('<div class="modal-head"><h2>WorkLog 관리자 등록·해제</h2>'+button('close','닫기')+'</div><form id="adminsForm">'+
+      '<div class="modal-body"><p>관리자로 등록할 재직자를 선택하세요. 권한을 해제하려면 선택을 풀어 주세요.</p>'+choices+
+      '<div id="adminsError" class="error" role="alert"></div></div><div class="modal-foot">'+button('close','취소')+'<button class="primary">저장</button></div></form>');
+  }
   function passwordSettings(){showDialog(`<div class="modal-head"><h2>개별 비밀번호 초기화</h2>${button('close','닫기')}</div><div class="modal-body"><p>초기화 후 내용 저장을 누르면 기존 비밀번호가 해제됩니다. 해당 팀원은 다음 로그인에서 새 비밀번호를 설정합니다.</p>${activeMembers().map(m=>`<div class="connection-line"><span>${esc(N.teamLabel(m.team))} · ${esc(m.name)}${state.accounts[m.name]?'':' · 최초 설정 대기'}</span>${button('resetPassword','비밀번호 초기화','danger',`data-name="${esc(m.name)}" ${!state.accounts[m.name]?'disabled':''}`)}</div>`).join('')}</div><div class="modal-foot">${button('close','닫기')}</div>`);}
   function deadlineItems(rows){return rows.map(p=>'<article class="agenda-item"><div>'+button('boardDetail',esc(p.title),'project-button','data-id="'+esc(p.id)+'"')+'<small>'+esc(p.due)+' · '+esc(p.assignees.join(', '))+'</small></div>'+weekBlocks(p.due,C.isComplete(p.status))+'</article>').join('')||'<p class="empty">예정된 마감이 없습니다.</p>';}
   function leaveItems(rows){return rows.map(l=>'<article class="agenda-item"><div><strong>'+esc(l.owner)+' · '+esc(l.type)+'</strong><small>'+esc(l.start)+' ~ '+esc(l.end)+'</small>'+(P.canEditLeave(state,user.name,l.owner)?button('editLeave','편집','','data-id="'+esc(l.id)+'"'):'')+'</div>'+weekBlocks(l.start)+'</article>').join('')||'<p class="empty">등록된 휴가가 없습니다.</p>';}
@@ -618,22 +632,76 @@
     const content=leaveView==='person'&&!leavePerson?names.map(name=>'<section class="leave-person-group"><h3>'+esc(name)+' <small>'+esc(N.teamLabel(member(name)?.team||''))+'</small></h3>'+D.leaves(state,user,rows.filter(l=>l.owner===name),'person')+'</section>').join('')||'<p class="empty">등록된 휴가가 없습니다.</p>':D.leaves(state,user,rows,leaveView);
     return '<div class="leave-workspace">'+annualLeavePanel()+'<section class="card leave-schedule-panel"><div class="sectionhead"><h2>휴가 일정</h2>'+button('newLeave','＋ 휴가 등록','primary')+'</div>'+controls+content+'</section></div>';
   }
-  function organizationChart(members,teams,canManage){
-    const roster=teams.map(team=>({team,members:members.filter(m=>m.team===team)}));
-    const rowCount=roster.reduce((count,group)=>count+Math.max(group.members.length,1),0);
-    const rows=roster.map(({team,members},groupIndex)=>(members.length?members:[null]).map((person,rowIndex)=>{
-      const isLeader=person&&state.teamLeaders[team]===person.name;
-      const edit=canManage?button('leaderSettings',Icons.arrow('edit'),'people-icon-button',
-        'data-team="'+esc(team)+'" aria-label="'+esc(N.teamLabel(team))+' 팀관리자 지정" title="팀관리자 지정"'):'';
-      return '<tr>'+(!groupIndex&&!rowIndex?'<td class="people-org-group" rowspan="'+rowCount+'"><strong>WorkLog</strong></td>':'')+
-        (!rowIndex?'<td class="people-org-group" rowspan="'+Math.max(members.length,1)+'"><div class="people-cell-actions"><strong>'+esc(N.teamLabel(team))+'</strong>'+edit+'</div></td>':'')+
-        (person?'<td>'+esc(person.name)+(isLeader?' <span class="badge">팀관리자</span>':'')+'</td><td>'+esc(person.rank||'미지정')+'</td>':
-          '<td colspan="2" class="muted">재직 중인 멤버가 없습니다.</td>')+'</tr>';
-    }).join('')).join('');
-    return '<div class="card table-wrap people-sheet people-org-sheet"><table><caption class="sr-only">조직도</caption><thead><tr>'+
-      '<th scope="col">조직</th><th scope="col">팀</th><th scope="col">멤버</th><th scope="col">직책</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  const readOrganization=()=>O.read(state.organizationChart,activeMembers(),C.TEAMS,N.teamLabel);
+  function saveOrganization(chart){
+    O.validate(chart,C.TEAMS);
+    state.organizationChart=chart;
+    changed();
+    if($('#editor').open)$('#editor').close();
+    render();
+    toast('조직도를 변경했습니다. 공용 반영은 내용 저장을 눌러 주세요.');
   }
-  function peopleRoles(members,teams,canManage){
+  function organizationChart(members,canEdit){
+    const chart=readOrganization(),groups=O.forest(chart,members,canEdit?null:user.team);
+    const columns=chart.levels.map((level,index)=>'<th scope="col"><div class="people-cell-actions">'+esc(level)+
+      (canEdit?button('orgLevel',Icons.arrow('edit'),'people-icon-button','data-index="'+index+'" aria-label="'+esc(level)+' 레벨 이름 편집"'):'')+'</div></th>').join('');
+    function branchRows(node,level){
+      const rows=node.children.flatMap(child=>branchRows(child,level+1));
+      if(!rows.length)rows.push(level+1<chart.levels.length?'<td colspan="'+(chart.levels.length-level-1)+'"></td>':'');
+      const title=node.person&&node.name!==node.person.name?node.name+' · '+node.person.name:node.name;
+      const actions=canEdit?'<div class="people-row-actions">'+
+        button('orgAdd','＋','people-icon-button','data-parent="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 하위 항목 추가"')+
+        button('orgEdit',Icons.arrow('edit'),'people-icon-button','data-id="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 편집"')+'</div>':'';
+      rows[0]='<td class="people-org-group" rowspan="'+rows.length+'"><div class="people-cell-actions"><strong>'+esc(title)+'</strong>'+actions+'</div>'+
+        (node.person?.rank?'<span class="muted">'+esc(node.person.rank)+'</span>':'')+
+        (node.person&&P.isOverallAdmin(state,node.person.name)?' <span class="badge">관리자</span>':'')+'</td>'+rows[0];
+      return rows;
+    }
+    const rows=groups.flatMap(node=>branchRows(node,0)).map(row=>'<tr>'+row+'</tr>').join('');
+    const toolbar=canEdit?'<div class="actions">'+button('orgAdd','＋ 조직도 항목 추가')+
+      button('orgLevel','＋ 레벨 추가','','data-index="'+chart.levels.length+'"')+'</div>':'';
+    return toolbar+'<div class="card table-wrap people-sheet people-org-sheet"><table><caption class="sr-only">조직도</caption><thead><tr>'+
+      columns+'</tr></thead><tbody>'+(rows||'<tr><td colspan="'+chart.levels.length+'" class="muted">등록된 조직도 항목이 없습니다.</td></tr>')+'</tbody></table></div>';
+  }
+  function organizationEditor(id,parent){
+    const chart=readOrganization(),node=chart.nodes.find(item=>item.id===id);
+    if(id&&!node)return;
+    const blocked=node?O.descendants(chart,node.id):new Set();
+    const nodes=new Map(chart.nodes.map(item=>[item.id,item]));
+    const parents='<option value="">최상위</option>'+O.forest(chart,activeMembers()).flatMap(function paths(item){
+      if(blocked.has(item.id))return [];
+      const path=[item.name];
+      for(let key=item.parent;key!==null;key=nodes.get(key).parent)path.unshift(nodes.get(key).name);
+      return ['<option value="'+esc(item.id)+'" '+(item.id===(node?node.parent:parent)?'selected':'')+'>'+esc(path.join(' / '))+'</option>',
+        ...item.children.flatMap(paths)];
+    }).join('');
+    const linked=new Set(chart.nodes.map(item=>item.member));
+    const available=activeMembers().filter(person=>!linked.has(person.name)).map(person=>person.name);
+    const memberField=!node&&available.length?'<div class="field"><label for="orgMember">멤버 연결 (선택)</label><select name="member" id="orgMember">'+
+      options(available,'','연결 안 함')+'</select></div>':'';
+    const attrs=node?'data-id="'+esc(id)+'"':'';
+    const order=node?chart.nodes.filter(item=>item.parent===node.parent):[];
+    const position=order.indexOf(node);
+    const move=(step,label,disabled)=>button('orgMove',label,'',attrs+' data-step="'+step+'" '+(disabled?'disabled':''));
+    showDialog('<div class="modal-head"><h2>'+(node?'조직도 항목 편집':'조직도 항목 추가')+'</h2>'+button('close','닫기')+'</div>'+
+      '<form id="organizationForm"><div class="modal-body"><input type="hidden" name="id" value="'+esc(id)+'">'+
+      '<div class="field"><label for="orgName">항목 이름</label><input id="orgName" name="name" value="'+esc(node?.name)+'" maxlength="80" required></div>'+
+      '<div class="field"><label for="orgParent">상위 항목</label><select id="orgParent" name="parent">'+parents+'</select></div>'+memberField+
+      (node?'<div class="actions">'+move(-1,Icons.arrow('up')+' 위로',position===0)+move(1,Icons.arrow('down')+' 아래로',position===order.length-1)+'</div>':'')+
+      '<p class="error" id="organizationError" role="alert"></p></div><div class="modal-foot">'+
+      (node?button('orgDelete','삭제','danger',attrs):'')+button('close','취소')+'<button class="primary">저장</button></div></form>');
+  }
+  function organizationLevelEditor(index){
+    const chart=readOrganization();
+    if(!Number.isInteger(index)||index<0||index>chart.levels.length)return;
+    const exists=index<chart.levels.length;
+    showDialog('<div class="modal-head"><h2>'+(exists?'레벨 이름 편집':'레벨 추가')+'</h2>'+button('close','닫기')+'</div>'+
+      '<form id="organizationLevelForm"><div class="modal-body"><input type="hidden" name="index" value="'+index+'">'+
+      '<div class="field"><label for="orgLevelName">레벨 이름</label><input id="orgLevelName" name="name" value="'+esc(chart.levels[index]||'')+
+      '" maxlength="80" required></div><p class="error" id="organizationError" role="alert"></p></div>'+
+      '<div class="modal-foot">'+button('close','취소')+'<button class="primary">저장</button></div></form>');
+  }
+  function peopleRoles(members){
     const isAdmin=P.isOverallAdmin(state,user.name);
     const admins=members.filter(m=>P.isOverallAdmin(state,m.name)).map(m=>esc(m.name));
     const ranks=P.ranks(state);
@@ -648,19 +716,17 @@
       (!ranks.length?'<tr><td colspan="'+(isAdmin?2:1)+'" class="muted">등록된 직책이 없습니다.</td></tr>':'')+'</tbody></table>'+
       (isAdmin?'<div class="people-sheet-foot">'+button('rankAdd','＋ 신규 직책 추가','people-text-button')+'</div>':'')+'</div>'+
       '<section class="card people-admin-panel"><div class="sectionhead"><h2>관리자 지정</h2><div class="actions">'+
-      (canManage?button('leaderSettings','팀관리자 지정'):'')+(isAdmin?button('adminSettings','전체관리자 지정'):'')+'</div></div><dl class="people-role-list">'+
-      (canManage?'<div><dt>전체관리자</dt><dd>'+(admins.join(', ')||'미지정')+'</dd></div>':'')+
-      teams.map(team=>'<div><dt>'+esc(N.teamLabel(team))+' 팀관리자</dt><dd>'+esc(state.teamLeaders[team]||'미지정')+'</dd></div>').join('')+
+      (isAdmin?button('adminSettings','관리자 등록·해제'):'')+'</div></div><dl class="people-role-list">'+
+      '<div><dt>WorkLog 관리자</dt><dd>'+(admins.join(', ')||'미지정')+'</dd></div>'+
       '</dl></section>';
   }
   function peoplePage(){
     if(!W.canPersonnel(state,user.name))return '';
     const canManage=P.canManage(state,user.name);
-    const teams=canManage?C.TEAMS:[user.team];
     const tabs=Object.entries(peopleSections).map(([section,label])=>button('peopleSection',label,peopleSection===section?'active':'',
       'data-section="'+section+'" aria-pressed="'+(peopleSection===section)+'" aria-controls="peopleSectionContent"')).join('');
     const members=activeMembers();
-    const content=peopleSection==='org'?organizationChart(members,teams,canManage):peopleSection==='roles'?peopleRoles(members,teams,canManage):
+    const content=peopleSection==='org'?organizationChart(members,P.isOverallAdmin(state,user.name)):peopleSection==='roles'?peopleRoles(members):
       personnelPanel(canManage?P.orderedMembers(state):members.filter(m=>m.team===user.team),canManage);
     return '<div class="card people-management"><div class="tabs people-tabs" role="group" aria-label="인원관리">'+tabs+
       '</div><section class="people-section" id="peopleSectionContent" aria-label="'+peopleSections[peopleSection]+'">'+content+'</section></div>';
@@ -674,7 +740,7 @@
     return `<section class="card personal-panel"><div class="sectionhead"><div><h2>나의 메모 & 일정 <span class="count">${items.filter(i=>!i.done).length}</span></h2><p class="muted">${esc(user.name)}님의 할 일과 간단한 일정을 기록하세요.</p></div><div class="home-panel-actions">${BoardMemoCarousel.controls('personal-memos',items.length)}${button('newMemo','＋ 메모·일정 추가')}</div></div>${BoardMemoCarousel.render('personal-memos',items.map(i=>`<article class="memo-card ${i.done?'done':''}"><div class="memo-title"><label class="memo-check"><input type="checkbox" data-memo-toggle="${esc(i.id)}" ${i.done?'checked':''} aria-label="${esc(i.title)} 완료"><strong>${esc(i.title)}</strong></label>${button('editMemo','편집','',`data-id="${esc(i.id)}"`)}</div><div class="memo-date">${i.date?`${esc(i.date)} ${esc(i.time)}${i.date<C.today()&&!i.done?' · 지난 일정':''}`:'날짜 없는 메모'}${i.done?' · 완료':''}</div><p>${esc(i.content)||'내용 없음'}</p></article>`).join(''),'<div class="memo-grid">'+D.illustratedHint(user.avatar,'첫 메모를 남겨보세요','회의 준비, 확인할 일, 아이디어를 적고 날짜를 넣어 일정으로 관리하세요.')+'</div>')}</section>`;
   }
   function showDialog(content){dialogOpener=document.activeElement;$('#editor').innerHTML=content;$('#editor').showModal();BoardBriefingHero.mount(document);}
-  function openMemo(id){const i=(state.personal[user.name]||[]).find(i=>i.id===id)||{id:'',title:'',content:'',date:'',time:'',done:false};showDialog(`<div class="modal-head"><h2>${i.id?'메모·일정 편집':'새 메모·일정'}</h2>${button('close','닫기')}</div><form id="memoForm"><div class="modal-body"><input type="hidden" name="id" value="${esc(i.id)}"><div class="field"><label for="memoTitle">제목</label><input id="memoTitle" name="title" required maxlength="150" value="${esc(i.title)}"></div><div class="form-grid"><div class="field"><label for="memoDate">시작일 (선택)</label><input id="memoDate" name="date" type="date" value="${esc(i.date)}"></div><div class="field"><label for="memoEndDate">종료일 (선택)</label><input id="memoEndDate" name="endDate" type="date" value="${esc(i.endDate||'')}"></div><div class="field"><label for="memoTime">시간 (선택)</label><input id="memoTime" name="time" type="time" value="${esc(i.time)}"></div></div><div class="field"><label for="memoContent">메모 내용</label><textarea id="memoContent" name="content">${esc(i.content)}</textarea></div><label class="remember-check"><input name="done" type="checkbox" ${i.done?'checked':''}> 완료한 메모·일정</label><p class="muted">날짜를 지정한 일정의 제목·날짜·시간·완료 상태는 팀관리자에게도 표시됩니다. 날짜 없는 메모와 상세 내용은 본인 화면에만 표시되며, 내용 저장 시 공용 통합관리 JSON에 함께 보관됩니다.</p><div id="memoError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteMemo','메모 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">메모 저장</button></div></form>`);}
+  function openMemo(id){const i=(state.personal[user.name]||[]).find(i=>i.id===id)||{id:'',title:'',content:'',date:'',time:'',done:false};showDialog(`<div class="modal-head"><h2>${i.id?'메모·일정 편집':'새 메모·일정'}</h2>${button('close','닫기')}</div><form id="memoForm"><div class="modal-body"><input type="hidden" name="id" value="${esc(i.id)}"><div class="field"><label for="memoTitle">제목</label><input id="memoTitle" name="title" required maxlength="150" value="${esc(i.title)}"></div><div class="form-grid"><div class="field"><label for="memoDate">시작일 (선택)</label><input id="memoDate" name="date" type="date" value="${esc(i.date)}"></div><div class="field"><label for="memoEndDate">종료일 (선택)</label><input id="memoEndDate" name="endDate" type="date" value="${esc(i.endDate||'')}"></div><div class="field"><label for="memoTime">시간 (선택)</label><input id="memoTime" name="time" type="time" value="${esc(i.time)}"></div></div><div class="field"><label for="memoContent">메모 내용</label><textarea id="memoContent" name="content">${esc(i.content)}</textarea></div><label class="remember-check"><input name="done" type="checkbox" ${i.done?'checked':''}> 완료한 메모·일정</label><p class="muted">날짜를 지정하면 일정에도 표시됩니다. 날짜 없는 메모와 상세 내용은 본인 화면에만 표시되며, 내용 저장 시 공용 통합관리 JSON에 함께 보관됩니다.</p><div id="memoError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteMemo','메모 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">메모 저장</button></div></form>`);}
   function personnelPanel(members,canManage){
     const rows=members.map(m=>{
       const attrs='data-name="'+esc(m.name)+'"';
@@ -704,8 +770,11 @@
   function userWorkPage(){const rows=projects(),names=P.orderNames(state,[...new Set(rows.flatMap(p=>p.assignees))]);return '<section class="card"><div class="table-toolbar"><h2>사용자별 업무</h2>'+scopeTabs()+viewTabs()+'</div>'+filterBar()+'<div class="tabs">'+button('userWork','전체 사용자',!userWork?'active':'')+names.map(n=>button('userWork',esc(n),userWork===n?'active':'','data-name="'+esc(n)+'"')).join('')+'</div>'+names.filter(n=>!userWork||n===userWork).map(n=>'<section class="user-work-section"><h3>'+esc(n)+' · '+esc(N.teamLabel(member(n)?.team||''))+'</h3>'+(view==='category'?categorizedTable(rows.filter(p=>p.assignees.includes(n))):projectTable(rows.filter(p=>p.assignees.includes(n))))+'</section>').join('')+(names.length?'':'<p class="empty">담당자가 지정된 과업이 없습니다.</p>')+'</section>';}
   function quickLinks(){let links;try{links=N.cleanLinks(state.quickLinks||N.defaults);}catch{links=N.defaults;}return '<div class="quick-links" aria-label="사이트 바로가기">'+links.map(l=>l.url?'<a href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+esc(l.label)+' '+Icons.arrow('external')+'</a>':'<span class="unconfigured">'+esc(l.label)+' · 주소 미등록</span>').join('')+(P.isOverallAdmin(state,user.name)?button('editQuickLinks','주소 설정'):'')+'</div>';}
   function quickLinksDialog(){const links=state.quickLinks||N.defaults;showDialog('<div class="modal-head"><h2>사이트 바로가기</h2>'+button('close','닫기')+'</div><form id="quickLinksForm"><div class="modal-body"><p>상단에 표시할 사이트를 최대 4개까지 등록하세요.</p>'+Array.from({length:4},(_,i)=>'<div class="link-fields"><input name="label'+i+'" aria-label="사이트 '+(i+1)+' 이름" placeholder="사이트 이름" maxlength="40" value="'+esc(links[i]?.label||'')+'"><input name="url'+i+'" aria-label="사이트 '+(i+1)+' 주소" placeholder="https://..." value="'+esc(links[i]?.url||'')+'"></div>').join('')+'<div id="quickLinksError" class="error"></div></div><div class="modal-foot"><button class="primary">바로가기 저장</button></div></form>');}
-  function transferAdminDialog(){showDialog('<div class="modal-head"><h2>전체관리자 권한 이전</h2>'+button('close','닫기')+'</div><form id="transferAdminForm"><div class="modal-body"><p>현재 전체관리자: '+esc(P.overallAdmin(state))+'</p><label for="nextAdmin">새 전체관리자</label><select id="nextAdmin" name="target" required>'+options(activeMembers().filter(m=>m.name!==user.name).map(m=>m.name),'','재직자 선택')+'</select><p>이전 후 본인의 전체관리자·팀관리자 권한은 해제됩니다. 팀관리자 지정은 유지됩니다. 공용 반영은 내용 저장을 눌러 완료하세요.</p><div id="transferAdminError" class="error"></div></div><div class="modal-foot">'+button('close','취소')+'<button class="primary">권한 이전</button></div></form>');}
-  function preferences(){showDialog('<div class="modal-head"><h2>설정</h2>'+button('close','닫기')+'</div><div class="modal-body"><h3>내 캐릭터</h3>'+button('avatarSettings','캐릭터 선택')+'<h3>데이터 연결</h3>'+button('connections','폴더 연결 관리')+button('page','자료 가져오기 · 백업','','data-page="settings"')+'<details class="preference-more"><summary>계정 · 관리 설정</summary><h3>로그인 편의</h3>'+button('forgetLogin','저장된 로그인 정보 지우기')+(P.isOverallAdmin(state,user.name)?'<h3>전체관리자</h3><p>현재: '+esc((state.overallAdmins||[P.overallAdmin(state)]).join(', '))+'</p>'+button('adminSettings','전체관리자 관리'):'')+(W.canContent(state,user.name)?'<h3>콘텐츠 분류</h3>'+button('contentOptions','콘텐츠 선택 항목 관리'):'')+'</details></div><div class="modal-foot">'+button('close','닫기')+'</div>');}
+  function preferences(){
+    showDialog('<div class="modal-head"><h2>설정</h2>'+button('close','닫기')+'</div><div class="modal-body"><div class="actions">'+
+      button('avatarSettings','내 캐릭터 선택')+button('forgetLogin','저장된 로그인 정보 지우기')+
+      button('page','데이터 연결','','data-page="settings"')+'</div></div>');
+  }
 
   async function checkConnections(){
     async function readable(handle,mode){if(!handle)return false;try{return !handle.queryPermission||await handle.queryPermission({mode})==='granted';}catch{return false;}}
@@ -786,7 +855,7 @@
     if(formId==='heroDesignForm'){e.preventDefault();try{heroDesign.save(displayProfile(user),heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
     if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(formId==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
-    if(['leadersForm','memberForm','memberRankForm','removeMemberForm'].includes(formId)&&!P.canManage(state,user?.name)){e.preventDefault();toast('전체관리자만 사용할 수 있습니다.');return;}
+    if(['memberForm','memberRankForm','removeMemberForm'].includes(formId)&&!P.canManage(state,user?.name)){e.preventDefault();toast('관리자만 사용할 수 있습니다.');return;}
     if(formId==='expenseCardForm'||formId==='expenseEntryForm'){
       e.preventDefault();
       try{
@@ -822,8 +891,35 @@
       }catch(err){const error=e.target.querySelector?.('[role="alert"]');if(error)error.textContent=err.message;else toast(err.message);}
     }
     if(formId==='postForm'){e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));state=B.save(state,user.name,data);changed();$('#editor').close();render();toast('게시글을 저장했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#postError').textContent=err.message;}}
-    if(formId==='quickLinksForm'){e.preventDefault();try{if(!P.isOverallAdmin(state,user?.name))throw Error('전체관리자만 설정할 수 있습니다.');const data=new FormData(e.target);state.quickLinks=N.cleanLinks(Array.from({length:4},(_,i)=>({label:data.get('label'+i),url:data.get('url'+i)})).filter(l=>l.label||l.url));changed();$('#editor').close();render();}catch(err){$('#quickLinksError').textContent=err.message;}}
-    if(formId==='transferAdminForm'){e.preventDefault();try{const target=new FormData(e.target).get('target'),next=P.transferAdmin(state,user?.name,target);if(!confirm(target+'님에게 전체관리자를 이전하시겠습니까? 본인의 관리 권한은 해제됩니다.'))return;state=next;changed();$('#editor').close();render();toast('전체관리자를 이전했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#transferAdminError').textContent=err.message;}}
+    if(formId==='quickLinksForm'){e.preventDefault();try{if(!P.isOverallAdmin(state,user?.name))throw Error('관리자만 설정할 수 있습니다.');const data=new FormData(e.target);state.quickLinks=N.cleanLinks(Array.from({length:4},(_,i)=>({label:data.get('label'+i),url:data.get('url'+i)})).filter(l=>l.label||l.url));changed();$('#editor').close();render();}catch(err){$('#quickLinksError').textContent=err.message;}}
+    if(formId==='organizationForm'||formId==='organizationLevelForm'){
+      e.preventDefault();
+      try{
+        if(!P.isOverallAdmin(state,user?.name))throw Error('WorkLog 관리자만 조직도를 편집할 수 있습니다.');
+        const fields=new FormData(e.target),chart=readOrganization(),name=String(fields.get('name')||'').trim();
+        if(!name||name.length>80)throw Error('이름을 1~80자로 입력해 주세요.');
+        if(formId==='organizationLevelForm'){
+          const index=Number(fields.get('index'));
+          if(!Number.isInteger(index)||index<0||index>chart.levels.length)throw Error('레벨을 찾을 수 없습니다.');
+          chart.levels[index]=name;
+        }else{
+          const id=String(fields.get('id')||''),parent=String(fields.get('parent')||'')||null;
+          const item=chart.nodes.find(node=>node.id===id);
+          if(id&&!item)throw Error('조직도 항목을 찾을 수 없습니다.');
+          if(parent&&(!chart.nodes.some(node=>node.id===parent)||(item&&O.descendants(chart,id).has(parent))))throw Error('상위 항목을 다시 선택해 주세요.');
+          if(item)Object.assign(item,{name,parent});
+          else{
+            const member=String(fields.get('member')||'');
+            if(member&&(!activeMembers().some(person=>person.name===member)||chart.nodes.some(node=>node.member===member)))throw Error('연결할 멤버를 다시 선택해 주세요.');
+            chart.nodes.push({id:C.uid(),name,parent,...(member?{member}:{})});
+            if(member)chart.hiddenMembers=chart.hiddenMembers.filter(hidden=>hidden!==member);
+          }
+          O.extendLevels(chart);
+        }
+        saveOrganization(chart);
+      }catch(err){$('#organizationError').textContent=err.message;}
+      return;
+    }
     if(formId==='rankOrderForm'){
       e.preventDefault();
       try{
@@ -835,9 +931,8 @@
       }catch(err){$('#rankOrderError').textContent=err.message;}
       return;
     }
-    if(formId==='adminsForm'){e.preventDefault();try{state=P.setTeamAdmins(state,user?.name,new FormData(e.target).getAll('admins'));changed();$('#editor').close();render();toast('전체관리자 지정을 변경했습니다. 내용 저장으로 반영하세요.');}catch(err){$('#adminsError').textContent=err.message;}}
+    if(formId==='adminsForm'){e.preventDefault();try{state=P.setAdministrators(state,user?.name,new FormData(e.target).getAll('admins'));changed();$('#editor').close();render();toast('관리자 지정을 변경했습니다. 내용 저장으로 반영하세요.');}catch(err){$('#adminsError').textContent=err.message;}}
     if(formId==='leaveForm'){e.preventDefault();try{state=P.saveLeave(state,user.name,Object.fromEntries(new FormData(e.target)));changed();$('#editor').close();render();toast('휴가를 등록했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#leaveError').textContent=err.message;}}
-    if(formId==='leadersForm'){e.preventDefault();try{state=P.setLeaders(state,{...state.teamLeaders,...Object.fromEntries(new FormData(e.target))});changed();$('#editor').close();render();toast('팀관리자 지정을 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#leadersError').textContent=err.message;}}
     if(formId==='loginForm'){e.preventDefault();signIn(e.target);}
     if(formId==='projectForm'){e.preventDefault();saveProject(e.target);}
     if(formId==='memoForm'){e.preventDefault();try{const d=new FormData(e.target);state=P.savePersonal(state,user.name,{...Object.fromEntries(d),done:d.has('done')});changed();$('#editor').close();render();toast('메모를 임시 저장했습니다. 내용 저장으로 파일에 반영하세요.');}catch(err){$('#memoError').textContent=err.message;}}

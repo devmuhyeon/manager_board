@@ -2,6 +2,7 @@
   'use strict';
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const CardExpenses=typeof module!=='undefined'?require('./card-expenses.js'):root.BoardCardExpenses;
+  const Organization=typeof module!=='undefined'?require('./organization-chart.js'):root.BoardOrganization;
   const MEMBERS = [
     ['성아미','기획','차장'],['정윤정','기획','대리'],['임정규','퍼블','차장'],['김무현','퍼블','대리'],
     ['홍소영','디자인','과장'],['김민재','디자인','대리'],['최완이','디자인','대리'],
@@ -204,6 +205,7 @@
     if(!Array.isArray(people)||!people.length||new Set(people.map(m=>m.name)).size!==people.length||people.some(m=>typeof m.name!=='string'||!m.name||!TEAMS.includes(m.team)||['__proto__','constructor','prototype'].includes(m.name)))throw new Error('인원 정보가 올바르지 않습니다.');
     if(s.personal){if(typeof s.personal!=='object'||Array.isArray(s.personal))throw new Error('개인 메모 형식이 올바르지 않습니다.');for(const items of Object.values(s.personal))if(!Array.isArray(items)||items.some(i=>!i||typeof i.id!=='string'||typeof i.title!=='string'||typeof i.content!=='string'))throw new Error('개인 메모 형식이 올바르지 않습니다.');}
     if(s.rankOrder!==undefined&&(!Array.isArray(s.rankOrder)||s.rankOrder.length>40||new Set(s.rankOrder).size!==s.rankOrder.length||s.rankOrder.some(r=>typeof r!=='string'||!r.trim()||r.length>30)))throw Error('직급 순서 형식이 올바르지 않습니다.');
+    Organization.validate(s.organizationChart,TEAMS);
     for(const key of ['removedMembers','hiddenProjects','customerTeams'])if(s[key]!==undefined&&(!Array.isArray(s[key])||s[key].some(v=>typeof v!=='string')))throw new Error('통합관리 설정 형식이 올바르지 않습니다.');
     for(const [name,a] of Object.entries(s.accounts))if(!people.some(m=>m.name===name)||!a||typeof a.salt!=='string'||typeof a.hash!=='string'||a.iterations!==150000)throw new Error('계정 데이터 형식이 올바르지 않습니다.');
     return s;
