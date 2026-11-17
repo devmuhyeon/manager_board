@@ -36,6 +36,11 @@
   let boardName='',boardMode='workflow',boardLayout='cards';
   let boardTeam='all',boardPostId='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   const peopleSections={org:'조직도 관리',roles:'직책 관리',members:'멤버 관리'};
+  const personnelActions=new Set([
+    'manageMembers','addMember','rehire','removeMember','editMemberRank','passwords','resetPassword','adminSettings',
+    'rankUp','rankDown','rankEdit','rankDelete','rankAdd','orgEdit','orgAdd','orgLevel','orgDelete','orgMove'
+  ]);
+  const personnelForms=new Set(['memberForm','memberRankForm','removeMemberForm','adminsForm','rankOrderForm','organizationForm','organizationLevelForm']);
   let peopleSection='org';
   const expenseService=BoardCardExpenses.create({uid:C.uid,isAdmin:P.isOverallAdmin});
   let expenseCardId='',expenseMonth=BoardCardExpenses.today().slice(0,7);
@@ -351,9 +356,8 @@
     if(a==='layoutMove'){const index=layoutDraft.indexOf(el.dataset.key),next=index+Number(el.dataset.direction);if(index>=0&&next>=0&&next<layoutDraft.length){[layoutDraft[index],layoutDraft[next]]=[layoutDraft[next],layoutDraft[index]];homeLayout();}return;}
     if(a==='layoutReset'){layoutDraft=P.homeOrder({},user.name);homeLayout();return;}
     if(a==='layoutSave'){state=P.saveHomeOrder(state,user.name,layoutDraft);changed();$('#editor').close();render();toast('나의 홈 배치 순서를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');return;}
-    if(['manageMembers','addMember','rehire','removeMember','passwords','resetPassword'].includes(a)&&!P.canManage(state,user?.name))throw new Error('관리자만 사용할 수 있습니다.');
-    if(['adminSettings','editQuickLinks','rankUp','rankDown','rankEdit','rankDelete','rankAdd',
-      'orgEdit','orgAdd','orgLevel','orgDelete','orgMove'].includes(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
+    if(personnelActions.has(a)&&!W.canPersonnel(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
+    if(a==='editQuickLinks'&&!P.isOverallAdmin(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
     if(a==='heroMode'){const persisted=heroDesign.setMode(user,el.dataset.mode);render();if(!persisted)toast('선택한 보기는 유지됩니다. 브라우저 저장이 제한되어 새로고침 후에는 복원되지 않을 수 있습니다.');return;}
     if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(displayProfile(user));showDialog(heroEditorHTML());}return;}
     if(a==='heroPreviewMode'&&heroDraft){heroDraft.mode=el.dataset.mode==='big'?'big':'normal';$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
@@ -365,7 +369,7 @@
     if(a==='leaveView'){leaveView=el.dataset.view;render();return;}
     if(a==='peopleSection'){
       const section=el.dataset.section;
-      if(page!=='people'||!W.canPersonnel(state,user.name)||!Object.hasOwn(peopleSections,section))return;
+      if(page!=='people'||!W.canPersonnel(state,user?.name)||!Object.hasOwn(peopleSections,section))return;
       peopleSection=section;
       render();
       $('.people-tabs button.active')?.focus();
@@ -652,20 +656,20 @@
     render();
     toast('조직도를 변경했습니다. 공용 반영은 내용 저장을 눌러 주세요.');
   }
-  function organizationChart(members,canEdit){
-    const chart=readOrganization(),groups=O.forest(chart,members,canEdit?null:user.team);
+  function organizationChart(members){
+    const chart=readOrganization(),groups=O.forest(chart,members);
     const columns=chart.levels.map((level,index)=>'<th scope="col"><div class="people-cell-actions">'+esc(level)+
-      (canEdit?button('orgLevel',Icons.arrow('edit'),'people-icon-button','data-index="'+index+'" aria-label="'+esc(level)+' 레벨 이름 편집"'):'')+'</div></th>').join('');
+      button('orgLevel',Icons.arrow('edit'),'people-icon-button','data-index="'+index+'" aria-label="'+esc(level)+' 레벨 이름 편집"')+'</div></th>').join('');
     function branchRows(node,level,index,siblings){
       const rows=node.children.flatMap((child,i)=>branchRows(child,level+1,i,node.children));
       if(!rows.length)rows.push(level+1<chart.levels.length?'<td colspan="'+(chart.levels.length-level-1)+'"></td>':'');
       const title=node.person&&node.name!==node.person.name?node.name+' · '+node.person.name:node.name;
       const move=(step,direction,label,disabled)=>button('orgMove',Icons.arrow(direction),'people-icon-button',
         'data-id="'+esc(node.id)+'" data-step="'+step+'" aria-label="'+esc(title+' '+label)+'" title="'+label+'" '+(disabled?'disabled':''));
-      const actions=canEdit?'<div class="people-row-actions">'+
+      const actions='<div class="people-row-actions">'+
         (siblings.length>1?move(-1,'up','위로 이동',index===0)+move(1,'down','아래로 이동',index===siblings.length-1):'')+
         button('orgAdd','＋','people-icon-button','data-parent="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 하위 항목 추가"')+
-        button('orgEdit',Icons.arrow('edit'),'people-icon-button','data-id="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 편집"')+'</div>':'';
+        button('orgEdit',Icons.arrow('edit'),'people-icon-button','data-id="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 편집"')+'</div>';
       const name='<strong>'+esc(title)+'</strong>';
       const label=node.person?'<div class="people-org-member">'+name+
         (node.person.rank?'<span class="muted">'+esc(node.person.rank)+'</span>':'')+
@@ -674,8 +678,8 @@
       return rows;
     }
     const rows=groups.flatMap((node,index)=>branchRows(node,0,index,groups)).map(row=>'<tr>'+row+'</tr>').join('');
-    const toolbar=canEdit?'<div class="actions">'+button('orgAdd','＋ 조직도 항목 추가')+
-      button('orgLevel','＋ 레벨 추가','','data-index="'+chart.levels.length+'"')+'</div>':'';
+    const toolbar='<div class="actions">'+button('orgAdd','＋ 조직도 항목 추가')+
+      button('orgLevel','＋ 레벨 추가','','data-index="'+chart.levels.length+'"')+'</div>';
     return toolbar+'<div class="card table-wrap people-sheet people-org-sheet"><table><caption class="sr-only">조직도</caption><thead><tr>'+
       columns+'</tr></thead><tbody>'+(rows||'<tr><td colspan="'+chart.levels.length+'" class="muted">등록된 조직도 항목이 없습니다.</td></tr>')+'</tbody></table></div>';
   }
@@ -714,7 +718,6 @@
       '<div class="modal-foot">'+button('close','취소')+'<button class="primary">저장</button></div></form>');
   }
   function peopleRoles(members){
-    const isAdmin=P.isOverallAdmin(state,user.name);
     const admins=members.filter(m=>P.isOverallAdmin(state,m.name)).map(m=>esc(m.name));
     const ranks=P.ranks(state);
     const controls=(rank,index)=>[
@@ -723,23 +726,21 @@
     ].map(([action,icon,label,disabled])=>button(action,Icons.arrow(icon),'people-icon-button'+(action==='rankDelete'?' danger':''),
       'data-rank="'+esc(rank)+'" aria-label="'+esc(rank)+' '+label+'" title="'+label+'" '+(disabled?'disabled':''))).join('');
     return '<div class="card table-wrap people-sheet people-rank-sheet"><table><caption class="sr-only">직책과 정렬 순서</caption><thead><tr><th scope="col">직책명</th>'+
-      (isAdmin?'<th scope="col"><span class="sr-only">관리</span></th>':'')+'</tr></thead><tbody>'+
-      ranks.map((rank,index)=>'<tr><td>'+esc(rank)+'</td>'+(isAdmin?'<td><div class="people-row-actions">'+controls(rank,index)+'</div></td>':'')+'</tr>').join('')+
-      (!ranks.length?'<tr><td colspan="'+(isAdmin?2:1)+'" class="muted">등록된 직책이 없습니다.</td></tr>':'')+'</tbody></table>'+
-      (isAdmin?'<div class="people-sheet-foot">'+button('rankAdd','＋ 신규 직책 추가','people-text-button')+'</div>':'')+'</div>'+
+      '<th scope="col"><span class="sr-only">관리</span></th></tr></thead><tbody>'+
+      ranks.map((rank,index)=>'<tr><td>'+esc(rank)+'</td><td><div class="people-row-actions">'+controls(rank,index)+'</div></td></tr>').join('')+
+      (!ranks.length?'<tr><td colspan="2" class="muted">등록된 직책이 없습니다.</td></tr>':'')+'</tbody></table>'+
+      '<div class="people-sheet-foot">'+button('rankAdd','＋ 신규 직책 추가','people-text-button')+'</div></div>'+
       '<section class="card people-admin-panel"><div class="sectionhead"><h2>관리자 지정</h2><div class="actions">'+
-      (isAdmin?button('adminSettings','관리자 등록·해제'):'')+'</div></div><dl class="people-role-list">'+
+      button('adminSettings','관리자 등록·해제')+'</div></div><dl class="people-role-list">'+
       '<div><dt>WorkLog 관리자</dt><dd>'+(admins.join(', ')||'미지정')+'</dd></div>'+
       '</dl></section>';
   }
   function peoplePage(){
     if(!W.canPersonnel(state,user.name))return '';
-    const canManage=P.canManage(state,user.name);
     const tabs=Object.entries(peopleSections).map(([section,label])=>button('peopleSection',label,peopleSection===section?'active':'',
       'data-section="'+section+'" aria-pressed="'+(peopleSection===section)+'" aria-controls="peopleSectionContent"')).join('');
     const members=activeMembers();
-    const content=peopleSection==='org'?organizationChart(members,P.isOverallAdmin(state,user.name)):peopleSection==='roles'?peopleRoles(members):
-      personnelPanel(canManage?P.orderedMembers(state):members.filter(m=>m.team===user.team),canManage);
+    const content=peopleSection==='org'?organizationChart(members):peopleSection==='roles'?peopleRoles(members):personnelPanel(P.orderedMembers(state));
     return '<div class="card people-management"><div class="tabs people-tabs" role="group" aria-label="인원관리">'+tabs+
       '</div><section class="people-section" id="peopleSectionContent" aria-label="'+peopleSections[peopleSection]+'">'+content+'</section></div>';
   }
@@ -753,27 +754,26 @@
   }
   function showDialog(content){dialogOpener=document.activeElement;$('#editor').innerHTML=content;$('#editor').showModal();BoardBriefingHero.mount(document);}
   function openMemo(id){const i=(state.personal[user.name]||[]).find(i=>i.id===id)||{id:'',title:'',content:'',date:'',time:'',done:false};showDialog(`<div class="modal-head"><h2>${i.id?'메모·일정 편집':'새 메모·일정'}</h2>${button('close','닫기')}</div><form id="memoForm"><div class="modal-body"><input type="hidden" name="id" value="${esc(i.id)}"><div class="field"><label for="memoTitle">제목</label><input id="memoTitle" name="title" required maxlength="150" value="${esc(i.title)}"></div><div class="form-grid"><div class="field"><label for="memoDate">시작일 (선택)</label><input id="memoDate" name="date" type="date" value="${esc(i.date)}"></div><div class="field"><label for="memoEndDate">종료일 (선택)</label><input id="memoEndDate" name="endDate" type="date" value="${esc(i.endDate||'')}"></div><div class="field"><label for="memoTime">시간 (선택)</label><input id="memoTime" name="time" type="time" value="${esc(i.time)}"></div></div><div class="field"><label for="memoContent">메모 내용</label><textarea id="memoContent" name="content">${esc(i.content)}</textarea></div><label class="remember-check"><input name="done" type="checkbox" ${i.done?'checked':''}> 완료한 메모·일정</label><p class="muted">날짜를 지정하면 일정에도 표시됩니다. 날짜 없는 메모와 상세 내용은 본인 화면에만 표시되며, 내용 저장 시 공용 통합관리 JSON에 함께 보관됩니다.</p><div id="memoError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteMemo','메모 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">메모 저장</button></div></form>`);}
-  function personnelPanel(members,canManage){
+  function personnelPanel(members){
     const rows=members.map(m=>{
       const attrs='data-name="'+esc(m.name)+'"';
       const status=m.active===false?'퇴사 · '+(m.retention==='purge'?'개인 자료 삭제':'자료 보관'):'재직';
-      const actions=canManage?'<td><div class="actions">'+button('editMemberRank','직급 변경','',attrs)+
+      const actions='<td><div class="actions">'+button('editMemberRank','직급 변경','',attrs)+
         (m.active===false?button('rehire','재입사','',attrs):button('removeMember','퇴사 처리','danger',
-          attrs+(m.name===user.name?' disabled title="본인의 퇴사 처리는 다른 관리자가 진행해 주세요."':'')))+'</div></td>':'';
+          attrs+(m.name===user.name?' disabled title="본인의 퇴사 처리는 다른 관리자가 진행해 주세요."':'')))+'</div></td>';
       return '<tr><td>'+esc(N.teamLabel(m.team))+'</td><td>'+esc(m.name)+(m.name===user.name?' (본인)':'')+
         '</td><td>'+esc(m.rank||'미지정')+'</td><td>'+status+'</td>'+actions+'</tr>';
     }).join('');
     const retired=members.filter(m=>m.active===false).length;
-    const toolbar=canManage?'<div class="actions">'+button('passwords','개별 비밀번호 초기화')+
-      button('addMember','＋ 인원 추가','primary')+'</div>':'';
-    return '<section class="card people-admin-panel"><div class="sectionhead"><div><h2>'+(canManage?'입사·퇴사 인원 관리':'우리 팀 멤버')+
-      '</h2><p class="muted">재직 '+(members.length-retired)+'명'+(canManage?' · 퇴사 '+retired+'명':'')+'</p></div>'+toolbar+
+    const toolbar='<div class="actions">'+button('passwords','개별 비밀번호 초기화')+
+      button('addMember','＋ 인원 추가','primary')+'</div>';
+    return '<section class="card people-admin-panel"><div class="sectionhead"><div><h2>입사·퇴사 인원 관리</h2>'+
+      '<p class="muted">재직 '+(members.length-retired)+'명 · 퇴사 '+retired+'명</p></div>'+toolbar+
       '</div><div class="table-wrap people-sheet"><table><caption class="sr-only">등록 인원과 재직 상태</caption><thead><tr>'+
       '<th scope="col">팀</th><th scope="col">이름</th><th scope="col">직급</th><th scope="col">상태</th>'+
-      (canManage?'<th scope="col">관리</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div></section>';
+      '<th scope="col">관리</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>';
   }
   function editMemberRankDialog(name){
-    if(!P.canManage(state,user.name))throw new Error('관리자만 직급을 변경할 수 있습니다.');
     const person=member(name);if(!person)throw new Error('인원을 찾을 수 없습니다.');
     showDialog('<div class="modal-head"><h2>직급 변경</h2>'+button('close','닫기')+'</div><form id="memberRankForm"><div class="modal-body"><p>'+esc(N.teamLabel(person.team))+' · '+esc(person.name)+'</p><input type="hidden" name="name" value="'+esc(person.name)+'"><div class="field"><label for="existingMemberRank">직급</label><input id="existingMemberRank" name="rank" maxlength="30" required value="'+esc(person.rank||'')+'"></div><div id="memberRankError" class="error" role="alert"></div></div><div class="modal-foot">'+button('close','취소')+'<button class="primary">직급 저장</button></div></form>');
   }
@@ -867,7 +867,11 @@
     if(formId==='heroDesignForm'){e.preventDefault();try{heroDesign.save(displayProfile(user),heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
     if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(formId==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
-    if(['memberForm','memberRankForm','removeMemberForm'].includes(formId)&&!P.canManage(state,user?.name)){e.preventDefault();toast('관리자만 사용할 수 있습니다.');return;}
+    if(personnelForms.has(formId)&&!W.canPersonnel(state,user?.name)){
+      e.preventDefault();
+      toast('WorkLog 관리자만 사용할 수 있습니다.');
+      return;
+    }
     if(formId==='expenseCardForm'||formId==='expenseEntryForm'){
       e.preventDefault();
       try{
@@ -907,7 +911,6 @@
     if(formId==='organizationForm'||formId==='organizationLevelForm'){
       e.preventDefault();
       try{
-        if(!P.isOverallAdmin(state,user?.name))throw Error('WorkLog 관리자만 조직도를 편집할 수 있습니다.');
         const fields=new FormData(e.target),chart=readOrganization(),name=String(fields.get('name')||'').trim();
         if(!name||name.length>80)throw Error('이름을 1~80자로 입력해 주세요.');
         if(formId==='organizationLevelForm'){

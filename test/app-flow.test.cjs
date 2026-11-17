@@ -36,57 +36,70 @@ test('WorkLog 관리자 등록과 해제를 직책 관리에서 적용하고 공
 });
 test('모든 상세 탭은 렌더되고 업무는 보드가 기본이고 고객·주간보고는 표를 제공한다',async()=>{const h=harness(),s=P.addSamples(fixture());h.api.seed(s);h.api.session('김무현');for(const page of ['dashboard','work','memo','schedule','deadlines','leaves','revisions','customers','report','people','settings']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'),page);if(page==='work')assert.match(html,/남은 과업 보드/);if(page==='work'){assert.ok(!html.includes('board-filters'));assert.match(html,/board-control-row/);}if(page==='report')assert.match(html,/weekly-projects/);if(['customers','report'].includes(page)){if(page==='customers'){assert.match(html,/분류별/);assert.match(html,/과업별/);}assert.ok(html.indexOf('data-scope="all"')<html.indexOf('data-scope="team"'));assert.ok(html.indexOf('data-scope="team"')<html.indexOf('data-scope="personal"'));}}});
 test('일정 제목에는 날짜칸이 없고 각 일정·마감·휴가에 날짜칸이 붙는다',async()=>{const h=harness();h.api.seed(P.savePersonal(C.importRows(fixture(),[{id:'scheduled',과업명:'일정 검증',담당자_퍼블:'김무현',시작일:C.today(),마감일:C.today()}]).state,'김무현',{title:'오늘 일정 검증',date:C.today()}));h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});let html=h.element('#app').innerHTML;assert.ok(html.includes('week-countdown'));assert.ok(!/<div class="sectionhead">[\s\S]*?week-countdown[\s\S]*?<div class="agenda-list">/.test(html.split('<div class="agenda-list">')[0]));for(const page of ['deadlines']){await h.api.act({dataset:{action:'page',page}});assert.match(h.element('#app').innerHTML,/week-countdown/);}});
-test('인원관리에서 조직도·직책·멤버를 나누고 기존 관리 권한을 적용한다',async()=>{
- const s=P.setLeaders(fixture(),{기획:'성아미'});
- for(const actor of ['정윤정','성아미','김무현']){
+test('WorkLog 관리자만 인원관리 메뉴와 설정을 사용할 수 있다',async()=>{
+ const s=P.setTeamAdmins(P.setLeaders(fixture(),{디자인:'홍소영'}),'김무현',['성아미']);
+ for(const actor of ['정윤정','홍소영','성아미','김무현']){
   const h=harness();h.api.seed(s);h.api.session(actor);h.api.render();
   const hasTab=h.element('#app').innerHTML.includes('data-page="people"');
-  assert.equal(hasTab,actor!=='정윤정');
-  if(!hasTab)continue;
-  const isAdmin=actor==='김무현';
+  assert.equal(hasTab,actor==='김무현');
+  if(!hasTab){
+   const before=JSON.stringify(h.api.read().state);
+   await assert.rejects(h.api.act({dataset:{action:'page',page:'people'}}),/인원관리 권한/);
+   for(const action of ['addMember','editMemberRank','passwords','rankAdd','orgEdit','adminSettings']){
+    await assert.rejects(h.api.act({dataset:{action}}),/WorkLog 관리자/);
+   }
+   for(const [id,fields] of Object.entries({
+    memberForm:{name:'새 멤버',team:'기획',rank:'대리'},
+    memberRankForm:{name:'정윤정',rank:'부장'},
+    removeMemberForm:{name:'정윤정',retention:'keep',acknowledge:'on'},
+    adminsForm:{admins:[actor]},
+    rankOrderForm:{name:'새 직책'},
+    organizationForm:{id:'worklog',name:'다른 이름'},
+    organizationLevelForm:{index:'0',name:'다른 레벨'}
+   }))h.submit({id,fields});
+  assert.equal(JSON.stringify(h.api.read().state),before);
+   continue;
+  }
   await h.api.act({dataset:{action:'page',page:'people'}});
   const org=h.element('#app').innerHTML;
   assert.match(org,/data-section="org" aria-pressed="true"/);
   assert.match(org,/people-org-sheet/);
   assert.match(org,/rowspan="\d+"><div class="people-cell-actions"><strong>WorkLog/);
-  assert.equal(org.includes('<strong>디자인</strong>'),isAdmin);
-  if(isAdmin)assert.match(org,/<div class="people-org-member"><strong>김무현<\/strong><span class="muted">대리<\/span><span class="badge">관리자<\/span><\/div>/);
+  assert.ok(org.includes('<strong>디자인</strong>'));
+  assert.match(org,/<div class="people-org-member"><strong>김무현<\/strong><span class="muted">대리<\/span><span class="badge">관리자<\/span><\/div>/);
   assert.doesNotMatch(org,/입사·퇴사 인원 관리|팀원 휴가 관리/);
   await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
   const roles=h.element('#app').innerHTML;
   assert.match(roles,/data-section="roles" aria-pressed="true"/);
   assert.match(roles,/직책과 정렬 순서/);
-  assert.equal(roles.includes('data-action="rankAdd"'),isAdmin);
-  assert.equal(roles.includes('data-action="rankEdit"'),isAdmin);
-  assert.equal(roles.includes('data-action="adminSettings"'),isAdmin);
+  assert.ok(roles.includes('data-action="rankAdd"'));
+  assert.ok(roles.includes('data-action="rankEdit"'));
+  assert.ok(roles.includes('data-action="adminSettings"'));
   assert.doesNotMatch(roles,/전체관리자|팀관리자/);
   assert.deepEqual([...roles.matchAll(/<tr><td>(부장|차장|과장|대리|사원)<\/td>/g)].map(match=>match[1]),['부장','차장','과장','대리','사원']);
   await h.api.act({dataset:{action:'peopleSection',section:'members'}});
   const members=h.element('#app').innerHTML;
   assert.match(members,/data-section="members" aria-pressed="true"/);
   assert.doesNotMatch(members,/팀원 휴가 관리|leave-workspace/);
-  assert.equal(members.includes('우리 팀 멤버'),!isAdmin);
-  assert.equal(members.includes('입사·퇴사 인원 관리'),isAdmin);
-  assert.equal(members.includes('개별 비밀번호 초기화'),isAdmin);
+  assert.ok(members.includes('입사·퇴사 인원 관리'));
+  assert.ok(members.includes('개별 비밀번호 초기화'));
   const nav=members.match(/<nav\b[\s\S]*?<\/nav>/)[0];
   assert.match(nav,/data-page="dashboard"[^]*?<\/div><div class="nav-section"><button[^>]*data-page="memo"[^]*?data-section="work"/);
   const teamNav=nav.slice(nav.indexOf('id="nav-team"'));
   assert.deepEqual([...teamNav.matchAll(/data-page="([^"]+)"/g)].map(match=>match[1]),['board','leaves','cardHistory','people']);
   assert.doesNotMatch(nav,/개인관리/);
-  if(isAdmin){
-   await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
-   await h.api.act({dataset:{action:'rankAdd'}});
-   assert.match(h.element('#editor').innerHTML,/신규 직책 추가/);
-   h.submit({id:'rankOrderForm',fields:{old:'',name:'리드'}});
-   assert.equal(P.ranks(h.api.read().state).at(-1),'리드');
-   await h.api.act({dataset:{action:'rankUp',rank:'리드'}});
-   assert.equal(P.ranks(h.api.read().state).at(-2),'리드');
-   await h.api.act({dataset:{action:'rankEdit',rank:'리드'}});
-   h.submit({id:'rankOrderForm',fields:{old:'리드',name:'팀 리드'}});
-   assert.equal(P.ranks(h.api.read().state).at(-2),'팀 리드');
-   await h.api.act({dataset:{action:'rankDelete',rank:'팀 리드'}});
-   assert.ok(!P.ranks(h.api.read().state).includes('팀 리드'));
-  }
+  await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
+  await h.api.act({dataset:{action:'rankAdd'}});
+  assert.match(h.element('#editor').innerHTML,/신규 직책 추가/);
+  h.submit({id:'rankOrderForm',fields:{old:'',name:'리드'}});
+  assert.equal(P.ranks(h.api.read().state).at(-1),'리드');
+  await h.api.act({dataset:{action:'rankUp',rank:'리드'}});
+  assert.equal(P.ranks(h.api.read().state).at(-2),'리드');
+  await h.api.act({dataset:{action:'rankEdit',rank:'리드'}});
+  h.submit({id:'rankOrderForm',fields:{old:'리드',name:'팀 리드'}});
+  assert.equal(P.ranks(h.api.read().state).at(-2),'팀 리드');
+  await h.api.act({dataset:{action:'rankDelete',rank:'팀 리드'}});
+  assert.ok(!P.ranks(h.api.read().state).includes('팀 리드'));
  }
 });
 test('수정작업 저장은 부모 과업을 보존하고 수정 탭과 엑셀 분류 열에 반영한다',async()=>{const h=harness(),s=P.addSamples(fixture()),root=s.projects[0];h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state.projects[0]);await h.api.act({dataset:{action:'newRevision',id:root.id}});h.api.saveProject({title:'검증용 1차 수정',taskCategory:'UX',platform:'PC&MO',contentCategory:'',contentType:'',logContent:'',logDate:C.today()});const state=h.api.read().state,revision=state.projects.find(p=>p.parentProjectId===root.id);assert.ok(revision);assert.equal(JSON.stringify(state.projects[0]),before);await h.api.act({dataset:{action:'page',page:'revisions'}});assert.match(h.element('#app').innerHTML,/검증용 1차 수정/);await h.api.exportXlsx();const sheet=h.context.exportedSheets[0];assert.deepEqual(Array.from(sheet.headers.slice(0,3)),['분류 1','분류 2','분류 3']);assert.equal(sheet.headers.length,sheet.rows[0].length);});
