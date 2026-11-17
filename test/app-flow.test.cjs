@@ -91,18 +91,18 @@ test('제거한 캐릭터는 선택 목록에서 숨기고 기존 선택은 기�
  const h=harness(),s=fixture();s.members.find(m=>m.name==='김무현').avatar='kirby';h.api.seed(s);h.api.session('김무현');h.api.render();
  assert.match(h.element('#app').innerHTML,/내 캐릭터 변경: 용용이/);
  await h.api.act({dataset:{action:'avatarSettings'}});
- for(const key of ['kirby','pikachu','charmander']){
+ for(const key of ['kirby','charmander']){
   assert.ok(!h.element('#editor').innerHTML.includes('data-avatar="'+key+'"'));
   await assert.rejects(h.api.act({dataset:{action:'setAvatar',avatar:key}}));
  }
 });
 
-test('새 3D 햄토리와 펭귄을 선택하면 프로필과 빈 안내에 적용하고 저장할 수 있다',async()=>{
+test('햄토리·펭귄·피카츄를 선택하면 프로필과 빈 안내에 적용하고 저장할 수 있다',async()=>{
  const h=harness();h.api.seed(fixture());h.api.session('김무현');
- for(const key of ['hamtaro','penguin']){
-  await h.api.act({dataset:{action:'avatarSettings'}});assert.ok(h.element('#editor').innerHTML.includes(key+'-3d.png'));
+ for(const [key,file] of [['hamtaro','hamtaro-3d.png'],['penguin','penguin-3d.png'],['pikachu','pikachu.gif']]){
+  await h.api.act({dataset:{action:'avatarSettings'}});assert.ok(h.element('#editor').innerHTML.includes(file));
   await h.api.act({dataset:{action:'setAvatar',avatar:key}});const html=h.element('#app').innerHTML;
-  assert.ok(html.includes(key+'-3d.png'));assert.ok([...html.matchAll(/class="illustrated-hint"><img src="([^"]+)"/g)].every(m=>m[1].endsWith(key+'-3d.png')));
+  assert.ok(html.includes(file));assert.ok([...html.matchAll(/class="illustrated-hint"><img src="([^"]+)"/g)].every(m=>m[1].endsWith(file)));
   assert.doesNotThrow(()=>C.validateState(JSON.parse(JSON.stringify(h.api.read().state))));
  }
 });
