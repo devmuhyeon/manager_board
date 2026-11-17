@@ -14,25 +14,40 @@
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
-  let boardTeam='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
+  let boardTeam='all',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   let rankDraft=[];
-  let selectedProject='',leaveView='date',leavePerson='';
+  let linkedProject='',selectedProject='',leaveView='date',leavePerson='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
   state=P.migrateRoles(state);P.upgrade(state);C.setMembers(P.orderedMembers(state));
   let developmentSamples=false;
   const heroDesign=BoardBriefingHero.create(localStorage);let heroDraft=null,heroSecretCount=0,heroSecretTime=0;
-  function sourceRows({includeRemoved=false}={}){
+  function sourceRows({includeRemoved=false,forReports=false}={}){
     const snapshot=state.sourceSnapshotIds&&new Set(state.sourceSnapshotIds);
-    return state.projects.filter(project=>!state.hiddenProjects?.includes(project.id)&&(demoSession||project.raw&&(includeRemoved||!snapshot||snapshot.has(project.id))))
-      .map(project=>project.raw?{...C.normalize(project.raw),sourceHistory:project.sourceHistory,sourceRemoved:Boolean(snapshot&&!snapshot.has(project.id))}:C.effective(project));
+    const useWorkflowSamples=demoSession&&forReports&&state.projects.some(project=>project.workflowFixture);
+    return state.projects.filter(project=>!state.hiddenProjects?.includes(project.id)&&(demoSession?(!useWorkflowSamples||project.workflowFixture||project.id===linkedProject):project.raw&&(includeRemoved||!snapshot||snapshot.has(project.id))))
+      .map(project=>project.raw?{...C.normalize(project.raw),sourceHistory:project.sourceHistory,sourceAssignments:project.sourceAssignments,sourceRemoved:Boolean(snapshot&&!snapshot.has(project.id))}:C.effective(project));
   }
   const heroRows=()=>sourceRows();
+  const reportViews={work:'UIUX',report:'주간 업무',customers:'고객별',projects:'과업별'};
+  function relatedRows(includeRemoved=false){
+    return sourceRows({includeRemoved,forReports:true}).filter(project=>!linkedProject||project.id===linkedProject);
+  }
+  function projectLinks(id){
+    if(!id)return '';
+    const activeInSource=demoSession||!state.sourceSnapshotIds||state.sourceSnapshotIds.includes(id);
+    return '<div class="related-project-links" role="group" aria-label="같은 과업 보기">'+Object.entries(reportViews).filter(([key])=>key!==page&&(activeInSource||key==='report'||key==='projects')).map(([key,label])=>button('relatedProject',label,'','data-page="'+key+'" data-id="'+esc(id)+'"')).join('')+'</div>';
+  }
+  function linkedProjectBar(){
+    if(!linkedProject||!reportViews[page])return '';
+    const project=relatedRows(true)[0];
+    return '<div class="linked-project-bar">'+(project?'<strong>'+esc(project.title)+'</strong>':'<strong>연결된 과업</strong>')+projectLinks(linkedProject)+button('clearLinkedProject','전체 목록')+'</div>';
+  }
   const heroEditorHTML=()=>BoardBriefingHero.editor({user,rows:heroRows(),C,N,esc,record:heroDraft,button});
   const styles=BoardDisplayStyles.create({storage:localStorage,element:document.documentElement});
   window.addEventListener('storage',e=>{if(e.key===BoardDisplayStyles.KEY||e.key==='workplace-theme'||e.key===null){styles.restore();render();}});
   const presence=BoardPresence.create({onChange:()=>{const host=$('#onlineProfiles');if(host)host.innerHTML=BoardPresence.render(presence.snapshot(),esc);liveCursors?.paint();}});
-  const liveCursors=BoardLiveCursors.create({document,window,getView:()=>page==='work'?JSON.stringify([boardMode,boardLayout,boardName,filters]):'',setCursor:c=>presence.setCursor(c),getPeople:()=>presence.snapshot().people,getUser:()=>user});
+  const liveCursors=BoardLiveCursors.create({document,window,getView:()=>page==='work'?JSON.stringify([boardMode,boardLayout,boardName,filters,linkedProject]):'',setCursor:c=>presence.setCursor(c),getPeople:()=>presence.snapshot().people,getUser:()=>user});
   window.addEventListener('pagehide',()=>{presence.stop().catch(()=>{});});
   window.addEventListener('pageshow',()=>{presence.setSession({directory:demoSession?null:targetDir,user:demoSession?null:user,members:state.members}).catch(()=>{});});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)presence.refresh().catch(()=>{});});
@@ -50,7 +65,7 @@
   function persist(){if(demoSession)return true;if(cacheError){toast(cacheError);return false;}try{localStorage.setItem(CACHE,JSON.stringify(state));localStorage.setItem(CACHE+'-dirty',String(dirty));return true;}catch(e){toast('브라우저 임시 저장에 실패했습니다. JSON 백업으로 보관해 주세요.');return false;}}
   function changed(){dirty=true;persist();}
   function f(){return {...filters,scope,user:user?.name,team:selectedTeam,taskMode:page!=='report'&&view==='sheet'};}
-  function projects(){const filter=f();return C.filterProjects(['customers','deadlines'].includes(page)?sourceRows():state.projects,page==='work'&&view==='board'?{...filter,from:'',to:''}:filter);}
+  function projects(){const filter=f();return C.filterProjects(page==='customers'?relatedRows():page==='deadlines'?sourceRows():state.projects,page==='work'&&view==='board'?{...filter,from:'',to:''}:filter);}
   function download(blob,name){const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   const badge=s=>`<span class="badge ${esc(s)}">${esc(s)}</span>`;
   const T=BoardWorkTables.create({C,N,esc,button,badge,orderNames:names=>P.orderNames(state,names)});
@@ -87,9 +102,8 @@
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
-    if(!B.canRead(state,user.name,boardTeam))boardTeam=user.team;
-    let body=page==='workContent'?'<section class="card"><p class="empty">등록된 콘텐츠 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:sourceRows({includeRemoved:Boolean(selectedProject)}),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam):page==='today'?D.today(state,user):page==='report'?report():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?'<p class="schedule-help">업무관리의 시작일~마감일을 기준으로 표시합니다. 과업명을 누르면 같은 카드를 확인·수정할 수 있습니다.</p><div class="home-panels weekly-schedule-panels">'+schedulePanel().thisWeek+schedulePanel().nextWeek+'</div>':page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
-    $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(user)+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">워크 플레이스 / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+BoardPresence.render(presence.snapshot(),esc)+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll','↻ 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['customers','report','revisions'].includes(page)?button('export','↓ 엑셀 내보내기'):'' )+'</div>'+body+'</div></main></div>',styles.current());
+    let body=page==='workContent'?'<section class="card"><p class="empty">등록된 콘텐츠 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam):page==='today'?D.today(state,user):page==='report'?report():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?'<p class="schedule-help">업무관리의 시작일~마감일을 기준으로 표시합니다. 과업명을 누르면 같은 카드를 확인·수정할 수 있습니다.</p><div class="home-panels weekly-schedule-panels">'+schedulePanel().thisWeek+schedulePanel().nextWeek+'</div>':page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
+    $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(user)+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">워크 플레이스 / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+BoardPresence.render(presence.snapshot(),esc)+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll','↻ 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['customers','report','revisions'].includes(page)?button('export','↓ 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
     BoardBriefingHero.mount(document);
@@ -115,8 +129,8 @@
       +button('new','＋ 새 과업 등록','primary')
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
       +'</div></div>':'';
-    const content=isBoard&&boardMode==='workflow'&&boardLayout==='table'?'<div class="board-table-view">'+projectTable(BoardTaskBoard.cards(sourceRows(),boardAssignee(),true,C,{from:filters.from,to:filters.to}).map(card=>card.project))+'</div>':isBoard&&boardMode==='workflow'&&boardLayout==='cards'
-      ?BoardTaskBoard.renderWorkflow({rows:sourceRows(),internalRows:rows,name:boardAssignee(),C,esc,button,actor:user.name,period:{from:filters.from,to:filters.to},sourceIds:state.sourceSnapshotIds,demo:demoSession,includeSamples:demoSession})
+    const content=isBoard&&boardMode==='workflow'&&boardLayout==='table'?'<div class="board-table-view">'+projectTable(BoardTaskBoard.cards(relatedRows(),boardAssignee(),true,C,{from:filters.from,to:filters.to}).map(card=>card.project))+'</div>':isBoard&&boardMode==='workflow'&&boardLayout==='cards'
+      ?BoardTaskBoard.renderWorkflow({rows:relatedRows(),internalRows:rows,name:boardAssignee(),C,esc,button,actor:user.name,period:{from:filters.from,to:filters.to},sourceIds:state.sourceSnapshotIds,demo:demoSession,includeSamples:demoSession})
       :isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode==='workflow'?'project':boardMode,layout:boardLayout,closedWeeks,closedLanes,expandedCards,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
@@ -128,11 +142,11 @@
   function taskRows(rows){const tf=f();if(!tf.taskMode){tf.status='';tf.from='';tf.to='';}return rows.flatMap(p=>(p.tasks?.length?p.tasks:[{role:'기타',assignees:p.assignees,started:p.started,due:p.due,status:p.status,notes:p.description}]).filter(t=>C.matchesTask(t,tf)).map(t=>({p,t})));}
   function sheetTable(rows){return T.tasks(taskRows(rows));}
   function customerCards(){
-    const all=sourceRows(),key=customerMode==='team'?'customer':'requester';
+    const all=relatedRows(),key=customerMode==='team'?'customer':'requester';
     const values=[...new Set(all.map(p=>p[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
     return `<div class="heading"><div class="tabs">${button('customerMode','고객 팀별',customerMode==='team'?'active':'','data-mode="team"')}${button('customerMode','고객 이름별',customerMode==='name'?'active':'','data-mode="name"')}${button('allCustomers','전체 고객')}</div></div><div class="customer-grid">${values.map(v=>{const rows=all.filter(p=>p[key]===v);return button('customer',`<strong>${esc(v)}</strong><p>전체 ${rows.length}건 &nbsp;·&nbsp; 미완료 ${rows.filter(p=>!C.isComplete(p.status)).length}건</p>`,`card customer-card ${filters[key]===v?'active':''}`,`data-value="${esc(v)}"`);}).join('')||'<p class="muted">등록된 고객이 없습니다.</p>'}</div>`;
   }
-  function reportRows(){return C.filterProjects(sourceRows({includeRemoved:true}),{...f(),from:'',to:''});}
+  function reportRows(){return C.filterProjects(relatedRows(true),{...f(),from:'',to:''});}
   function report(){return '<section class="card weekly-report"><div class="weekly-report-toolbar">'+scopeTabs()+button('reportRefresh','원본 새로고침')+'</div>'+filterBar(true)+BoardProjectReport.weeklyTable({rows:reportRows(),filters,Board:BoardTaskBoard,esc,button})+'</section>';}
 
   function settings(){return `<div class="settings-grid"><section class="card settings-card"><h2>원본과 저장 폴더</h2><p>원본 기준 폴더는 Z:\\고용24 디자인파트 요청관리\\디자인파트요청관리\\입니다. 요청관리 JSON의 정확한 위치는 직접 선택합니다. 원본의 프로젝트 자료와 팀관리 JSON도 변경하지 않습니다.</p>${connectionCards()}<div class="actions">${button('refreshAll','최신 자료 새로고침')}${button('reload','저장된 통합관리 파일 다시 읽기')}</div><p>최근 가져오기: ${state.importedAt?new Date(state.importedAt).toLocaleString('ko-KR'):'아직 없음'}</p></section><section class="card settings-card"><h2>저장 및 백업</h2><p>과업·인원·메모 변경사항은 현재 브라우저에 임시 저장됩니다. 내용 저장을 누르면 선택한 Y 폴더의 <strong>save/</strong> 아래 기능별 JSON에 반영합니다.</p><div class="actions">${button('save','내용 저장','primary')}${button('backup','통합관리 JSON 내려받기')}${button('restore','통합관리 JSON 복원')}</div><p>다른 사용자가 먼저 저장하면 덮어쓰기를 중단합니다. 동시 저장 이력이 갈라지면 양쪽 자료를 보존하고 복구 전까지 추가 저장을 차단합니다. 작업 전 새로고침을 권장합니다.</p></section></div>`;}
@@ -158,7 +172,7 @@
       +(raw.start?'<p>원문 작업시작일자: '+esc(raw.start)+'</p>':'')
       +(raw.end?'<p>작업종료일자: '+esc(raw.end)+'</p>':'')
       +'<h3>고객 작업 내용</h3><pre>'+esc(raw.notes||'기재된 작업 내용이 없습니다.')+'</pre>'+BoardProjectReport.sourceTimeline(original,esc)+'</div>'
-      +'<div class="modal-foot">'+button('edit','수정','primary','data-id="'+esc(id)+'"')+'</div>');
+      +'<div class="modal-foot">'+projectLinks(id)+button('edit','수정','primary','data-id="'+esc(id)+'"')+'</div>');
   }
   async function refreshWorkflowSource(){
     if(demoSession||!sourceHandle||!user)return;
@@ -174,7 +188,15 @@
       state=P.enforceRemovals(result.state);syncRoster();changed();render();
     }catch(error){toast('최신 고객 요청을 읽지 못했습니다. '+error.message);}
   }
-  function boardDetail(id){if(!state.projects.some(p=>p.id===id)||state.hiddenProjects?.includes(id))return;if($('#editor').open)$('#editor').close();selectedProject=id;page='projects';closedNav=closedNav.filter(key=>key!=='reports');render();}
+  function goToRelatedProject(id,destination){
+    if(!Object.hasOwn(reportViews,destination)||!state.projects.some(project=>project.id===id)||state.hiddenProjects?.includes(id))return;
+    if($('#editor').open)$('#editor').close();
+    linkedProject=id;selectedProject=destination==='projects'?id:'';
+    page=destination;view=page==='work'?'board':'category';scope='all';boardName='';
+    filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:page==='report'?'requestedDue':'due',from:'',to:''};
+    closedNav=closedNav.filter(key=>key!==(page==='work'?'work':'reports'));render();
+  }
+  function boardDetail(id){goToRelatedProject(id,'projects');}
   function openEditor(id,parentId){
     dialogOpener=document.activeElement;
     const original=state.projects.find(p=>p.id===id);editing=original?C.effective(original):{id:C.uid(),source:'manual',title:'',customer:'',requester:'',category1:'',category2:'',requested:C.today(),requestedDue:'',description:'',link:'',logs:[],tasks:[]};
@@ -274,9 +296,10 @@
     if(a==='heroPalette'&&heroDraft){const palette=BoardBriefingHero.palettes.find(p=>p.id===el.dataset.palette);if(palette){const current=heroDraft[heroDraft.mode];heroDraft[heroDraft.mode]={...BoardBriefingHero.fromPalette(palette,heroDraft.mode),scale:current.scale,x:current.x,y:current.y,rx:current.rx,ry:current.ry,rz:current.rz,flip:current.flip};$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);}return;}
     if(a==='heroSaveMode'&&heroDraft){heroDesign.saveMode(user,heroDraft.mode,heroDraft[heroDraft.mode]);toast((heroDraft.mode==='big'?'대두형':'기본형')+' 설정을 이 사용자·캐릭터에 저장했습니다.');return;}
     if(a==='heroReset'&&heroDraft){heroDraft[heroDraft.mode]=BoardBriefingHero.defaults(user,heroDraft.mode);$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
-    if(a==='allProjects'){selectedProject='';render();return;}
+    if(a==='relatedProject'){goToRelatedProject(el.dataset.id,el.dataset.page);return;}
+    if(a==='allProjects'||a==='clearLinkedProject'){linkedProject='';selectedProject='';render();return;}
     if(a==='leaveView'){leaveView=el.dataset.view;render();return;}
-    if(a==='page'){selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'requestedDue',from:'',to:''};}render();if(page==='work'||page==='report')await refreshWorkflowSource();}
+    if(a==='page'){linkedProject='';selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'requestedDue',from:'',to:''};}render();if(Object.hasOwn(reportViews,page))await refreshWorkflowSource();}
     else if(a==='scope'){scope=el.dataset.scope;render();}
     else if(a==='view'){view=el.dataset.view;render();}
     else if(a==='boardLayout'){boardLayout=boardLayout==='cards'?'table':'cards';render();}
@@ -349,8 +372,9 @@
     else if(['rankUp','rankDown','rankDelete','rankAdd'].includes(a)){if(!P.isOverallAdmin(state,user.name))throw Error('전체관리자만 사용할 수 있습니다.');document.querySelectorAll('[data-rank-index]').forEach(input=>rankDraft[Number(input.dataset.rankIndex)].name=input.value);const i=Number(el.dataset.index);if(a==='rankAdd')rankDraft.push({old:'',name:''});if(a==='rankDelete')rankDraft.splice(i,1);const j=a==='rankUp'?i-1:i+1;if(['rankUp','rankDown'].includes(a)&&j>=0&&j<rankDraft.length)[rankDraft[i],rankDraft[j]]=[rankDraft[j],rankDraft[i]];rankSettings();}
     else if(a==='transferAdmin')transferAdminDialog();
     else if(a==='editQuickLinks')quickLinksDialog();
-    else if(a==='boardTeam'){if(!B.canRead(state,user.name,el.dataset.team))throw Error('게시판 접근 권한이 없습니다.');boardTeam=el.dataset.team;render();}
-    else if(a==='newPost'||a==='editPost')showDialog(D.postForm(state,user,boardTeam,el.dataset.id));
+    else if(a==='boardTeam'){if(!B.TABS.some(([key])=>key===el.dataset.team))return;boardTeam=el.dataset.team;render();}
+    else if(a==='postNotice')showDialog(D.noticeForm(state,user,el.dataset.id));
+    else if(a==='newPost'||a==='editPost')showDialog(D.postForm(state,user,boardTeam==='common'||B.canRead(state,user.name,boardTeam)?boardTeam:user.team,el.dataset.id));
     else if(a==='deletePost'){if(confirm('게시글을 삭제하시겠습니까?')){state=B.remove(state,user.name,el.dataset.id);changed();$('#editor').close();render();}}
     else if(a==='userWork'){userWork=el.dataset.name||'';render();}
     else if(a==='passwords')passwordSettings();
@@ -522,6 +546,7 @@
     if(e.target.id==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(e.target.id==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
     if(['leadersForm','memberForm','memberRankForm','removeMemberForm'].includes(e.target.id)&&!P.canManage(state,user?.name)){e.preventDefault();toast('전체관리자만 사용할 수 있습니다.');return;}
+    if(e.target.id==='postNoticeForm'){e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));state=B.setNotice(state,user.name,data);changed();$('#editor').close();render();toast('공지 설정을 저장했습니다.');}catch(err){$('#postError').textContent=err.message;}}
     if(e.target.id==='postForm'){e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));state=B.save(state,user.name,data);changed();$('#editor').close();render();toast('게시글을 저장했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#postError').textContent=err.message;}}
     if(e.target.id==='quickLinksForm'){e.preventDefault();try{if(!P.isOverallAdmin(state,user?.name))throw Error('전체관리자만 설정할 수 있습니다.');const data=new FormData(e.target);state.quickLinks=N.cleanLinks(Array.from({length:4},(_,i)=>({label:data.get('label'+i),url:data.get('url'+i)})).filter(l=>l.label||l.url));changed();$('#editor').close();render();}catch(err){$('#quickLinksError').textContent=err.message;}}
     if(e.target.id==='transferAdminForm'){e.preventDefault();try{const target=new FormData(e.target).get('target'),next=P.transferAdmin(state,user?.name,target);if(!confirm(target+'님에게 전체관리자를 이전하시겠습니까? 본인의 관리 권한은 해제됩니다.'))return;state=next;changed();$('#editor').close();render();toast('전체관리자를 이전했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#transferAdminError').textContent=err.message;}}

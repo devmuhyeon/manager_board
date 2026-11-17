@@ -271,3 +271,25 @@ test('주간 업무는 고객 원본을 주차별 표로 표시하고 상세에�
  assert.match(detail,/고객 원본 변경 이력/);assert.match(detail,/이전: 접수/);assert.match(detail,/변경: 진행중/);assert.doesNotMatch(detail,/내부 전용 기록/);
  await h.api.exportXlsx();assert.ok(h.context.exportedSheets[1].rows.some(row=>row.some(cell=>String(cell).includes('이전: 접수'))));
 });
+
+test('같은 원본 ID로 UIUX, 주간 업무, 고객별, 과업별을 오간다',async()=>{
+ const h=harness();h.api.seed(C.importRows(fixture(),[{id:'shared',과업명:'연결 대상',요청팀:'고객 A',담당자_퍼블:'김무현'},{id:'neighbor',과업명:'다른 과업',요청팀:'고객 A'}]).state);h.api.session('김무현','work');
+ await h.api.act({dataset:{action:'workflowDetail',id:'source:shared'}});assert.match(h.element('#editor').innerHTML,/data-action="relatedProject"[^>]*data-page="report"[^>]*data-id="source:shared"/);
+ for(const page of ['report','customers','projects','work']){
+  await h.api.act({dataset:{action:'relatedProject',page,id:'source:shared'}});
+  const html=h.element('#app').innerHTML;
+  assert.match(html,/linked-project-bar/);assert.match(html,/연결 대상/);assert.doesNotMatch(html,/다른 과업/);
+ }
+ await h.api.act({dataset:{action:'clearLinkedProject'}});assert.match(h.element('#app').innerHTML,/다른 과업/);
+});
+
+test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 설정으로 상단 고정한다',async()=>{
+ const h=harness(),s=fixture(),B=h.context.BoardTeamPosts;s.members.find(m=>m.name==='김무현').avatar='bbiyak';
+ h.api.seed(B.save(s,'김무현',{team:'퍼블',type:'일반글',title:'검토 글',content:'상세 내용'}));h.api.session('김무현','board');h.api.render();
+ const html=h.element('#app').innerHTML,tabs=[...html.matchAll(/data-action="boardTeam"[^>]*>([^<]+)<\/button>/g)].map(match=>match[1]);
+ assert.deepEqual(tabs,['전체','공통','기획','퍼블','디자인','콘텐츠']);assert.match(html,/post-byline"><img[^>]+><strong>김무현/);
+ const post=h.api.read().state.teamPosts[0];await h.api.act({dataset:{action:'postNotice',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
+ h.submit({id:'postNoticeForm',fields:{id:post.id,type:'전체공지',pinned:'on'}});
+ await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/공통 공지 · 고정/);assert.match(h.element('#app').innerHTML,/검토 글/);
+ assert.throws(()=>B.setNotice(h.api.read().state,'정윤정',{id:post.id,type:'일반글',pinned:false}),/권한/);
+});

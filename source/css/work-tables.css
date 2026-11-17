@@ -81,3 +81,15 @@
 .workflow-source-history{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
 .workflow-source-history h3{margin:0 0 8px;font-weight:700}
 .workflow-source-history>.muted{margin:0 0 16px}
+
+:root[data-style] .bulletin-board .board-posts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:16px;padding:16px 24px 24px}
+.bulletin-toolbar,.linked-project-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bulletin-toolbar{padding:16px 24px 0}.bulletin-toolbar .tabs{flex-wrap:wrap}
+.bulletin-board .board-posts>.empty{grid-column:1/-1}.bulletin-board .board-post{min-width:0}
+.bulletin-board .post-byline,.bulletin-board .post-actions,.related-project-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bulletin-board .post-byline{margin-top:12px;color:var(--muted);font-size:12px}
+.bulletin-board .post-byline img{width:28px;height:28px;object-fit:contain}
+.bulletin-board .post-byline time{margin-left:auto}.bulletin-board .board-post p{overflow-wrap:anywhere}
+.linked-project-bar{padding:12px 16px;margin-bottom:16px;background:var(--surface);border-radius:8px;color:var(--text)}
+.linked-project-bar>strong{margin-right:auto;overflow-wrap:anywhere}
+@media(max-width:760px){:root[data-style] .bulletin-board .board-posts{grid-template-columns:1fr}.bulletin-toolbar{padding:16px 16px 0}}

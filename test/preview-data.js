@@ -1,5 +1,19 @@
 (function(root){
  'use strict';
+ function workflowSamples(C,day){
+  const rows=[
+   {id:'uiux-intake',과업명:'[샘플] 모바일 회원가입 개선',요청팀:'서비스 운영팀',진행상태:'접수',완료요청일:day(4),요청내용:'가입 첫 화면의 안내 문구를 검토해 주세요.'},
+   {id:'uiux-plan',과업명:'[샘플] 검색 필터 정책 정리',요청팀:'서비스 운영팀',진행상태:'진행중',완료요청일:day(3),담당자_기획:'성아미',작업내용_기획:'조건별 필터 노출 정책을 정리하고 있습니다.'},
+   {id:'uiux-history',과업명:'[샘플] 신청서 접근성 점검',요청팀:'신청 서비스팀',완료요청일:day(1),담당자_기획:'정윤정',담당자_퍼블:'김무현',처리결과:{진행상태:'접수',담당자_디자인:'홍소영'},요청내용:'키보드 이동과 입력 오류 안내를 확인합니다.'},
+   {id:'uiux-publish',과업명:'[샘플] 모바일 메뉴 반영',요청팀:'서비스 운영팀',진행상태:'완료',완료요청일:day(-3),담당자_퍼블:'김무현',작업내용_퍼블:'모바일 메뉴와 키보드 탐색을 검증했습니다.'},
+   {id:'uiux-revision',과업명:'[샘플] 공지 배너 문구 수정',요청팀:'고객 지원팀',진행상태:'완료 후 수정',완료요청일:day(-2),담당자_디자인:'최완이',작업내용_디자인:'고객 피드백으로 배너 제목과 줄바꿈을 수정합니다.'},
+   {id:'uiux-hold',과업명:'[샘플] FAQ 분류 개편',요청팀:'고객 지원팀',진행상태:'보류',담당자_기획:'정윤정',담당자_디자인:'김민재',요청내용:'고객이 FAQ 분류를 확정한 이후 진행합니다.'},
+   {id:'uiux-live',과업명:'[샘플] 대시보드 도움말 반영',요청팀:'신청 서비스팀',진행상태:'운영반영완료',완료요청일:day(-8),담당자_디자인:'홍소영',담당자_퍼블:'임정규',작업내용_퍼블:'운영 화면에서 도움말 표시를 확인했습니다.'}
+  ].map(row=>({...row,마감일:row.완료요청일||'',시작일:row.완료요청일?day(-9):''}));
+  const baseline=C.importRows(C.emptyState(),rows,day(-2)).state;
+  const updated=rows.map(row=>row.id==='uiux-history'?{...row,완료요청일:day(3),마감일:day(3),처리결과:{진행상태:'진행중',담당자_디자인:'홍소영, 김민재'}}:row);
+  return C.importRows(baseline,updated,day(0)).state.projects.map(project=>({...project,sampleFixture:true,workflowFixture:true}));
+ }
  function create(C,P){
   const state=P.upgrade({...C.emptyState(),projects:[],demo:false});
   const today=C.today(),day=n=>{const d=new Date(today+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
@@ -22,6 +36,7 @@
    project.tasks.forEach((task,j)=>{const pool=state.members.filter(m=>m.team===(i%4===0?'콘텐츠':j===0?'기획':j===1?'디자인':'퍼블'));task.assignees=[pool[Math.floor(i/2)%pool.length].name];task.started=start.toISOString().slice(0,10);task.due=due;task.status=statuses[i%6];task.progress=[0,40,100,25,100,60][i%6];if(task.status==='완료 후 수정'){task.progress=100;task.revisionProgress=20+(i%4)*15;}});
    project.logs.push({id:'ux-log-detail:'+i,date:day(-i%6),author:project.tasks[0].assignees[0],content:'[샘플] 담당자 검토 완료. 상세 화면, 긴 제목, 기간 겹침, 상태별 표현을 비교합니다.'});
   });
+  state.projects.push(...workflowSamples(C,day));
   state.personal={};state.leaves=[];state.leaveAllowances={[today.slice(0,4)]:{}};
   state.members.forEach((m,i)=>{m.avatar=i%2?'bbiyak':'yongyong';state.leaveAllowances[today.slice(0,4)][m.name]=15;
    state.personal[m.name]=Array.from({length:12},(_,j)=>['검토할 화면','UI 피드백 회의','체크리스트','다음 주 할 일','버튼 정렬 확인','모바일 화면 점검'][j%6]+' '+(j+1)).map((title,j)=>({id:'ux-memo:'+i+':'+j,title:'[샘플] '+title,content:'화면 검토 의견을 여기에 기록해 주세요.\n간격, 글자 크기, 이동 흐름을 확인합니다.',date:j<10?day((j-3)*3):'',endDate:j<10&&j%2?day((j-3)*3+2+j%3):'',time:j===1?'14:00':'',done:j===2}));
@@ -34,6 +49,7 @@
   if(input.developmentSamplesVersion===1)return input;
   const state=P.upgrade(structuredClone(input)),sample=create(C,P),active=state.members.filter(m=>m.active!==false);
   for(const project of sample.projects){
+   if(project.workflowFixture)continue;
    if(state.projects.some(p=>p.id===project.id))continue;
    project.tasks.forEach(task=>{task.assignees=task.assignees.filter(name=>active.some(m=>m.name===name));if(!task.assignees.length){const team=task.role==='디자인'?'디자인':task.role==='퍼블'?'퍼블':'기획';task.assignees=active.filter(m=>m.team===team).slice(0,1).map(m=>m.name);}});
    state.projects.push(project);
