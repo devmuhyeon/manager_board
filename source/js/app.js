@@ -652,9 +652,11 @@
       const actions=canEdit?'<div class="people-row-actions">'+
         button('orgAdd','＋','people-icon-button','data-parent="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 하위 항목 추가"')+
         button('orgEdit',Icons.arrow('edit'),'people-icon-button','data-id="'+esc(node.id)+'" aria-label="'+esc(node.name)+' 편집"')+'</div>':'';
-      rows[0]='<td class="people-org-group" rowspan="'+rows.length+'"><div class="people-cell-actions"><strong>'+esc(title)+'</strong>'+actions+'</div>'+
-        (node.person?.rank?'<span class="muted">'+esc(node.person.rank)+'</span>':'')+
-        (node.person&&P.isOverallAdmin(state,node.person.name)?' <span class="badge">관리자</span>':'')+'</td>'+rows[0];
+      const name='<strong>'+esc(title)+'</strong>';
+      const label=node.person?'<div class="people-org-member">'+name+
+        (node.person.rank?'<span class="muted">'+esc(node.person.rank)+'</span>':'')+
+        (P.isOverallAdmin(state,node.person.name)?'<span class="badge">관리자</span>':'')+'</div>':name;
+      rows[0]='<td class="people-org-group" rowspan="'+rows.length+'"><div class="people-cell-actions">'+label+actions+'</div></td>'+rows[0];
       return rows;
     }
     const rows=groups.flatMap(node=>branchRows(node,0)).map(row=>'<tr>'+row+'</tr>').join('');

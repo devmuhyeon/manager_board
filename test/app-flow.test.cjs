@@ -50,6 +50,7 @@ test('인원관리에서 조직도·직책·멤버를 나누고 기존 관리 �
   assert.match(org,/people-org-sheet/);
   assert.match(org,/rowspan="\d+"><div class="people-cell-actions"><strong>WorkLog/);
   assert.equal(org.includes('<strong>디자인</strong>'),isAdmin);
+  if(isAdmin)assert.match(org,/<div class="people-org-member"><strong>김무현<\/strong><span class="muted">대리<\/span><span class="badge">관리자<\/span><\/div>/);
   assert.doesNotMatch(org,/입사·퇴사 인원 관리|팀원 휴가 관리/);
   await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
   const roles=h.element('#app').innerHTML;

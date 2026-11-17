@@ -103,6 +103,7 @@ html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
 .people-org-group{vertical-align:top;min-width:144px}
 .people-cell-actions,.people-row-actions{display:flex;gap:4px;align-items:center}
 .people-cell-actions{justify-content:space-between}
+.people-org-member{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
 .people-row-actions{justify-content:flex-end}
 .content .people-management .people-icon-button{display:inline-grid;place-items:center;padding:0;width:28px;min-height:28px;border:0;box-shadow:none;color:var(--muted);background:transparent}
 .content .people-management .people-icon-button:hover:not(:disabled){color:var(--people-accent);background:var(--surface-soft)}
