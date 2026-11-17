@@ -1,4 +1,4 @@
-# 워크 플레이스
+# WorkLog
 
 ## 폴더 구성
 
@@ -17,12 +17,12 @@
 
 1. 전체 프로젝트를 고정된 위치에 압축 해제합니다.
 2. `prg/Create-Desktop-Shortcut.bat`를 실행하면 바탕화면 바로가기를 만듭니다.
-3. 바로가기 또는 `prg/Start-Workplace.bat`로 Edge 앱 창을 실행합니다. 주소 표시줄이나 탭은 표시되지 않습니다.
+3. 바로가기 또는 `prg/Start-WorkLog.bat`로 Edge 앱 창을 실행합니다. 주소 표시줄이나 탭은 표시되지 않습니다.
 4. 폴더를 옮긴 뒤에는 바로가기 생성 파일을 다시 실행하세요. 기존 버전의 로컬 서버가 열려 있다면 종료 후 새 버전을 실행하세요.
 
-기본 실행은 Windows PowerShell/.NET의 읽기 전용 로컬 서버 `http://127.0.0.1:49271/source/html/index.html`을 사용합니다. 별도 런타임 설치나 관리자 권한은 필요하지 않습니다. 보안 정책에서 PowerShell·폴더 접근을 차단하면 사내 HTTPS 서버를 사용해야 합니다. `prg/scripts/Start-Workplace.ps1 -Mode File`도 제공하지만 file 모드에서는 브라우저 정책에 따라 폴더 연결 기능이 제한될 수 있습니다. 브라우저 보안을 해제하는 옵션은 사용하지 않습니다.
+기본 실행은 Windows PowerShell/.NET의 읽기 전용 로컬 서버 `http://127.0.0.1:49271/source/html/index.html`을 사용합니다. 별도 런타임 설치나 관리자 권한은 필요하지 않습니다. 보안 정책에서 PowerShell·폴더 접근을 차단하면 사내 HTTPS 서버를 사용해야 합니다. `prg/scripts/Start-WorkLog.ps1 -Mode File`도 제공하지만 file 모드에서는 브라우저 정책에 따라 폴더 연결 기능이 제한될 수 있습니다. 브라우저 보안을 해제하는 옵션은 사용하지 않습니다.
 
-아이콘은 `source/images/ico/kkulkkkuk.ico`입니다. 바탕화면 바로가기에 적용하며 웹페이지 favicon으로도 연결합니다. 작업 표시줄 고정은 Edge/Windows 정책에 따라 다르고, 실행 창 아이콘이 Edge 아이콘으로 보일 수도 있습니다.
+아이콘은 `source/images/ico/WorkLog.ico`입니다. 바탕화면 바로가기에 적용하며 웹페이지 favicon으로도 연결합니다. 작업 표시줄 고정은 Edge/Windows 정책에 따라 다르고, 실행 창 아이콘이 Edge 아이콘으로 보일 수도 있습니다.
 
 화면 리소스는 실행 시 현재 프로젝트 위치를 기준으로 **절대 URL**을 계산합니다. C 드라이브 경로를 다른 PC에 강제로 고정하지 않습니다. CSS의 폰트·이미지 참조도 해당 스타일시트의 절대 URL 기준으로 브라우저가 해석합니다. CDN이나 외부 디자인 프레임워크는 사용하지 않습니다.
 
@@ -63,7 +63,7 @@ WBS는 사용자 요청으로 보류했습니다.
 
 프로젝트 루트에서 `node --test test/*.test.cjs`로 검증합니다. Node는 개발 검증용이며 실제 사용자는 설치할 필요가 없습니다. 개발 서버는 `node prg/server.cjs` 또는 `npm --prefix prg start`입니다.
 
-배포 파일: `powershell -NoProfile -File prg/scripts/package-offline.ps1`. 결과는 `prg/releases/manager-board-offline.zip`이며 process/save/dist/data의 실제 데이터, 백업, 계정, Git 이력은 포함하지 않습니다. 개발 확인용 샘플 스크립트는 test 아래에 포함됩니다. 사용자가 요청하기 전까지 개발 샘플을 제거하지 않습니다. 이후 test를 제거해도 기본 앱은 실행됩니다.
+배포 파일: `powershell -NoProfile -File prg/scripts/package-offline.ps1`. 결과는 `prg/releases/WorkLog-offline.zip`이며 process/save/dist/data의 실제 데이터, 백업, 계정, Git 이력은 포함하지 않습니다. 개발 확인용 샘플 스크립트는 test 아래에 포함됩니다. 사용자가 요청하기 전까지 개발 샘플을 제거하지 않습니다. 이후 test를 제거해도 기본 앱은 실행됩니다.
 
 Git에는 검증 완료한 소스만 커밋/푸시합니다. process, dist, data, save, 샘플 JSON, 로컬 백업은 제외합니다. 로컬 서버도 해당 저장 폴더와 JSON을 HTTP로 제공하지 않습니다.
 

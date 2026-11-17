@@ -294,11 +294,14 @@ test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 �
  assert.match(html,/datetime="2026-11-16"/);assert.match(html,/<td class="bulletin-notice"><\/td>/);assert.doesNotMatch(html.split('</table>')[0],/상세 내용/);
  const post=h.api.read().state.teamPosts[0];
  h.api.session('정윤정','board');await assert.rejects(h.api.act({dataset:{action:'postDetail',id:post.id}}),/권한/);
- h.api.session('김무현','board');await h.api.act({dataset:{action:'postDetail',id:post.id}});assert.match(h.element('#app').innerHTML,/id="bulletinDetail"[\s\S]*상세 내용/);assert.equal(h.element('#editor').open,false);assert.match(h.element('#app').innerHTML,/공지 설정/);
- await h.api.act({dataset:{action:'postNotice',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
- h.submit({id:'postNoticeForm',fields:{id:post.id,type:'전체공지',pinned:'on'}});
+ h.api.session('김무현','board');await h.api.act({dataset:{action:'postDetail',id:post.id}});assert.match(h.element('#app').innerHTML,/id="bulletinDetail"[\s\S]*상세 내용/);assert.equal(h.element('#editor').open,false);assert.match(h.element('#app').innerHTML,/댓글 등록/);assert.doesNotMatch(h.element('#app').innerHTML,/공지 설정/);
+ h.submit({id:'postCommentForm',fields:{id:post.id,content:'확인했습니다.'}});assert.match(h.element('#app').innerHTML,/확인했습니다\./);
+ await h.api.act({dataset:{action:'editPost',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
+ h.submit({id:'postForm',fields:{id:post.id,team:post.team,title:post.title,content:post.content,type:'전체공지',pinned:'on'}});
+ assert.equal(h.api.read().state.teamPosts[0].comments[0].content,'확인했습니다.');
  await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/<td>공통<\/td>/);assert.match(h.element('#app').innerHTML,/bulletin-notice[^>]*><span[^>]*>📢/);assert.doesNotMatch(h.element('#app').innerHTML,/>고정</);assert.equal(h.api.read().state.teamPosts[0].pinned,true);assert.match(h.element('#app').innerHTML,/검토 글/);
- assert.throws(()=>B.setNotice(h.api.read().state,'정윤정',{id:post.id,type:'일반글',pinned:false}),/권한/);
+ assert.throws(()=>B.save(h.api.read().state,'정윤정',{...post,type:'일반글',pinned:false}),/권한/);
+ assert.throws(()=>B.addComment({...s,teamPosts:[post]},'정윤정',{id:post.id,content:'권한 확인'}),/권한/);
 });
 
 test('일반 주소에서 원본 연결 전에는 UI·UX 샘플을 보여주고 실제 과업 저장에는 포함하지 않는다',async()=>{
@@ -322,6 +325,9 @@ test('통계는 과업별 다음에 있고 같은 원본 과업을 집계한다'
  const html=h.element('#app').innerHTML;
  assert.ok(html.indexOf('data-page="projects"')<html.indexOf('data-page="stats"'));
  assert.match(html,/<span>전체 과업<\/span><strong>2<\/strong>/);assert.match(html,/<span>마감일 경과<\/span><strong>1<\/strong>/);assert.match(html,/<span>고객 A<\/span><strong>2건<\/strong>/);
+ h.submit({id:'statsQueryForm',fields:{role:'퍼블',group:'고객별'}});
+ assert.match(h.element('#app').innerHTML,/<span>전체 과업<\/span><strong>1<\/strong>/);
+ assert.equal((h.element('#app').innerHTML.match(/class="card stats-breakdown"/g)||[]).length,1);
 });
 
 test('일반 주소의 게시판도 샘플 글은 작성자별 캐릭터로 표시한다',async()=>{
@@ -331,4 +337,16 @@ test('일반 주소의 게시판도 샘플 글은 작성자별 캐릭터로 표�
  const html=h.element('#app').innerHTML;
  assert.match(html,/post-byline"><img src="[^\"]*펭귄\.png"[^>]*><strong>김무현/);
  assert.match(html,/post-byline"><img src="[^\"]*소년 손오공\.png"[^>]*><strong>임정규/);
+});
+
+
+test('주간 일정은 월요일 시작으로 구분하고 이전 주와 이번 주로 이동한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});
+ const current=P.weekRanges()[0].start,html=h.element('#app').innerHTML;
+ assert.match(html,new RegExp('data-week-start="'+current+'"'));assert.match(html,/월 [1-6]주차/);
+ await h.api.act({dataset:{action:'scheduleWeek',step:'previous'}});
+ const previous=[...h.element('#app').innerHTML.matchAll(/data-week-start="([^"]+)"/g)].map(match=>match[1]);
+ assert.ok(previous[0]<current);assert.equal(previous[1],current);
+ await h.api.act({dataset:{action:'scheduleWeek',step:'current'}});
+ assert.equal(h.element('#app').innerHTML.match(/data-week-start="([^"]+)"/)[1],current);
 });

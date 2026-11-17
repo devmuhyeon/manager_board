@@ -31,7 +31,7 @@
    week.entries.map(({project,raw,nextDue})=>'<tr><td>'+button('workflowDetail',esc(raw.title),'project-button','data-id="'+esc(project.id)+'"')+'</td>'+[raw.customer,raw.requestedDue||nextDue,project.sourceRemoved?'원본 목록 제외':raw.status,...['기획','디자인','퍼블'].map(role=>Board.sourceDetails(project,role).assignees),project.sourceHistory?.length||0].map(value=>'<td>'+esc(value??'—').replace(/^$/,'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>'
   ).join('')+(!entries.length?'<p class="empty">표시할 고객 원본 과업이 없습니다.</p>':'')+'</div>';
  }
- function statistics({rows,C,Board,esc}){
+ function statistics({rows,C,Board,esc,group}){
   const roles=['기획','디자인','퍼블'];
   const statusCounts=new Map(),customerCounts=new Map(),roleCounts=new Map(roles.map(role=>[role,0]));
   let completed=0,overdue=0,unassigned=0;
@@ -54,8 +54,10 @@
   const sorted=map=>[...map].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko'));
   const summary=[['전체 과업',rows.length],['완료',completed],['미완료',rows.length-completed],['마감일 경과',overdue]];
   const breakdown=(heading,items,help='')=>'<section class="card stats-breakdown"><h3>'+heading+'</h3>'+(help?'<p class="muted">'+help+'</p>':'')+'<ul>'+items.map(([label,count])=>'<li><span>'+esc(label)+'</span><strong>'+count+'건</strong><progress aria-label="'+esc(label)+'" max="'+Math.max(1,rows.length)+'" value="'+count+'"></progress></li>').join('')+'</ul></section>';
+  const panels=[['상태별',sorted(statusCounts)],['담당 파트별',[...roleCounts,['미배정',unassigned]],'여러 파트에 배정된 과업은 각 파트에 한 건씩 집계합니다.'],['고객별',sorted(customerCounts)]];
+  const breakdowns=panels.filter(([label])=>!group||label===group).map(panel=>breakdown(...panel)).join('');
   return '<section class="card project-statistics"><div class="stats-metrics">'+summary.map(([label,count])=>'<div><span>'+label+'</span><strong>'+count+'</strong></div>').join('')+'</div>'+
-   (rows.length?'<div class="stats-breakdowns">'+breakdown('상태별',sorted(statusCounts))+breakdown('담당 파트별',[...roleCounts,['미배정',unassigned]],'여러 파트에 배정된 과업은 각 파트에 한 건씩 집계합니다.')+breakdown('고객별',sorted(customerCounts))+'</div>':'<p class="empty">집계할 과업이 없습니다.</p>')+'</section>';
+   (rows.length?'<div class="stats-breakdowns">'+breakdowns+'</div>':'<p class="empty">집계할 과업이 없습니다.</p>')+'</section>';
  }
  function sourceTimeline(project,esc){
   const events=history(project).filter(event=>event.source);

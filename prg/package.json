@@ -1,8 +1,8 @@
 {
-  "name": "manager-board",
+  "name": "worklog",
   "version": "1.0.0",
   "private": true,
-  "description": "Offline team management dashboard",
+  "description": "WorkLog team management dashboard",
   "scripts": {
     "start": "node server.cjs",
     "test": "node --test ../test/*.test.cjs",

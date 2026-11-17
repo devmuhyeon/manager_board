@@ -13,7 +13,7 @@ try{
   $found=Read-Identity
   if($found -and $found -ne $identity){throw 'Port 49271 is serving another project. Close its local server before moving this project.'}
   if(!$found){
-   Start-Process (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -WindowStyle Hidden -ArgumentList @('-NoLogo','-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+(Join-Path $PSScriptRoot 'Serve-Workplace.ps1')+'"')) | Out-Null
+   Start-Process (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -WindowStyle Hidden -ArgumentList @('-NoLogo','-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+(Join-Path $PSScriptRoot 'Serve-WorkLog.ps1')+'"')) | Out-Null
    for($i=0;$i -lt 20;$i++){Start-Sleep -Milliseconds 250;if((Read-Identity) -eq $identity){break}}
    if((Read-Identity) -ne $identity){throw 'The local server could not start. Check company policy or port 49271. File mode is also available.'}
   }
@@ -21,6 +21,6 @@ try{
  Start-Process -FilePath $edge -ArgumentList @('--app="'+$url+'"')
 }catch{
  Add-Type -AssemblyName System.Windows.Forms
- [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Workplace startup') | Out-Null
+ [Windows.Forms.MessageBox]::Show($_.Exception.Message,'WorkLog startup') | Out-Null
  exit 1
 }

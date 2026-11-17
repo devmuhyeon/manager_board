@@ -7,5 +7,5 @@ const server=http.createServer((req,res)=>{
  if(!(parts[1]==='source'||['/test/preview-data.js','/test/request-samples.js','/test/legacy-samples.js'].includes(name))||parts.some(p=>p==='..'||p.startsWith('.'))||!file.startsWith(root+path.sep)||!types[ext]){res.writeHead(404);res.end('Not found');return;}
  fs.readFile(file,(error,data)=>{if(error){res.writeHead(404);res.end('Not found');return;}res.writeHead(200,{'Content-Type':types[ext],'Cache-Control':'no-store'});res.end(data);});
 });
-if(require.main===module)server.listen(4173,'127.0.0.1',()=>console.log('워크 플레이스: http://127.0.0.1:4173'));
+if(require.main===module)server.listen(4173,'127.0.0.1',()=>console.log('WorkLog: http://127.0.0.1:4173'));
 module.exports=server;
