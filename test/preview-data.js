@@ -1,5 +1,6 @@
 (function(root){
  'use strict';
+ const Avatars=typeof module!=='undefined'?require('../source/js/avatar-catalog.js'):root.BoardAvatars;
  function workflowSamples(C,day){
   const rows=[
    {id:'uiux-intake',과업명:'[샘플] 모바일 회원가입 개선',요청팀:'서비스 운영팀',진행상태:'접수',완료요청일:day(4),요청내용:'가입 첫 화면의 안내 문구를 검토해 주세요.'},
@@ -8,7 +9,12 @@
    {id:'uiux-publish',과업명:'[샘플] 모바일 메뉴 반영',요청팀:'서비스 운영팀',진행상태:'완료',완료요청일:day(-3),담당자_퍼블:'김무현',작업내용_퍼블:'모바일 메뉴와 키보드 탐색을 검증했습니다.'},
    {id:'uiux-revision',과업명:'[샘플] 공지 배너 문구 수정',요청팀:'고객 지원팀',진행상태:'완료 후 수정',완료요청일:day(-2),담당자_디자인:'최완이',작업내용_디자인:'고객 피드백으로 배너 제목과 줄바꿈을 수정합니다.'},
    {id:'uiux-hold',과업명:'[샘플] FAQ 분류 개편',요청팀:'고객 지원팀',진행상태:'보류',담당자_기획:'정윤정',담당자_디자인:'김민재',요청내용:'고객이 FAQ 분류를 확정한 이후 진행합니다.'},
-   {id:'uiux-live',과업명:'[샘플] 대시보드 도움말 반영',요청팀:'신청 서비스팀',진행상태:'운영반영완료',완료요청일:day(-8),담당자_디자인:'홍소영',담당자_퍼블:'임정규',작업내용_퍼블:'운영 화면에서 도움말 표시를 확인했습니다.'}
+   {id:'uiux-live',과업명:'[샘플] 대시보드 도움말 반영',요청팀:'신청 서비스팀',진행상태:'운영반영완료',완료요청일:day(-8),담당자_디자인:'홍소영',담당자_퍼블:'임정규',작업내용_퍼블:'운영 화면에서 도움말 표시를 확인했습니다.'},
+   {id:'uiux-overdue',과업명:'[샘플] 신청서 저장 오류 안내 수정',요청팀:'신청 서비스팀',진행상태:'진행중',완료요청일:day(-2),담당자_기획:'정윤정',담당자_퍼블:'김무현',요청내용:'임시 저장이 실패했을 때 다시 시도할 수 있도록 오류 안내를 수정합니다.'},
+   {id:'uiux-design',과업명:'[샘플] 서비스 소개 화면 시안',요청팀:'서비스 운영팀',진행상태:'검토중',완료요청일:day(1),담당자_디자인:'최완이',작업내용_디자인:'두 가지 헤더 시안의 모바일 가독성을 비교합니다.'},
+   {id:'uiux-today',과업명:'[샘플] 통합검색 빈 화면 개선',요청팀:'고객 지원팀',진행상태:'진행중',완료요청일:day(0),담당자_디자인:'김민재',담당자_퍼블:'임정규',요청내용:'검색 결과가 없을 때 추천 검색어와 초기화 버튼을 표시합니다.'},
+   {id:'uiux-next',과업명:'[샘플] 로그인 옵션과 인증 안내 개편',요청팀:'서비스 운영팀',진행상태:'예정',완료요청일:day(8),담당자_기획:'성아미, 정윤정',담당자_디자인:'홍소영',담당자_퍼블:'김무현',요청내용:'로그인 옵션의 기본 순서와 인증 안내 문구를 검토합니다.'},
+   {id:'uiux-previous',과업명:'[샘플] 고객센터 접근성 점검 완료',요청팀:'고객 지원팀',진행상태:'완료',완료요청일:day(-13),담당자_기획:'성아미',담당자_디자인:'최완이',담당자_퍼블:'임정규',요청내용:'제목 구조, 명도 대비, 키보드 이동 범위를 점검했습니다.'}
   ].map(row=>({...row,마감일:row.완료요청일||'',시작일:row.완료요청일?day(-9):''}));
   const baseline=C.importRows(C.emptyState(),rows,day(-2)).state;
   const updated=rows.map(row=>row.id==='uiux-history'?{...row,완료요청일:day(3),마감일:day(3),처리결과:{진행상태:'진행중',담당자_디자인:'홍소영, 김민재'}}:row);
@@ -38,15 +44,16 @@
   });
   state.projects.push(...workflowSamples(C,day));
   state.personal={};state.leaves=[];state.leaveAllowances={[today.slice(0,4)]:{}};
-  state.members.forEach((m,i)=>{m.avatar=i%2?'bbiyak':'yongyong';state.leaveAllowances[today.slice(0,4)][m.name]=15;
+  state.members.forEach((m,i)=>{m.avatar=Avatars.keys[i%Avatars.keys.length];state.leaveAllowances[today.slice(0,4)][m.name]=15;
    state.personal[m.name]=Array.from({length:12},(_,j)=>['검토할 화면','UI 피드백 회의','체크리스트','다음 주 할 일','버튼 정렬 확인','모바일 화면 점검'][j%6]+' '+(j+1)).map((title,j)=>({id:'ux-memo:'+i+':'+j,title:'[샘플] '+title,content:'화면 검토 의견을 여기에 기록해 주세요.\n간격, 글자 크기, 이동 흐름을 확인합니다.',date:j<10?day((j-3)*3):'',endDate:j<10&&j%2?day((j-3)*3+2+j%3):'',time:j===1?'14:00':'',done:j===2}));
    for(const offset of [-7,i+2])state.leaves.push({id:'ux-leave:'+i+':'+offset,owner:m.name,start:day(offset),end:day(offset),type:i%2?'오후 반차':'연차',note:'[샘플] 일정 표시 확인',dailyUnits:i%2?.5:1});
   });
   state.teamPosts=C.TEAMS.flatMap((team,i)=>[...(i<3?[0]:[]),2,5,8].map(j=>{
    const isNotice=j===0;
-   const title=isNotice?['UI·UX 검토 안내','이번 주 업무 공유','화면 개선 의견 모집'][i]:'화면 개선 의견 모음 '+(Math.floor(j/3)+1);
+   const title=isNotice?['UI·UX 검토 안내: 회원가입과 신청서 화면의 키보드 이동, 오류 안내, 모바일 레이아웃 확인 항목 및 팀별 의견 제출 일정','이번 주 업무 공유','화면 개선 의견 모집'][i]:'화면 개선 의견 모음 '+(Math.floor(j/3)+1);
    const content=isNotice?['UI·UX 보드와 주간 업무 화면에서 같은 과업을 열어 보세요.','이번 주 마감 과업과 담당자를 확인해 주세요.','화면에서 발견한 불편사항을 게시판에 남겨 주세요.'][i]:'화면 검토 의견을 기록합니다.\n1. 버튼 위치\n2. 글자 크기\n3. 모바일 스크롤';
-   return {id:'ux-post:'+i+':'+j,team,type:isNotice?'전체공지':'일반글',author:state.members.find(m=>m.team===team).name,title:'[샘플] '+title,content,pinned:isNotice&&i===0,sampleFixture:true,createdAt:day(-(isNotice?i:j))+'T09:00:00Z',updatedAt:day(-(isNotice?i:j))+'T09:00:00Z'};
+   const authors=state.members.filter(member=>member.team===team);
+   return {id:'ux-post:'+i+':'+j,team,type:isNotice?'전체공지':'일반글',author:authors[Math.floor(j/3)%authors.length].name,title:'[샘플] '+title,content,pinned:isNotice&&i===0,sampleFixture:true,createdAt:day(-(isNotice?i:j))+'T09:00:00Z',updatedAt:day(-(isNotice?i:j))+'T09:00:00Z'};
   }));
   state.customerTeams=['샘플 서비스팀','샘플 운영팀','샘플 콘텐츠팀'];return C.validateState(state);
  }
@@ -66,7 +73,7 @@
   }
   for(const leave of sample.leaves)if(active.some(m=>m.name===leave.owner)&&!state.leaves.some(l=>l.id===leave.id))state.leaves.push({...leave,sampleFixture:true});
   state.teamPosts??=[];
-  for(const post of sample.teamPosts)if(!state.teamPosts.some(p=>p.id===post.id)){const author=active.find(m=>m.team===post.team);if(author)state.teamPosts.push({...post,author:author.name,sampleFixture:true});}
+  for(const post of sample.teamPosts)if(!state.teamPosts.some(p=>p.id===post.id)){const author=active.find(m=>m.name===post.author&&m.team===post.team)||active.find(m=>m.team===post.team);if(author)state.teamPosts.push({...post,author:author.name,sampleFixture:true});}
   state.developmentSamplesVersion=1;state.demo=false;return state;
  }
  const api={create,ensure};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;

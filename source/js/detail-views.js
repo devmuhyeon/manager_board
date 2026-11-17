@@ -31,7 +31,8 @@
     const rows=posts.map((post,index)=>{
       const date=postDate(post);
       const notice=B.typeOf(post)!=='일반글'?'<span class="tossface" aria-hidden="true">📢</span><span class="sr-only">공지</span>':'';
-      return '<tr><td>'+(posts.length-index)+'</td><td>'+esc(postTypeLabel(post))+'</td><td class="bulletin-notice">'+notice+'</td><td>'+button('postDetail',esc(post.title),'project-button','data-id="'+esc(post.id)+'" aria-controls="bulletinDetail" aria-pressed="'+(post.id===active?.id)+'"')+'</td><td>'+postByline(post)+'</td><td><time datetime="'+esc(date==='—'?'':date)+'">'+esc(date)+'</time></td></tr>';
+      const title=esc(post.title);
+      return '<tr><td>'+(posts.length-index)+'</td><td>'+esc(postTypeLabel(post))+'</td><td class="bulletin-notice">'+notice+'</td><td>'+button('postDetail',title,'project-button','data-id="'+esc(post.id)+'" title="'+title+'" aria-controls="bulletinDetail" aria-pressed="'+(post.id===active?.id)+'"')+'</td><td>'+postByline(post)+'</td><td><time datetime="'+esc(date==='—'?'':date)+'">'+esc(date)+'</time></td></tr>';
     }).join('');
     const empty=allowed?illustratedHint(user.avatar,'등록된 게시글이 없습니다.'):'<p class="empty">이 팀 게시판은 해당 팀원과 관리자만 볼 수 있습니다.</p>';
     return '<section class="card bulletin-board"><div class="bulletin-toolbar"><div class="tabs" role="group" aria-label="게시판 범위">'+tabs+'</div>'+(allowed?button('newPost','＋ 글 작성','primary'):'')+'</div><div class="bulletin-split"><div class="table-wrap bulletin-table-wrap" tabindex="0" aria-label="게시글 목록"><table class="bulletin-table"><caption class="sr-only">게시글 목록</caption><thead><tr>'+headers.map(header=>'<th scope="col">'+header+'</th>').join('')+'</tr></thead><tbody>'+(rows||'<tr><td colspan="6">'+empty+'</td></tr>')+'</tbody></table></div><section id="bulletinDetail" class="bulletin-pane" aria-label="게시글 상세">'+(active?postDetail(state,user,active.id):'<p class="empty">표시할 게시글이 없습니다.</p>')+'</section></div></section>';
