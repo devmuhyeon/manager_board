@@ -3,6 +3,9 @@ param([Parameter(Mandatory=$true)][string]$SaveFolder,[string]$Commit)
 $ErrorActionPreference='Stop'
 $root=(Resolve-Path -LiteralPath $SaveFolder).Path
 $commits=Join-Path $root 'commits'
+# Korean bulletin folder name, kept ASCII for Windows PowerShell 5.1.
+$boardFolder=-join @([char]0xAC8C,[char]0xC2DC,[char]0xD310)
+$postDirectory=Join-Path (Join-Path (Split-Path $root -Parent) 'save') $boardFolder
 $records=@(Get-ChildItem -LiteralPath $commits -Filter '*.json' | ForEach-Object {$raw=Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8;if($raw -and $raw.Trim()){$raw | ConvertFrom-Json}})
 $parents=@($records | ForEach-Object {$_.parents})
 $heads=@($records | Where-Object {$_.id -notin $parents})
@@ -30,11 +33,20 @@ foreach($head in $heads){
    $state.personal[$person.Name]=@(Get-Content -LiteralPath (Join-Path $userFolder ($person.Value+'.json')) -Raw -Encoding UTF8 | ConvertFrom-Json)
   }
  }
+ if($head.PSObject.Properties['postParts']){
+  $state.teamPosts=@(foreach($entry in $head.postParts){
+   if(!$entry.id -or $entry.revision -notmatch '^[a-f0-9-]{36}$'){throw 'Invalid bulletin post path'}
+   $post=Get-Content -LiteralPath (Join-Path $postDirectory ($entry.revision+'.json')) -Raw -Encoding UTF8 | ConvertFrom-Json
+   if($post.id -cne $entry.id){throw 'Bulletin post ID does not match the manifest'}
+   $post
+  })
+ }
  [IO.File]::WriteAllText((Join-Path $exports ($head.id+'.json')),($state | ConvertTo-Json -Depth 100),(New-Object Text.UTF8Encoding($false)))
 }
 $id=[Guid]::NewGuid().ToString()
 $record=@{version=1;id=$id;parents=@($heads | ForEach-Object {$_.id});parts=$selected.parts;savedAt=[DateTime]::UtcNow.ToString('o');savedBy='manual recovery'}
 if($selected.personalParts){$record.personalParts=$selected.personalParts;if($selected.personalStore){$record.personalStore=$selected.personalStore}}
+if($selected.PSObject.Properties['postParts']){$record.postParts=@($selected.postParts)}
 $temp=Join-Path $commits ($id+'.pending')
 [IO.File]::WriteAllText($temp,($record | ConvertTo-Json -Depth 100),(New-Object Text.UTF8Encoding($false)))
 Move-Item -LiteralPath $temp -Destination (Join-Path $commits ($id+'.json'))

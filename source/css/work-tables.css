@@ -136,7 +136,7 @@ html[data-workplace-theme][data-style] .main .content:has(> .bulletin-board){dis
 .bulletin-comments h3{margin:0 0 12px;font-size:15px}.bulletin-comments h3 span{color:var(--muted);font-size:12px}
 .bulletin-comments ol{list-style:none;margin:0 0 16px;padding:0;border-bottom:1px solid var(--border);background:var(--surface)}
 .bulletin-comments li{position:relative;margin-inline-start:min(var(--reply-indent,0px),22%);padding:8px 4px;border-top:1px solid var(--border)}
-.bulletin-comment-meta{display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap;padding-right:44px;color:var(--muted);font-size:12px}
+.bulletin-comment-meta{display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap;padding-right:76px;color:var(--muted);font-size:12px}
 .bulletin-comment-meta time{white-space:nowrap}
 .bulletin-reply-marker{color:var(--muted);opacity:.6;font-size:16px;line-height:1}
 .bulletin-comments li p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -146,6 +146,8 @@ html[data-workplace-theme][data-style] .main .content:has(> .bulletin-board){dis
 .bulletin-reply-form summary{position:absolute;top:8px;right:4px;list-style:none;padding:4px;color:var(--muted);cursor:pointer;font-size:12px}
 .bulletin-reply-form summary::-webkit-details-marker{display:none}
 html[data-workplace-theme][data-style] #bulletinDetail .bulletin-reply-form>summary::after{display:none}
+.bulletin-reply-form .reply-close-label,.bulletin-reply-form[open] .reply-open-label{display:none}
+.bulletin-reply-form[open] .reply-close-label{display:inline}
 .bulletin-reply-form summary:hover,.bulletin-reply-form[open] summary{color:var(--accent-text);text-decoration:underline}
 .bulletin-reply-form[open] .bulletin-comment-form{margin-top:8px}
 .bulletin-notice-settings{border:1px solid var(--border);border-radius:8px;padding:12px;margin:16px 0}

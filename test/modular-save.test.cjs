@@ -69,3 +69,27 @@ test('existing dist personal history stays readable and the next save migrates J
  assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,1);
  assert.deepEqual(JSON.parse(await read(handle)).personal,data.personal);
 });
+
+test('기존 게시판 묶음에서 글과 댓글을 개별 저장하고 수정하지 않은 글 파일을 재사용한다',async()=>{
+ const dir=directory(),handle=await M.open(dir),process=dir.children.get('process'),commits=process.children.get('commits');
+ const oldId='11111111-1111-4111-8111-111111111111',oldBoard=await process.getDirectoryHandle('board',{create:true});
+ const oldFile=await oldBoard.getFileHandle(oldId+'.json',{create:true}),oldCommit=await commits.getFileHandle(oldId+'.json',{create:true});
+ const initial=[{id:'first',title:'첫 글',comments:[{id:'reply',content:'보관할 댓글'}]},{id:'sample:second',title:'둘째 글'}];
+ oldFile.value=JSON.stringify({teamPosts:initial});const original=oldFile.value;
+ oldCommit.value=JSON.stringify({version:1,id:oldId,parents:[],parts:{board:oldId}});
+ assert.deepEqual(JSON.parse(await read(handle)).teamPosts,initial);
+ await save(handle,{revision:1,teamPosts:initial});
+ const postFolder=dir.children.get('save').children.get('게시판');
+ assert.deepEqual([...postFolder.children.values()].map(file=>JSON.parse(file.value)),initial);
+ const previous=[...commits.children.values()].map(file=>JSON.parse(file.value)).find(record=>record.postParts);
+ assert.equal(previous.parts.board,undefined);
+ const updated=[{...initial[0],title:'수정한 첫 글'},initial[1]];
+ await save(handle,{revision:2,teamPosts:updated});
+ const latest=[...commits.children.values()].map(file=>JSON.parse(file.value)).find(record=>record.parents.includes(previous.id));
+ assert.notEqual(latest.postParts[0].revision,previous.postParts[0].revision);
+ assert.equal(latest.postParts[1].revision,previous.postParts[1].revision);
+ assert.equal(postFolder.children.size,3);
+ assert.deepEqual(JSON.parse(await read(handle)).teamPosts,updated);
+ await save(handle,{revision:3,teamPosts:[]});assert.deepEqual(JSON.parse(await read(handle)).teamPosts,[]);
+ assert.equal(postFolder.children.size,3);assert.equal(oldFile.value,original);
+});
