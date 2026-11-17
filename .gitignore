@@ -35,3 +35,6 @@ prg/releases/
 
 # Request history, per-user view state and private records
 data/
+
+# Browser verification output and isolated test profiles
+/test/results/

@@ -263,3 +263,13 @@ test('four-column cards show customer values while release records are stored se
  assert.doesNotMatch(html,/내부 이름/);
  assert.throws(()=>Board.recordRelease(project,'source-task:퍼블','production',C,'정윤정'),/본인이 담당/);
 });
+
+test('development samples populate the dashboard and matching department columns outside preview',()=>{
+ const sample={id:'sample-workflow',source:'manual',sampleFixture:true,title:'[샘플] 신청 화면 개선',customer:'샘플 고객',requester:'요청자',requestedDue:'2026-11-20',tasks:['기획','디자인','퍼블'].map((role,i)=>({id:'sample-role-'+i,role,assignees:['작업자'+i],status:'진행중'}))};
+ const html=Board.renderWorkflow({rows:[sample],name:'',C,esc:String,button:(a,t,c,d)=>'<button '+d+'>'+t+'</button>',actor:'작업자0',sourceIds:[],demo:false});
+ assert.equal((html.match(/\[샘플\] 신청 화면 개선/g)||[]).length,4);
+ assert.equal((html.match(/class="workflow-column"/g)||[]).length,4);
+ for(const role of ['기획','디자인','퍼블'])assert.ok(html.includes(role));
+ assert.match(html,/샘플 고객 \| 완료요청일/);
+ for(let i=0;i<3;i++)assert.equal(Board.sourceDetails(sample,['기획','디자인','퍼블'][i]).assignees,'작업자'+i);
+});

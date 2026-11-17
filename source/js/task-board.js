@@ -211,7 +211,7 @@
  const workflowRoles=['기획','디자인','퍼블'];
  function sourceDetails(project,role=''){
   const raw=project.raw;
-  if(!raw)return {title:project.title,customer:project.requester||project.customer,requestedDue:project.requestedDue,status:project.status,assignees:project.assignees?.join(', '),notes:project.description};
+  if(!raw)return {title:project.title,customer:project.customer||project.requester,requestedDue:project.requestedDue,status:project.status,assignees:role?items(project).filter(task=>task.role===role).flatMap(task=>task.assignees||[]).join(', '):project.assignees?.join(', '),notes:project.description};
   const nested=raw.처리결과||raw.처리정보;
   const fields={...raw,...(nested&&typeof nested==='object'?nested:{})};
   const value=(...keys)=>keys.map(key=>fields[key]).find(x=>x!==undefined&&x!==null&&x!=='')??'';
@@ -229,7 +229,7 @@
   };
  }
  function renderWorkflow({rows,name,C,esc,button,actor,period,sourceIds,demo}){
-  const available=rows.filter(project=>demo||(project.source==='import'&&(!sourceIds||sourceIds.includes(project.id))));
+  const available=rows.filter(project=>demo||project.sampleFixture||(project.source==='import'&&(!sourceIds||sourceIds.includes(project.id))));
   const entries=cards(available,name,true,C,period);
   const panels=workflowRoles.map(role=>{
    const tasks=entries.flatMap(({project,tasks})=>tasks.filter(task=>project.raw?task.id==='source-task:'+role:task.role===role||task.role==='과업'&&project.taskCategory===role).map(task=>({project,task})));
@@ -261,6 +261,20 @@
   const workflowRelease={...project.workflowRelease,[taskId]:{...previous,[stage]:{by:actor,at:new Date().toISOString()}}};
   return raw.source==='import'?{...raw,overrides:{...raw.overrides,workflowRelease}}:{...raw,workflowRelease};
  }
- const api={sourceDetails,renderWorkflow,recordRelease,cards,toggle,completion,render,move,lanes,groups,progress,average,setProgress,setRevisionProgress,setRevisionRequired,canProgress,guardEdit,orderedTasks,weekGroups};
+ function withHistory(change){return (...args)=>{
+  const raw=args[0],C=args.at(-2),actor=args.at(-1),next=change(...args);
+  const before=items(C.effective(raw)),after=items(C.effective(next)),at=new Date().toISOString();
+  const logs=after.flatMap(task=>{
+   const previous=before.find(t=>t.id===task.id);if(!previous)return [];
+   const changes=[];
+   if(previous.status!==task.status)changes.push(previous.status+' → '+task.status);
+   if(progress(previous)!==progress(task))changes.push('진행률 '+progress(previous)+'% → '+progress(task)+'%');
+   if(Boolean(previous.revisionRequired)!==Boolean(task.revisionRequired))changes.push(task.revisionRequired?'수정 필요 선택':'수정 필요 해제');
+   if((previous.revisionProgress||0)!==(task.revisionProgress||0))changes.push('수정 진행률 '+(previous.revisionProgress||0)+'% → '+(task.revisionProgress||0)+'%');
+   return changes.length?[{id:C.uid(),date:C.today(),at,author:actor,kind:'진행 변경',content:(task.role||'담당 업무')+' · '+changes.join(' · ')}]:[];
+  });
+  return logs.length?{...next,logs:[...(next.logs||[]),...logs]}:next;
+ };}
+ const api={sourceDetails,renderWorkflow,recordRelease,cards,toggle:withHistory(toggle),completion,render,move:withHistory(move),lanes,groups,progress,average,setProgress:withHistory(setProgress),setRevisionProgress:withHistory(setRevisionProgress),setRevisionRequired:withHistory(setRevisionRequired),canProgress,guardEdit,orderedTasks,weekGroups};
  if(typeof module!=='undefined')module.exports=api;else root.BoardTaskBoard=api;
 })(typeof window!=='undefined'?window:globalThis);
