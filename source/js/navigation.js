@@ -6,7 +6,7 @@
  const teamLabel=value=>value==='퍼블'?'퍼블리싱':value;
  const defaults=[{label:'W24DG',url:''},{label:'고용24 테스트서버',url:''},{label:'퍼블리셔 작업문서',url:''}];
  function cleanLinks(input){if(!Array.isArray(input)||input.length>4)throw Error('바로가기는 최대 4개까지 등록하세요.');return input.map(l=>{const label=String(l.label||'').trim(),url=String(l.url||'').trim();if(!label||label.length>40)throw Error('사이트 이름은 1~40자로 입력하세요.');if(url){let u;try{u=new URL(url);}catch{throw Error('올바른 사이트 주소를 입력하세요.');}if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw Error('http 또는 https 주소만 사용할 수 있습니다.');}return {label,url};});}
- const sections=[['work','업무관리',['work','workContent']],['schedule','일정관리',['schedule','deadlines']],['reports','조회·보고',['report','customers','projects','stats']],['team','조직관리',['board','cardHistory','people','leaves']]];
+ const sections=[['work','업무관리',['work','workContent']],['schedule','일정관리',['schedule','deadlines']],['reports','조회·보고',['report','customers','projects','stats']],['team','조직관리',['board','leaves','cardHistory','people']]];
  function menu({page,canPersonnel,esc,button,closed=[]}){
   const all=groups.flatMap(group=>group.items);
   const labels={report:'주간 업무',customers:'고객별'};

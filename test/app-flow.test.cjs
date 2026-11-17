@@ -50,7 +50,8 @@ test('인원관리에서 조직도·직책·멤버를 나누고 기존 관리 �
   assert.equal(members.includes('개별 비밀번호 초기화'),isAdmin);
   const nav=members.match(/<nav\b[\s\S]*?<\/nav>/)[0];
   assert.match(nav,/data-page="dashboard"[^]*?<\/div><div class="nav-section"><button[^>]*data-page="memo"[^]*?data-section="work"/);
-  assert.match(nav,/id="nav-team"[^]*?data-page="leaves"/);
+  const teamNav=nav.slice(nav.indexOf('id="nav-team"'));
+  assert.deepEqual([...teamNav.matchAll(/data-page="([^"]+)"/g)].map(match=>match[1]),['board','leaves','cardHistory','people']);
   assert.doesNotMatch(nav,/개인관리/);
   if(isAdmin){
    await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
