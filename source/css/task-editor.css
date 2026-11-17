@@ -7,11 +7,11 @@ html[data-workplace-theme][data-style] .simple-project-form{display:flex;flex-di
 html[data-workplace-theme][data-style] .simple-project-form .modal-body{display:grid;gap:24px;max-height:calc(100dvh - 208px);overflow:auto;padding:24px!important;scrollbar-width:thin;scrollbar-color:#a7b3c3 transparent}
 html[data-workplace-theme][data-style] .simple-project-form .simple-field{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0;font-size:13px;line-height:20px;font-weight:600;color:var(--text)}
 .simple-project-form .simple-field>.muted{font-weight:400;font-size:12px}
-html[data-workplace-theme][data-style] .simple-project-form :is(input:not([type=checkbox]),select,textarea){box-sizing:border-box;min-height:40px;height:40px;min-width:0;margin:0;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface,#fff);color:var(--text);font-size:14px;font-weight:400;line-height:20px;box-shadow:none}
+html[data-workplace-theme][data-style] .simple-project-form :is(input:not([type=checkbox]),select,textarea){box-sizing:border-box;min-height:40px;height:40px;min-width:0;margin:0;padding-block:8px;padding-inline:12px var(--select-padding-end,12px);border:1px solid var(--border);border-radius:8px;background-color:var(--surface,#fff);color:var(--text);font-size:14px;font-weight:400;line-height:20px;box-shadow:none}
 html[data-workplace-theme][data-style] .simple-project-form .simple-field>:is(input,textarea){flex-basis:100%;width:100%}
 html[data-workplace-theme][data-style] .simple-project-form textarea{height:80px;min-height:80px;resize:vertical}
 html[data-workplace-theme][data-style] .simple-project-form :is(input,select,textarea):focus-visible{outline:2px solid var(--primary_blue_50,#3f58d4);outline-offset:2px}
-html[data-workplace-theme][data-style] .simple-project-form :is(input,select):disabled{background:var(--surface-soft,#f1f5f9);color:var(--muted);opacity:1;cursor:not-allowed}
+html[data-workplace-theme][data-style] .simple-project-form :is(input,select):disabled{background-color:var(--surface-soft,#f1f5f9);color:var(--muted);opacity:1;cursor:not-allowed}
 html[data-workplace-theme][data-style] .simple-task-title{display:flex;align-items:center;justify-content:space-between;gap:16px;border:0;padding:0;margin:0 0 -8px}
 .simple-task-title h3{font-size:15px;font-weight:700;line-height:24px;margin:0}
 html[data-workplace-theme][data-style] .simple-task-title button{min-height:32px;padding:4px 12px;font-size:12px;border:1px solid var(--border);background:var(--surface,#fff)}

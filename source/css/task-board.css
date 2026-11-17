@@ -195,7 +195,7 @@ html[data-workplace-theme][data-style] .task-board-lane.is-drop-target {outline:
 .task-board-title {font-weight:700;}
 .task-board-due:not(.is-overdue) {background:var(--color-info-muted);color:var(--color-on-info-muted);}
 .board-move-label {display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--color-border);margin-top:12px;padding-top:12px;font-size:11px;color:var(--muted);}
-html[data-workplace-theme][data-style] .board-move-label select {min-height:28px;padding:4px 8px;width:112px;font-size:12px;background:transparent;}
+html[data-workplace-theme][data-style] .board-move-label select {--select-inset:8px;min-height:28px;padding-block:4px;width:112px;font-size:12px;background-color:transparent;}
 html[data-workplace-theme][data-style] .board-add {width:100%;text-align:left;border:0;background:transparent;color:var(--muted);padding:12px;justify-content:flex-start;}
 html[data-workplace-theme][data-style] .board-add:hover {background:var(--color-background-muted);color:var(--text);}
 .board-detail .task-board {display:block;min-height:0;}

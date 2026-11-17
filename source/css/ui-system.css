@@ -62,8 +62,25 @@
 :root[data-style] .project-button{font-size:14px;font-weight:600;line-height:1.6}
 :root[data-style] .project-button:hover{background:transparent;color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
 :root[data-style] .table-sort:hover{background:transparent;color:var(--accent-text)}
-:root[data-style] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){border:1px solid var(--border);border-radius:var(--control-radius);font-size:var(--type-body);background:var(--surface);box-shadow:none}
+:root[data-style] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){border:1px solid var(--border);border-radius:var(--control-radius);font-size:var(--type-body);background-color:var(--surface);box-shadow:none}
 :root[data-style] :is(input:not([type="checkbox"]):not([type="radio"]),select){min-height:var(--control-height)}
+:root[data-style] select:not([multiple]):where(:not([size]),[size="1"]){
+  --select-icon-width:12px;
+  --select-padding-end:calc(2 * var(--select-inset,12px) + var(--select-icon-width));
+  appearance:none;
+  padding-inline:var(--select-inset,12px) var(--select-padding-end);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='5 5 14 14' fill='none' stroke='%23637083' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right var(--select-inset,12px) center;
+  background-size:var(--select-icon-width);
+}
+@media(forced-colors:active){
+  :root[data-style] select:not([multiple]):where(:not([size]),[size="1"]){
+    --select-padding-end:var(--select-inset,12px);
+    appearance:auto;
+    background-image:none;
+  }
+}
 :root[data-style] textarea{min-height:96px}
 :root[data-style] :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 /* Titles, reading text and metadata are intentionally different levels. */

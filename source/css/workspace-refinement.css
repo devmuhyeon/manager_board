@@ -193,7 +193,7 @@ html[data-workplace-theme][data-style] .briefing-schedules .briefing-agenda:focu
     height: 200px;
   }
 }
-.week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{min-height:32px;padding:4px 8px}
+.week-group-control{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}.week-group-control select{--select-inset:8px;min-height:32px;padding-block:4px}
 .week-subgroup{grid-column:1/-1;min-width:0}.week-subgroup>h4{font-size:14px;font-weight:600;margin:8px 0 12px}.week-subgroup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
 @media(max-width:600px){.week-subgroup-cards{grid-template-columns:minmax(0,1fr)}}
 /* Shared disclosure arrows. Full-row controls keep their larger click target. */
