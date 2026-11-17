@@ -9,6 +9,10 @@
   state.projects=Array.from({length:36},(_,i)=>{const title=titles[i%titles.length]+(i>=12?' · '+(Math.floor(i/12)+1)+'차':'');return ({id:'ux-preview:'+i,source:'manual',title:'[샘플] '+title,customer:['샘플 서비스팀','샘플 운영팀','샘플 콘텐츠팀'][i%3],requester:'검토 담당 '+(i%3+1),taskCategory:'UX',platform:'PC&MO',requested:day(-10),requestedDue:day(i-4),description:'UI/UX 검토용 샘플입니다. 카드 배치, 진행률, 담당자 및 마감일 표시를 확인해 주세요.',link:'',sampleFixture:true,
    tasks:['기획','디자인','퍼블'].map((role,j)=>({id:'ux-task:'+i+':'+j,role,assignees:[j===0?'성아미':j===1?(i%2?'김다솔':'홍소영'):'김무현'],status:statuses[i%6],progress:[0,40,100,25,100,60][i%6],started:day(-6),due:day(i-4),completedOn:[2,4].includes(i%6)?day(-1):'',notes:'담당 업무 '+(j+1)+' 진행 확인'})),logs:[{id:'ux-log:'+i,date:day(-(i%4)),author:'김무현',content:'[샘플] 화면 구성 검토 및 피드백 반영. 버튼 정렬과 모바일 표시를 확인했습니다.'}]});});
   state.projects[3].parentProjectId=state.projects[2].id;
+  const sampleBefore={id:'preview-history',과업명:'신청서 접근성 점검',처리결과:{담당자_디자인:'홍소영',진행상태:'접수',완료요청일:day(1)}};
+  const sampleAfter={...sampleBefore,처리결과:{담당자_디자인:'홍소영, 김민재',진행상태:'진행중',완료요청일:day(3)}};
+  const sampleBaseline=C.importRows(C.emptyState(),[sampleBefore],day(-1)).state;
+  state.projects[1].sourceHistory=C.importRows(sampleBaseline,[sampleAfter],today).state.projects[0].sourceHistory;
   state.projects[10].tasks=[{id:'ux-content-plan',role:'기획',assignees:['김아영'],status:'진행중',progress:65,started:day(-2),due:day(4),notes:''},{id:'ux-content-design',role:'디자인',assignees:['최지안'],status:'진행중',progress:30,started:day(-1),due:day(5),notes:''}];
   state.projects.forEach((project,i)=>{
    const due=[2,4].includes(i%6)?day(-1-(i%9)):day((i%12-3)*3);

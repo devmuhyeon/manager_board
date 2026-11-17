@@ -55,7 +55,28 @@
       return [role,entries];
     }));
   }
-  function importRows(state, input, seenOn=today()) {
+  const isRecord=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+  function sameSourceValue(before,after){
+    if(before===after)return true;
+    if(Array.isArray(before)&&Array.isArray(after))return before.length===after.length&&before.every((value,i)=>sameSourceValue(value,after[i]));
+    if(isRecord(before)&&isRecord(after))return Object.keys(before).length===Object.keys(after).length&&Object.keys(before).every(key=>Object.hasOwn(after,key)&&sameSourceValue(before[key],after[key]));
+    return false;
+  }
+  function sourceDifferences(before,after,path=[]){
+    const keys=[...new Set([...Object.keys(before),...Object.keys(after)])];
+    return keys.flatMap(key=>{
+      const field=[...path,key];
+      const oldValue=Object.hasOwn(before,key)?before[key]:undefined;
+      const newValue=Object.hasOwn(after,key)?after[key]:undefined;
+      if(sameSourceValue(oldValue,newValue))return [];
+      if(isRecord(oldValue)&&isRecord(newValue))return sourceDifferences(oldValue,newValue,field);
+      return [{field,before:oldValue,after:newValue}];
+    });
+  }
+  function importRows(state, input, seenOn) {
+    const now=new Date();
+    const confirmedAt=seenOn?seenOn+'T00:00:00+09:00':now.toISOString();
+    seenOn??=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
     const arr=Array.isArray(input)?input:pick(input||{},['요청목록','요청관리','requests','projects','data']);
     if(!Array.isArray(arr)) throw new Error('JSON은 요청 배열 또는 requests·projects·data 배열을 포함해야 합니다.');
     const normalized=arr.map(normalize);
@@ -67,9 +88,21 @@
     for(const project of normalized){
       const index=next.projects.findIndex(item=>item.id===project.id);
       const previous=next.projects[index];
-      project.sourceAssignments=trackSourceAssignments(project,previousIds.has(project.id)?previous:null,alreadyImported,seenOn);
+      project.sourceAssignments=trackSourceAssignments(project,previous,alreadyImported,seenOn);
+      const history=previous?.sourceHistory||[];
+      const wasPresent=previousIds.has(project.id);
+      const changes=previous?.raw?sourceDifferences(previous.raw,project.raw):[];
+      const kind=!alreadyImported?'':!wasPresent?(previous?'원본 목록 복귀':'원본 과업 추가'):changes.length?'원본 수정':'';
+      if(kind)project.sourceHistory=[...history,{at:confirmedAt,kind,changes}];
+      else if(history.length)project.sourceHistory=history;
       if(index<0){next.projects.push(project);added++;}
       else{next.projects[index]={...project,overrides:previous.overrides||{},logs:previous.logs||[]};updated++;}
+    }
+    const currentIds=new Set(normalized.map(project=>project.id));
+    for(const project of next.projects){
+      if(project.raw&&previousIds.has(project.id)&&!currentIds.has(project.id)){
+        project.sourceHistory=[...(project.sourceHistory||[]),{at:confirmedAt,kind:'원본 목록에서 제외',changes:[]}];
+      }
     }
     next.sourceSnapshotIds=normalized.map(project=>project.id);
     next.demo=false;next.importedAt=new Date().toISOString();return {state:next,added,updated};

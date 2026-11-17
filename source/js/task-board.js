@@ -224,18 +224,20 @@
    customer:value('고객명','요청자','requester','요청팀','고객팀','customer'),
    requestedDue:value('요청완료일','완료요청일','완료요청일자','requestedDue'),
    status:value('상태_'+role,'진행상태_'+role,'상태','진행상태','처리상태','status'),
-   assignees:value('담당자_'+role,'담당자','작업자','assignees'),
+   assignees:role?value('담당자_'+role):value('담당자','작업자','assignees'),
    notes,start,end
   };
  }
- function renderWorkflow({rows,name,C,esc,button,actor,period,sourceIds,demo}){
-  const available=rows.filter(project=>demo||project.sampleFixture||(project.source==='import'&&(!sourceIds||sourceIds.includes(project.id))));
+ function renderWorkflow({rows,name,C,esc,button,actor,period,sourceIds,demo,includeSamples=true,internalRows=rows}){
+  const available=rows.filter(project=>demo||includeSamples&&project.sampleFixture||(project.source==='import'&&(!sourceIds||sourceIds.includes(project.id))));
   const entries=cards(available,name,true,C,period);
+  const internal=new Map(internalRows.map(project=>[project.id,project]));
   const panels=workflowRoles.map(role=>{
    const tasks=entries.flatMap(({project,tasks})=>tasks.filter(task=>project.raw?task.id==='source-task:'+role:task.role===role||task.role==='과업'&&project.taskCategory===role).map(task=>({project,task})));
    return '<section class="workflow-column"><h3>'+role+' <span>'+tasks.length+'</span></h3><div class="workflow-scroll">'+(tasks.map(({project,task})=>{
     const raw=sourceDetails(project,role),data='data-id="'+esc(project.id)+'" data-task-id="'+esc(task.id)+'" data-role="'+role+'"';
-    const own=canProgress(task,actor),done=isDone(task.status),release=project.workflowRelease?.[task.id];
+    const saved=internal.get(project.id),actionTask=saved?.tasks?.find(item=>item.id===task.id)||task;
+    const own=canProgress(actionTask,actor),done=isDone(actionTask.status),release=saved?.workflowRelease?.[task.id];
     const status=project.raw?raw.status:task.status;
     const started=(project.sourceAssignments?.[role]||[]).map(item=>item.started).filter(Boolean).sort()[0];
     return '<article class="workflow-card" data-card-id="'+esc(project.id)+'">'

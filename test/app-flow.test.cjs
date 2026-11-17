@@ -18,7 +18,7 @@ test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day�
 test('팀 게시글 UI 저장 후 공용 파일 저장·다시 읽기에 보존된다',async()=>{const h=harness(),s=fixture(),src=handle('[]'),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(src,out,out.text);await h.api.act({dataset:{action:'page',page:'board'}});await h.api.act({dataset:{action:'newPost'}});assert.match(h.element('#editor').innerHTML,/postForm/);h.submit({id:'postForm',fields:{id:'',team:'퍼블',title:'안내 <script>',content:'공유 내용',pinned:'on'}});assert.equal(h.api.read().state.teamPosts.length,1);assert.match(h.element('#app').innerHTML,/안내 &lt;script&gt;/);await h.api.act({dataset:{action:'save'}});const loaded=C.validateState(JSON.parse(out.text));assert.equal(loaded.teamPosts[0].content,'공유 내용');assert.equal(src.writes,0);});
 test('설정에서 전체관리자 이전 후 메뉴 권한과 공용 저장이 함께 변경된다',async()=>{const h=harness(),s=fixture(),src=handle('[]'),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(src,out,out.text);await h.api.act({dataset:{action:'preferences'}});assert.match(h.element('#editor').innerHTML,/전체관리자 관리/);await h.api.act({dataset:{action:'transferAdmin'}});h.submit({id:'transferAdminForm',target:'정윤정'});assert.equal(h.api.read().state.overallAdmin,'정윤정');assert.equal(P.canManage(h.api.read().state,'김무현'),false);await h.api.act({dataset:{action:'save'}});assert.equal(JSON.parse(out.text).overallAdmin,'정윤정');await assert.rejects(h.api.act({dataset:{action:'adminSettings'}}));h.api.session('정윤정');await h.api.act({dataset:{action:'adminSettings'}});assert.match(h.element('#editor').innerHTML,/추가 전체관리자를 선택/);});
 test('모든 상세 탭은 렌더되고 업무는 보드가 기본이고 고객·주간보고는 표를 제공한다',async()=>{const h=harness(),s=P.addSamples(fixture());h.api.seed(s);h.api.session('김무현');for(const page of ['dashboard','work','memo','schedule','deadlines','leaves','revisions','customers','report','people','settings']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'),page);if(page==='work')assert.match(html,/남은 과업 보드/);if(page==='work'){assert.ok(!html.includes('board-filters'));assert.match(html,/board-control-row/);}if(page==='report')assert.match(html,/weekly-projects/);if(['customers','report'].includes(page)){if(page==='customers'){assert.match(html,/분류별/);assert.match(html,/과업별/);}assert.ok(html.indexOf('data-scope="all"')<html.indexOf('data-scope="team"'));assert.ok(html.indexOf('data-scope="team"')<html.indexOf('data-scope="personal"'));}}});
-test('일정 제목에는 날짜칸이 없고 각 일정·마감·휴가에 날짜칸이 붙는다',async()=>{const h=harness();h.api.seed(P.savePersonal(P.addSamples(fixture()),'김무현',{title:'오늘 일정 검증',date:C.today()}));h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});let html=h.element('#app').innerHTML;assert.ok(html.includes('week-countdown'));assert.ok(!/<div class="sectionhead">[\s\S]*?week-countdown[\s\S]*?<div class="agenda-list">/.test(html.split('<div class="agenda-list">')[0]));for(const page of ['deadlines']){await h.api.act({dataset:{action:'page',page}});assert.match(h.element('#app').innerHTML,/week-countdown/);}});
+test('일정 제목에는 날짜칸이 없고 각 일정·마감·휴가에 날짜칸이 붙는다',async()=>{const h=harness();h.api.seed(P.savePersonal(C.importRows(fixture(),[{id:'scheduled',과업명:'일정 검증',담당자_퍼블:'김무현',시작일:C.today(),마감일:C.today()}]).state,'김무현',{title:'오늘 일정 검증',date:C.today()}));h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});let html=h.element('#app').innerHTML;assert.ok(html.includes('week-countdown'));assert.ok(!/<div class="sectionhead">[\s\S]*?week-countdown[\s\S]*?<div class="agenda-list">/.test(html.split('<div class="agenda-list">')[0]));for(const page of ['deadlines']){await h.api.act({dataset:{action:'page',page}});assert.match(h.element('#app').innerHTML,/week-countdown/);}});
 test('인원관리 탭은 팀장에게 휴가만, 관리자에게 입사·퇴사도 제공한다',async()=>{const s=P.setLeaders(fixture(),{기획:'성아미'});for(const actor of ['정윤정','성아미','김무현']){const h=harness();h.api.seed(s);h.api.session(actor);h.api.render();const hasTab=h.element('#app').innerHTML.includes('data-page="people"');assert.equal(hasTab,actor!=='정윤정');if(hasTab){await h.api.act({dataset:{action:'page',page:'people'}});assert.match(h.element('#app').innerHTML,/팀원 휴가 관리/);assert.equal(h.element('#app').innerHTML.includes('입사·퇴사 인원 관리'),actor==='김무현');}}});
 test('수정작업 저장은 부모 과업을 보존하고 수정 탭과 엑셀 분류 열에 반영한다',async()=>{const h=harness(),s=P.addSamples(fixture()),root=s.projects[0];h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state.projects[0]);await h.api.act({dataset:{action:'newRevision',id:root.id}});h.api.saveProject({title:'검증용 1차 수정',taskCategory:'UX',platform:'PC&MO',contentCategory:'',contentType:'',logContent:'',logDate:C.today()});const state=h.api.read().state,revision=state.projects.find(p=>p.parentProjectId===root.id);assert.ok(revision);assert.equal(JSON.stringify(state.projects[0]),before);await h.api.act({dataset:{action:'page',page:'revisions'}});assert.match(h.element('#app').innerHTML,/검증용 1차 수정/);await h.api.exportXlsx();const sheet=h.context.exportedSheets[0];assert.deepEqual(Array.from(sheet.headers.slice(0,3)),['분류 1','분류 2','분류 3']);assert.equal(sheet.headers.length,sheet.rows[0].length);});
 test('브리핑은 기존 업무 패널과 작은 달력을 함께 표시한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML;assert.match(html,/compact-calendar/);assert.equal((html.match(/data-home-section=/g)||[]).length,4);assert.ok(!html.includes('data-home-section="work"'));assert.ok(!html.includes('data-home-section="memo"'));assert.ok(!html.includes('calendar-selected'));});
@@ -155,17 +155,20 @@ test('화면 이벤트에서도 타인의 완료 체크를 차단하고 원본 �
  await h.api.act({dataset:{action:'boardMode',mode:'project'}});assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
 });
 
-test('도표형 전환은 네 탭에서 같은 과업을 표시하고 신규 버튼 왼쪽에 위치한다',async()=>{
- const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');h.api.render();
+test('UIUX의 도표 토글과 등록 버튼은 업무관리 내부에 있고 콘텐츠는 별도 메뉴다',async()=>{
+ const h=harness(),original={id:'toggle',과업명:'카드와 도표 공통 과업',담당자_퍼블:'김무현'};
+ h.api.seed(C.importRows(fixture(),[original]).state);h.api.session('김무현','work');h.api.render();
  let html=h.element('#app').innerHTML;
- assert.ok(html.indexOf('data-action="boardLayout"')<html.indexOf('data-action="new"'));
- const nav=html.match(/<nav[^>]*>[\s\S]*?<\/nav>/)[0];assert.ok(!nav.includes('data-page="revisions"'));
- await h.api.act({dataset:{action:'boardLayout'}});
- for(const mode of ['project','status','team','person']){
-  await h.api.act({dataset:{action:'boardMode',mode}});html=h.element('#app').innerHTML;
-  assert.match(html,/board-table-view/);assert.match(html,/<table>/);assert.match(html,/진행률/);assert.match(html,/role="switch" aria-checked="true"/);
- }
- await h.api.act({dataset:{action:'boardLayout'}});assert.ok(!h.element('#app').innerHTML.includes('board-table-view'));
+ assert.match(html,/data-section="work"[^>]*aria-controls="nav-work"/);
+ assert.match(html,/data-page="work" aria-label="UIUX"/);assert.match(html,/data-page="workContent" aria-label="콘텐츠"/);
+ assert.doesNotMatch(html,/requestNotice|data-page="requests"/);
+ assert.match(html,/board-control-row"><button[^>]+data-action="boardLayout"/);
+ assert.match(html,/data-action="boardMine"[^>]*>내 과업<\/button><button[^>]+data-action="new"/);
+ assert.match(html,/카드와 도표 공통 과업/);
+ await h.api.act({dataset:{action:'boardLayout'}});html=h.element('#app').innerHTML;
+ assert.match(html,/class="board-table-view"/);assert.match(html,/<table\b/);assert.match(html,/카드와 도표 공통 과업/);
+ await h.api.act({dataset:{action:'page',page:'workContent'}});html=h.element('#app').innerHTML;
+ assert.match(html,/등록된 콘텐츠 업무가 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
 });
 
 test('날짜 초기화는 담당자와 도표형 선택을 유지한다',async()=>{
@@ -198,7 +201,7 @@ test('카드 도표 전환은 텍스트 대신 두 아이콘과 접근성 이름
  assert.equal((toggle.match(/<svg /g)||[]).length,2);assert.match(toggle,/title="카드 보기"/);assert.match(toggle,/title="도표 보기"/);assert.match(toggle,/aria-label="도표형 보기"/);assert.ok(!toggle.includes('>카드</span>'));
 });
 test('업무조회 메뉴는 고객별 다음에 과업별을 표시하고 클릭한 프로젝트만 도표로 연다',async()=>{
- const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;
+ const h=harness();h.api.seed(C.importRows(fixture(),[{id:'first',과업명:'원본 첫 과업',담당자_퍼블:'김무현'},{id:'second',과업명:'원본 다음 과업',담당자_디자인:'홍소영'}]).state);h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;
  const nav=html.match(/<nav[\s\S]*?<\/nav>/)[0];assert.ok(nav.indexOf('data-page="customers"')<nav.indexOf('data-page="projects"'));assert.ok(!nav.includes('고객별 업무'));
  const projects=h.api.read().state.projects;await h.api.act({dataset:{action:'boardDetail',id:projects[0].id}});html=h.element('#app').innerHTML;assert.match(html,/project-spreadsheet/);assert.ok(html.includes(projects[0].title));assert.ok(!html.includes(projects[1].title));assert.equal(h.element('#editor').open,false);
  await h.api.act({dataset:{action:'allProjects'}});assert.ok(h.element('#app').innerHTML.includes(projects[1].title));
@@ -255,11 +258,16 @@ test('the normal work page opens the customer workflow and its read-only detail 
  assert.match(h.element('#editor').innerHTML,/고객이 작성한 원문/);
 });
 
-test('주간 업무는 과업별 히스토리 전환·접기와 동일한 엑셀 기록을 제공한다',async()=>{
- const h=harness(),s=P.addSamples(fixture()),p=s.projects[0];p.logs=[{id:'old',date:'2020-01-01',author:'김무현',content:'오래된 작업 기록'},{id:'now',date:C.today(),author:'김무현',content:'이번 주 작업 기록'}];h.api.seed(s);h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'report'}});
- assert.match(h.element('#app').innerHTML,/이번 주 작업 기록/);assert.doesNotMatch(h.element('#app').innerHTML,/오래된 작업 기록/);
- await h.api.act({dataset:{action:'reportHistory'}});assert.match(h.element('#app').innerHTML,/오래된 작업 기록/);
- await h.api.act({dataset:{action:'reportOrder'}});assert.match(h.element('#app').innerHTML,/과거순/);
- await h.api.act({dataset:{action:'reportFold',id:p.id}});assert.match(h.element('#app').innerHTML,/weekly-project-body" hidden/);
- await h.api.exportXlsx();assert.ok(h.context.exportedSheets[1].rows.some(row=>row.includes('[작업 기록] 오래된 작업 기록')));
+test('주간 업무는 고객 원본을 주차별 표로 표시하고 상세에서 변경 이력을 연다',async()=>{
+ const h=harness();const raw={id:'weekly-history',과업명:'원본 과업',완료요청일:'2026-11-19',담당자_퍼블:'김무현',진행상태:'접수'};
+ const baseline=C.importRows(fixture(),[raw],'2026-11-16').state;
+ const state=C.importRows(baseline,[{...raw,진행상태:'진행중'}],'2026-11-17').state;
+ state.projects[0].overrides={title:'내부 변경 제목'};state.projects[0].logs=[{id:'local-note',date:'2026-11-17',author:'김무현',content:'내부 전용 기록'}];
+ h.api.seed(state);h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'report'}});
+ const html=h.element('#app').innerHTML;
+ assert.match(html,/11월 4주차/);assert.match(html,/<table>/);assert.match(html,/원본 과업/);assert.doesNotMatch(html,/이전: 접수|내부 변경 제목|내부 전용 기록/);
+ await h.api.act({dataset:{action:'workflowDetail',id:'source:weekly-history'}});
+ const detail=h.element('#editor').innerHTML;
+ assert.match(detail,/고객 원본 변경 이력/);assert.match(detail,/이전: 접수/);assert.match(detail,/변경: 진행중/);assert.doesNotMatch(detail,/내부 전용 기록/);
+ await h.api.exportXlsx();assert.ok(h.context.exportedSheets[1].rows.some(row=>row.some(cell=>String(cell).includes('이전: 접수'))));
 });
