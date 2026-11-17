@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),C=require('./core-fixture.cjs'),R=require('../source/js/project-report.js'),B=require('../source/js/task-board.js');
 const project=(id='a')=>({id,source:'manual',title:'같은 과업명',customer:'고객',status:'진행중',tasks:[{id:'t',role:'퍼블',assignees:['김무현'],started:'2026-11-01',due:'2026-11-30',status:'진행중',progress:40}],logs:[]});
-test('완료와 취소는 실제 히스토리를 남기고 원본을 변경하지 않는다',()=>{const p=project(),before=JSON.stringify(p);const done=B.toggle(p,'t',C,'김무현');assert.equal(done.logs.length,1);assert.match(done.logs[0].content,/40% → 100%/);const undo=B.toggle(done,'t',C,'김무현');assert.equal(undo.logs.length,2);assert.equal(JSON.stringify(p),before);assert.throws(()=>B.toggle(p,'t',C,'홍소영'),/본인이/);const same=B.setProgress(p,'t',40,C,'김무현');assert.equal(same.logs.length,0);});
+test('완료와 취소는 실제 히스토리를 남기고 원본을 변경하지 않는다',()=>{const p=project(),before=JSON.stringify(p);const done=B.toggle(p,'t',C,'김무현');assert.equal(done.logs.length,1);assert.match(done.logs[0].content,/40%에서 100%로 변경/);const undo=B.toggle(done,'t',C,'김무현');assert.equal(undo.logs.length,2);assert.equal(JSON.stringify(p),before);assert.throws(()=>B.toggle(p,'t',C,'홍소영'),/본인이/);const same=B.setProgress(p,'t',40,C,'김무현');assert.equal(same.logs.length,0);});
 test('원본 변경 이력은 과업 ID별로 바뀐 값만 누적하고 원본과 내부 편집을 보존한다',()=>{
  const a={id:'diff',과업명:'과업',처리결과:{진행상태:'접수',담당자_퍼블:'김무현',비고:'이전',링크:['기존']}},b={id:'no-change',과업명:'다른 과업'};
  let state=C.importRows(C.emptyState(),[a,b],'2026-11-16').state;
@@ -17,7 +17,7 @@ test('원본 변경 이력은 과업 ID별로 바뀐 값만 누적하고 원본�
  assert.deepEqual(p.raw,changed);
  assert.equal(JSON.stringify([a,changed]),inputs);
  const [event]=R.history(p);
- assert.match(event.content,/처리결과 › 진행상태\n이전: 접수\n변경: 진행중/);
+ assert.match(event.content,/처리결과 \/ 진행상태\n이전: 접수\n변경: 진행중/);
  assert.match(event.content,/비고\n이전: 이전\n변경: 항목 없음/);
  assert.match(event.content,/완료요청일\n이전: 항목 없음\n변경: 2026-11-20/);
  assert.doesNotMatch(event.content,/담당자_퍼블/);

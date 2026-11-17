@@ -10,7 +10,7 @@
   if(value==='')return '빈 값';
   return typeof value==='string'?value:JSON.stringify(value);
  }
- const describeChanges=changes=>changes.map(change=>change.field.join(' › ')+'\n이전: '+sourceValue(change.before)+'\n변경: '+sourceValue(change.after)).join('\n\n');
+ const describeChanges=changes=>changes.map(change=>change.field.join(' / ')+'\n이전: '+sourceValue(change.before)+'\n변경: '+sourceValue(change.after)).join('\n\n');
  function history(project){
   const sourceEvents=(project.sourceHistory||[]).map((entry,index)=>({
    id:'source:'+index,source:true,index,at:entry.at,kind:entry.kind,

@@ -1,5 +1,6 @@
 (function(root){
  'use strict';
+ const Icons=typeof module!=='undefined'?require('./arrow-icons.js'):root.BoardArrowIcons;
  const catalog=[
   ['01','clean','워크 플레이스 · 개편안','네이비 탐색 영역과 또렷한 업무 표'],
   ['02','navy','네이비 데스크','짙은 탐색 영역과 단정한 작업 공간'],
@@ -35,7 +36,7 @@
    +'<div class="workspace-overview-intro"><span class="workspace-kicker">'+esc(N.teamLabel(user.team))+' 팀</span>'
    +'<h2 id="workspace-overview-title">'+esc(user.name)+'님의 업무 브리핑</h2>'
    +'<p>전체 과업 현황을 보고, 아래에서 팀 소식과 내 일정을 확인하세요.</p>'
-   +button('page','업무 관리 →','primary','data-page="work"')+'</div>'
+   +button('page','업무 관리 '+Icons.arrow('right'),'primary','data-page="work"')+'</div>'
    +'<dl class="workspace-metrics">'+metrics.map(([label,value,tone])=>
     '<div data-tone="'+tone+'"><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('')+'</dl></section>';
  }
@@ -44,9 +45,9 @@
   const open=p=>button('boardDetail',esc(p.title),'project-button','data-id="'+esc(p.id)+'"');
   if(style==='briefing'){
    const posts=B.list(state,user.name,user.team).slice(0,3);
-   return '<section class="card briefing-news"><div class="sectionhead"><h2>'+esc(N.teamLabel(user.team))+' 팀 브리핑</h2>'+button('page','팀 게시판 →','','data-page="board"')+'</div><div class="briefing-posts">'+(posts.map(p=>'<article><span class="origin-label">'+esc(B.typeOf(p))+'</span><h3>'+esc(p.title)+'</h3><p>'+esc(p.content)+'</p><small>'+esc(p.author)+' · '+esc(p.updatedAt.slice(0,10))+'</small></article>').join('')||hint(user.avatar,'팀의 첫 소식을 남겨보세요','팀 게시판에서 공지와 작업 소식을 공유할 수 있어요.'))+'</div></section><section class="card style-work-panel"><div class="sectionhead"><h2>진행 중인 과업</h2>'+button('page','전체 업무 →','','data-page="work"')+'</div>'+table(rows.filter(p=>!C.isComplete(p.status)).slice(0,6))+'</section>';
+   return '<section class="card briefing-news"><div class="sectionhead"><h2>'+esc(N.teamLabel(user.team))+' 팀 브리핑</h2>'+button('page','팀 게시판 '+Icons.arrow('right'),'','data-page="board"')+'</div><div class="briefing-posts">'+(posts.map(p=>'<article><span class="origin-label">'+esc(B.typeOf(p))+'</span><h3>'+esc(p.title)+'</h3><p>'+esc(p.content)+'</p><small>'+esc(p.author)+' · '+esc(p.updatedAt.slice(0,10))+'</small></article>').join('')||hint(user.avatar,'팀의 첫 소식을 남겨보세요','팀 게시판에서 공지와 작업 소식을 공유할 수 있어요.'))+'</div></section><section class="card style-work-panel"><div class="sectionhead"><h2>진행 중인 과업</h2>'+button('page','전체 업무 '+Icons.arrow('right'),'','data-page="work"')+'</div>'+table(rows.filter(p=>!C.isComplete(p.status)).slice(0,6))+'</section>';
   }
-  if(style==='kanban')return '<section class="card style-work-panel"><div class="sectionhead"><h2>과업 진행 보드</h2>'+button('page','전체 업무 →','','data-page="work"')+'</div><div class="live-kanban">'+['접수','진행중','완료','완료 후 수정','운영반영완료','보류'].map(status=>{const items=rows.filter(p=>({'예정':'접수','대기':'접수','검토중':'진행중'}[p.status]||p.status)===status);return '<section class="kanban-lane"><h3>'+badge(status)+'<span class="count">'+items.length+'</span></h3>'+items.map(p=>'<article>'+open(p)+'<small>'+esc(orderNames(p.assignees||[]).join(', ')||'미배정')+'</small><time>'+esc(p.due||'마감일 없음')+'</time></article>').join('')+(items.length?'':'<p class="muted">등록된 과업이 없습니다.</p>')+'</section>';}).join('')+'</div></section>';
+  if(style==='kanban')return '<section class="card style-work-panel"><div class="sectionhead"><h2>과업 진행 보드</h2>'+button('page','전체 업무 '+Icons.arrow('right'),'','data-page="work"')+'</div><div class="live-kanban">'+['접수','진행중','완료','완료 후 수정','운영반영완료','보류'].map(status=>{const items=rows.filter(p=>({'예정':'접수','대기':'접수','검토중':'진행중'}[p.status]||p.status)===status);return '<section class="kanban-lane"><h3>'+badge(status)+'<span class="count">'+items.length+'</span></h3>'+items.map(p=>'<article>'+open(p)+'<small>'+esc(orderNames(p.assignees||[]).join(', ')||'미배정')+'</small><time>'+esc(p.due||'마감일 없음')+'</time></article>').join('')+(items.length?'':'<p class="muted">등록된 과업이 없습니다.</p>')+'</section>';}).join('')+'</div></section>';
   if(style==='timeline'){
    const today=C.today(),monday=new Date(today+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
    const days=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setUTCDate(d.getUTCDate()+i);return d.toISOString().slice(0,10);});

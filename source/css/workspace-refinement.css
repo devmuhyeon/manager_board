@@ -16,7 +16,7 @@ html[data-workplace-theme][data-style] .nav .nav-children{display:grid;grid-temp
 html[data-workplace-theme][data-style] .nav .nav-children.is-collapsed{grid-template-rows:0fr;opacity:0;pointer-events:none}
 .nav-children-inner>button:first-child{margin-top:4px}
 .nav-parent [aria-hidden],.board-collapse>[aria-hidden],.lane-toggle{font-size:18px;line-height:1;font-weight:600}
-summary{list-style:none}summary::-webkit-details-marker{display:none}summary::after{content:'⌄';float:right;margin-left:12px;font-size:18px;line-height:1}details[open]>summary::after{content:'⌃'}
+summary{list-style:none}summary::-webkit-details-marker{display:none}
 html:has(dialog[open]),body:has(dialog[open]){overflow:hidden!important;overscroll-behavior:none}
 body:has(dialog[open]) #app :is(.main,.content,.sidebar,.nav,.task-board,.table-wrap,.calendar-scroll){overflow:hidden!important;overscroll-behavior:none}
 dialog{overscroll-behavior:contain}dialog .modal-body{overscroll-behavior:contain}
@@ -219,16 +219,15 @@ html[data-workplace-theme][data-style] :is(.content, #editor) details > summary:
   display: none;
 }
 html[data-workplace-theme][data-style] :is(.content, #editor) details > summary::after {
-  content: '⌄' / '';
-  display: inline-grid;
-  place-items: center;
+  content: '';
+  display: inline-block;
   flex: 0 0 16px;
   width: 16px;
   height: 16px;
   margin-inline-start: auto;
-  font-size: 16px;
-  line-height: 1;
+  background-color: currentColor;
+  mask: var(--arrow-chevron-mask) center/contain no-repeat;
 }
 html[data-workplace-theme][data-style] :is(.content, #editor) details[open] > summary::after {
-  content: '⌃' / '';
+  transform: rotate(180deg);
 }
