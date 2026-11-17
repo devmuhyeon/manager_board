@@ -315,3 +315,20 @@ test('일반 주소에서 원본 연결 전에는 UI·UX 샘플을 보여주고 
  const src=handle('[]');h.api.connect(src,null,null);await h.api.act({dataset:{action:'page',page:'work'}});
  assert.doesNotMatch(h.element('#app').innerHTML,/신청서 접근성 점검/);
 });
+
+test('통계는 과업별 다음에 있고 같은 원본 과업을 집계한다',async()=>{
+ const h=harness();const s=C.importRows(fixture(),[{id:'s1',과업명:'완료 과업',요청팀:'고객 A',진행상태:'완료',완료요청일:'2020-01-01',담당자_퍼블:'김무현'},{id:'s2',과업명:'지연 과업',요청팀:'고객 A',진행상태:'접수',완료요청일:'2020-01-01'}]).state;
+ h.api.seed(s);h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'stats'}});
+ const html=h.element('#app').innerHTML;
+ assert.ok(html.indexOf('data-page="projects"')<html.indexOf('data-page="stats"'));
+ assert.match(html,/<span>전체 과업<\/span><strong>2<\/strong>/);assert.match(html,/<span>마감일 경과<\/span><strong>1<\/strong>/);assert.match(html,/<span>고객 A<\/span><strong>2건<\/strong>/);
+});
+
+test('일반 주소의 게시판도 샘플 글은 작성자별 캐릭터로 표시한다',async()=>{
+ const h=harness(),preview=require('./preview-data.js'),s=preview.ensure(fixture(),C,P);h.context.BoardPreviewData=preview;
+ assert.ok(s.members.filter(m=>['임정규','김무현'].includes(m.name)).every(m=>!m.avatar));
+ h.api.seed(s);h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'board'}});
+ const html=h.element('#app').innerHTML;
+ assert.match(html,/post-byline"><img src="[^\"]*펭귄\.png"[^>]*><strong>김무현/);
+ assert.match(html,/post-byline"><img src="[^\"]*소년 손오공\.png"[^>]*><strong>임정규/);
+});

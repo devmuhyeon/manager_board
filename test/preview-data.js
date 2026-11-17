@@ -2,6 +2,7 @@
  'use strict';
  const Avatars=typeof module!=='undefined'?require('../source/js/avatar-catalog.js'):root.BoardAvatars;
  const representativeAvatars={성아미:'sailor-moon',정윤정:'quokka',임정규:'young-goku',김무현:'penguin-new',홍소영:'powerpuff',김민재:'frog',최완이:'kitty',김아영:'terriermon',김다솔:'hamtaro',최지안:'bbiyak'};
+ const sampleAvatar=name=>Object.hasOwn(representativeAvatars,name)?representativeAvatars[name]:undefined;
  function relativeDays(today){return offset=>{const date=new Date(today+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10);};}
  function workflowSamples(C,day=relativeDays(C.today())){
   const rows=[
@@ -46,7 +47,7 @@
   });
   state.projects.push(...workflowSamples(C,day));
   state.personal={};state.leaves=[];state.leaveAllowances={[today.slice(0,4)]:{}};
-  state.members.forEach((m,i)=>{m.avatar=representativeAvatars[m.name]||Avatars.keys[i%Avatars.keys.length];state.leaveAllowances[today.slice(0,4)][m.name]=15;
+  state.members.forEach((m,i)=>{m.avatar=sampleAvatar(m.name)||Avatars.keys[i%Avatars.keys.length];state.leaveAllowances[today.slice(0,4)][m.name]=15;
    state.personal[m.name]=Array.from({length:12},(_,j)=>['검토할 화면','UI 피드백 회의','체크리스트','다음 주 할 일','버튼 정렬 확인','모바일 화면 점검'][j%6]+' '+(j+1)).map((title,j)=>({id:'ux-memo:'+i+':'+j,title:'[샘플] '+title,content:'화면 검토 의견을 여기에 기록해 주세요.\n간격, 글자 크기, 이동 흐름을 확인합니다.',date:j<10?day((j-3)*3):'',endDate:j<10&&j%2?day((j-3)*3+2+j%3):'',time:j===1?'14:00':'',done:j===2}));
    for(const offset of [-7,i+2])state.leaves.push({id:'ux-leave:'+i+':'+offset,owner:m.name,start:day(offset),end:day(offset),type:i%2?'오후 반차':'연차',note:'[샘플] 일정 표시 확인',dailyUnits:i%2?.5:1});
   });
@@ -78,5 +79,5 @@
   for(const post of sample.teamPosts)if(!state.teamPosts.some(p=>p.id===post.id)){const author=active.find(m=>m.name===post.author&&m.team===post.team)||active.find(m=>m.team===post.team);if(author)state.teamPosts.push({...post,author:author.name,sampleFixture:true});}
   state.developmentSamplesVersion=1;state.demo=false;return state;
  }
- const api={create,ensure,workflowSamples};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
+ const api={create,ensure,workflowSamples,sampleAvatar};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
 })(typeof window!=='undefined'?window:globalThis);

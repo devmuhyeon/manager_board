@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
- function create({C,P,W,B,N,esc,button,options,member,weekBlocks}){
+ function create({C,P,W,B,N,esc,button,options,member,weekBlocks,samplePostAvatar=()=>undefined}){
   const characters=Avatars.characters;
   const characterKey=value=>characters.some(([key])=>key===value)?value:'yongyong';
   const characterFile=value=>characters.find(c=>c[0]===characterKey(value))[2];
@@ -21,7 +21,10 @@
     const date=new Date(post.createdAt);
     return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
   }
-  function postByline(post){return '<span class="post-byline">'+characterImage(member(post.author)?.avatar,24,24)+'<strong>'+esc(post.author)+'</strong></span>';}
+  function postByline(post){
+    const avatar=samplePostAvatar(post)||member(post.author)?.avatar;
+    return '<span class="post-byline">'+characterImage(avatar,24,24)+'<strong>'+esc(post.author)+'</strong></span>';
+  }
   function board(state,user,selected,postId){
     const allowed=selected==='all'||selected==='common'||B.canRead(state,user.name,selected);
     const posts=B.boardPosts(state,user.name,selected);
