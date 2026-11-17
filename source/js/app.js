@@ -9,6 +9,26 @@
   const emptyState=()=>BoardAccountReset.apply({...C.emptyState(),projects:[],demo:false});
   try{const raw=localStorage.getItem(CACHE);state=raw?loadState(JSON.parse(raw)):emptyState();}catch(e){state=emptyState();cacheError='저장된 임시 데이터를 읽지 못했습니다. 원래 임시 데이터는 덮어쓰지 않습니다. JSON 백업을 불러와 주세요.';}
   let user=null,demoSession=false,page='dashboard',scope='all',customerMode='team',view='board',sourceHandle=null,targetHandle=null,diskText=null,dirty=false,saving=false;
+  const privateAvatarOwner='정윤정';
+  let privateAvatarSession=null;
+  const canUsePrivateAvatar=()=>user?.name===privateAvatarOwner&&!demoSession&&Boolean(privateAvatarSession);
+  function displayProfile(person){
+    const src=canUsePrivateAvatar()&&person?.name===privateAvatarOwner&&privateAvatarSession.profile?.active&&privateAvatarSession.profile.src;
+    return src?{...person,privateAvatarSrc:src}:person;
+  }
+  async function updatePrivateAvatar(session,profile){
+    await V.savePrivateAvatar(session.key,profile);
+    if(!canUsePrivateAvatar()||privateAvatarSession!==session)return false;
+    session.profile=profile;
+    return true;
+  }
+  function openAvatarPicker(){
+    const privateProfile=canUsePrivateAvatar()?privateAvatarSession.profile:undefined;
+    const privateControls=canUsePrivateAvatar()?'<section class="private-profile-picker"><h3>전용 프로필</h3><div class="actions">'+
+      (privateProfile?'<img width="40" height="40" alt="" src="'+esc(privateProfile.src)+'">'+button('usePrivateAvatar',privateProfile.active?'사용 중':'전용 프로필 사용','',privateProfile.active?'disabled':''):'')+
+      button('privateAvatarSettings',privateProfile?'GIF 변경':'전용 GIF 등록')+'</div></section>':'';
+    showDialog(D.avatarPicker(user,privateControls));
+  }
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
@@ -50,7 +70,7 @@
     const project=relatedRows(true)[0];
     return '<div class="linked-project-bar">'+(project?'<strong>'+esc(project.title)+'</strong>':'<strong>연결된 과업</strong>')+projectLinks(linkedProject)+button('clearLinkedProject','전체 목록')+'</div>';
   }
-  const heroEditorHTML=()=>BoardBriefingHero.editor({user,rows:heroRows(),C,N,esc,record:heroDraft,button});
+  const heroEditorHTML=()=>BoardBriefingHero.editor({user:displayProfile(user),rows:heroRows(),C,N,esc,record:heroDraft,button});
   const styles=BoardDisplayStyles.create({storage:localStorage,element:document.documentElement});
   window.addEventListener('storage',e=>{if(e.key===BoardDisplayStyles.KEY||e.key==='workplace-theme'||e.key===null){styles.restore();render();}});
   const presence=BoardPresence.create({onChange:()=>{const host=$('#onlineProfiles');if(host)host.innerHTML=BoardPresence.render(presence.snapshot(),esc);liveCursors?.paint();}});
@@ -67,7 +87,7 @@
     }else if(action==='preferences')label='<span class="tossface button-icon" aria-hidden="true">⚙️</span><span>설정</span>';
     return '<button type="button" data-action="'+action+'" class="'+cls+'" '+extra+'>'+label+'</button>';
   };
-  const D=BoardDetailViews.create({C,P,W,B,N,esc,button,options,member,weekBlocks,samplePostAvatar:post=>!demoSession&&post.sampleFixture&&typeof BoardPreviewData!=='undefined'?BoardPreviewData.sampleAvatar(post.author):undefined});
+  const D=BoardDetailViews.create({C,P,W,B,N,esc,button,options,member:name=>displayProfile(member(name)),weekBlocks,samplePostAvatar:post=>!demoSession&&post.sampleFixture&&typeof BoardPreviewData!=='undefined'?BoardPreviewData.sampleAvatar(post.author):undefined});
   function toast(message){$('#toast').textContent=message;$('#toast').style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').style.display='none',4500);}
   function persist(){if(demoSession)return true;if(cacheError){toast(cacheError);return false;}try{localStorage.setItem(CACHE,JSON.stringify(state));localStorage.setItem(CACHE+'-dirty',String(dirty));return true;}catch(e){toast('브라우저 임시 저장에 실패했습니다. JSON 백업으로 보관해 주세요.');return false;}}
   function changed(){dirty=true;persist();}
@@ -96,12 +116,18 @@
         if(!deferredConnection&&targetHandle&&health.target){try{await saveDisk();}catch(e){delete state.accounts[name];persist();throw e;}}
       }
       user=member(name);page='dashboard';demoSession=false;selectedTeam=user.team;scope='all';
-      try{if(data.get('remember'))await V.remember({name,team:user.team,password});else await V.forget();}catch{toast('이 브라우저에서 로그인 정보를 기억하지 못했습니다. 로그인은 계속 진행합니다.');}
+      privateAvatarSession=null;
+      if(name===privateAvatarOwner){
+        try{privateAvatarSession=await V.unlockPrivateAvatar(password,state.accounts[name].salt);}
+        catch{toast('이 브라우저에서 전용 프로필을 열지 못했습니다.');}
+      }
+      try{if(name!==privateAvatarOwner&&data.get('remember'))await V.remember({name,team:user.team,password});else await V.forget();}catch{toast('이 브라우저에서 로그인 정보를 기억하지 못했습니다. 로그인은 계속 진행합니다.');}
       render();
       await refreshWorkflowSource();
     }catch(e){$('#loginError').textContent=e.message;$('#loginSubmit').disabled=false;}
   }
   function render(){
+    if(user?.name!==privateAvatarOwner||demoSession)privateAvatarSession=null;
     if(typeof BoardPreviewData!=='undefined'&&developmentSamples&&!demoSession&&!cacheError){const filled=BoardPreviewData.ensure(state,C,P);if(filled!==state){state=filled;changed();}}
     BoardAvatars.sync(state.customAvatars||[]);
     presence.setSession({directory:demoSession?null:targetDir,user:demoSession?null:user,members:state.members}).catch(()=>{});
@@ -110,7 +136,7 @@
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
     let body=['workContent','workOtherDesign'].includes(page)?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='today'?D.today(state,user):page==='report'?report():page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
-    $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(user)+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">WorkLog / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+BoardPresence.render(presence.snapshot(),esc)+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll',Icons.arrow('refresh')+' 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['customers','report','revisions'].includes(page)?button('export',Icons.arrow('down')+' 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
+    $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(displayProfile(user))+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">WorkLog / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+BoardPresence.render(presence.snapshot(),esc)+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll',Icons.arrow('refresh')+' 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['customers','report','revisions'].includes(page)?button('export',Icons.arrow('down')+' 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
     BoardBriefingHero.mount(document);
@@ -119,7 +145,7 @@
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(C.TEAMS,selectedTeam)}</select>`:''}</div>`;}
   function filterBar(isReport=false){return `<div class="filters"><input class="search" type="search" placeholder="과업명, 담당자, 고객 검색" aria-label="업무 검색" data-filter="search" value="${esc(filters.search)}"><select aria-label="진행상태" data-filter="status">${options(C.STATUSES,filters.status,'전체 상태')}</select><select aria-label="담당팀" data-filter="teamFilter">${options(C.TEAMS,filters.teamFilter,'전체 담당팀')}</select><div class="date-filter">${isReport?'<span>완료요청일</span>':`<select aria-label="기간 기준" data-filter="dateField">${[['due','마감일'],['requestedDue','요청완료일'],['requested','요청일']].map(([v,t])=>`<option value="${v}" ${filters.dateField===v?'selected':''}>${t}</option>`).join('')}</select>`}<input type="date" aria-label="시작 날짜" data-filter="from" value="${filters.from}"><span>–</span><input type="date" aria-label="종료 날짜" data-filter="to" value="${filters.to}">${button('week','이번 주')}${button('clearFilters','초기화')}</div></div>`;}
-  function dashboard(){const calendar=BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,filter:calendarFilter,esc,button});return '<div class="briefing-layout">'+BoardBriefingHero.render({rows:heroRows(),user,C,N,esc,record:heroDesign.get(user)})+BoardBriefingDashboard.render({state,user,C,P,B,N,esc,button,table:projectTable,hint:D.illustratedHint,weekBlocks,leaveItems,calendar})+'</div>';}
+  function dashboard(){const calendar=BoardBriefingCalendar.render({state,actor:user.name,C,month:calendarMonth,selected:calendarDay,filter:calendarFilter,esc,button});return '<div class="briefing-layout">'+BoardBriefingHero.render({rows:heroRows(),user:displayProfile(user),C,N,esc,record:heroDesign.get(displayProfile(user))})+BoardBriefingDashboard.render({state,user,C,P,B,N,esc,button,table:projectTable,hint:D.illustratedHint,weekBlocks,leaveItems,calendar})+'</div>';}
   function viewTabs(){return '<div class="tabs" role="group" aria-label="업무 보기">'+(page==='work'?button('view','보드',view==='board'?'active':'','data-view="board"'):'')+button('view','분류별',view==='category'?'active':'','data-view="category"')+button('view','과업별',view==='project'?'active':'','data-view="project"')+'</div>';}
   function categorizedTable(rows){return W.group(rows).map(([label,group])=>'<section class="category-group"><h3>'+esc(label.replace(/^퍼블(?= >|$)/,'퍼블리싱'))+' <span class="count">'+group.length+'</span></h3>'+sheetTable(group)+'</section>').join('')||'<p class="empty">조회 조건에 맞는 과업이 없습니다.</p>';}
   const boardAssignee=()=>boardName||(scope==='personal'?user.name:'');
@@ -315,11 +341,11 @@
     if(['manageMembers','addMember','rehire','removeMember','leaderSettings','passwords','resetPassword'].includes(a)&&!P.canManage(state,user?.name))throw new Error('전체관리자만 사용할 수 있습니다.');
     if(['adminSettings','transferAdmin','editQuickLinks'].includes(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('전체관리자만 사용할 수 있습니다.');
     if(a==='heroMode'){const persisted=heroDesign.setMode(user,el.dataset.mode);render();if(!persisted)toast('선택한 보기는 유지됩니다. 브라우저 저장이 제한되어 새로고침 후에는 복원되지 않을 수 있습니다.');return;}
-    if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(user);showDialog(heroEditorHTML());}return;}
+    if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(displayProfile(user));showDialog(heroEditorHTML());}return;}
     if(a==='heroPreviewMode'&&heroDraft){heroDraft.mode=el.dataset.mode==='big'?'big':'normal';$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
     if(a==='heroPalette'&&heroDraft){const palette=BoardBriefingHero.palettes.find(p=>p.id===el.dataset.palette);if(palette){const current=heroDraft[heroDraft.mode];heroDraft[heroDraft.mode]={...BoardBriefingHero.fromPalette(palette,heroDraft.mode),scale:current.scale,x:current.x,y:current.y,rx:current.rx,ry:current.ry,rz:current.rz,flip:current.flip};$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);}return;}
-    if(a==='heroSaveMode'&&heroDraft){heroDesign.saveMode(user,heroDraft.mode,heroDraft[heroDraft.mode]);toast((heroDraft.mode==='big'?'대두형':'기본형')+' 설정을 이 사용자·캐릭터에 저장했습니다.');return;}
-    if(a==='heroReset'&&heroDraft){heroDraft[heroDraft.mode]=BoardBriefingHero.defaults(user,heroDraft.mode);$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
+    if(a==='heroSaveMode'&&heroDraft){heroDesign.saveMode(displayProfile(user),heroDraft.mode,heroDraft[heroDraft.mode]);toast((heroDraft.mode==='big'?'대두형':'기본형')+' 설정을 이 사용자·캐릭터에 저장했습니다.');return;}
+    if(a==='heroReset'&&heroDraft){heroDraft[heroDraft.mode]=BoardBriefingHero.defaults(displayProfile(user),heroDraft.mode);$('#editor').innerHTML=heroEditorHTML();BoardBriefingHero.mount(document);return;}
     if(a==='relatedProject'){goToRelatedProject(el.dataset.id,el.dataset.page);return;}
     if(a==='allProjects'||a==='clearLinkedProject'){linkedProject='';selectedProject='';render();return;}
     if(a==='leaveView'){leaveView=el.dataset.view;render();return;}
@@ -394,8 +420,21 @@
 
     else if(a==='preferences')preferences();
     else if(a==='addAvatar')showDialog('<div class="modal-head"><h2>캐릭터 추가</h2>'+button('close','닫기')+'</div><form id="addAvatarForm"><div class="modal-body"><div class="field"><label for="avatarName">캐릭터 이름</label><input id="avatarName" name="name" maxlength="40" required></div><div class="field"><label for="avatarFile">캐릭터 이미지</label><input id="avatarFile" name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div><p>PNG·JPG·WebP 최대 10MB, 움직이는 GIF 최대 2MB. 추가하면 내 캐릭터로 선택되고 핑크 브리핑이 생성됩니다.</p><div id="avatarError" class="error" role="alert"></div></div><div class="modal-foot"><button class="primary" id="avatarSubmit">추가하고 사용</button></div></form>');
-    else if(a==='avatarSettings')showDialog(D.avatarPicker(user));
-    else if(a==='setAvatar'){state=P.setAvatar(state,user.name,el.dataset.avatar);changed();$('#editor').close();render();toast('내 캐릭터를 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');}
+    else if(a==='avatarSettings')openAvatarPicker();
+    else if(a==='privateAvatarSettings'){
+      if(!canUsePrivateAvatar())throw Error('전용 프로필을 사용할 수 없습니다.');
+      showDialog('<div class="modal-head"><h2>전용 GIF 등록</h2>'+button('close','닫기')+'</div><form id="privateAvatarForm"><div class="modal-body"><label class="field">GIF 파일<input type="file" name="image" accept="image/gif,.gif" required></label><p>등록한 GIF는 이 브라우저에서 본인에게만 보입니다.</p><div class="error" id="privateAvatarError" role="alert"></div></div><div class="modal-foot"><button class="primary" type="submit">등록하고 사용</button></div></form>');
+    }
+    else if(a==='usePrivateAvatar'){
+      if(!canUsePrivateAvatar()||!privateAvatarSession.profile)throw Error('전용 프로필을 먼저 등록해 주세요.');
+      if(await updatePrivateAvatar(privateAvatarSession,{...privateAvatarSession.profile,active:true})){$('#editor').close();render();}
+    }
+    else if(a==='setAvatar'){
+      const owner=user.name;
+      if(canUsePrivateAvatar()&&privateAvatarSession.profile?.active&&!(await updatePrivateAvatar(privateAvatarSession,{...privateAvatarSession.profile,active:false})))return;
+      if(user?.name!==owner)return;
+      state=P.setAvatar(state,owner,el.dataset.avatar);changed();$('#editor').close();render();toast('내 캐릭터를 변경했습니다. 내용 저장으로 공용 파일에 반영하세요.');
+    }
     else if(a==='adminSettings')adminSettings();
     else if(a==='rankSettings'){if(!P.isOverallAdmin(state,user.name))throw Error('전체관리자만 사용할 수 있습니다.');rankDraft=P.ranks(state).map(name=>({old:name,name}));rankSettings();}
     else if(['rankUp','rankDown','rankDelete','rankAdd'].includes(a)){if(!P.isOverallAdmin(state,user.name))throw Error('전체관리자만 사용할 수 있습니다.');document.querySelectorAll('[data-rank-index]').forEach(input=>rankDraft[Number(input.dataset.rankIndex)].name=input.value);const i=Number(el.dataset.index);if(a==='rankAdd')rankDraft.push({old:'',name:''});if(a==='rankDelete')rankDraft.splice(i,1);const j=a==='rankUp'?i-1:i+1;if(['rankUp','rankDown'].includes(a)&&j>=0&&j<rankDraft.length)[rankDraft[i],rankDraft[j]]=[rankDraft[j],rankDraft[i]];rankSettings();}
@@ -464,6 +503,9 @@
     $('#loginPassword').autocomplete=existing?'off':'new-password';
     $('#loginHint').textContent=existing?'기억된 정보를 확인하고 로그인하세요.':'최초 로그인입니다. 사용할 비밀번호를 설정해 주세요.';
     $('#loginSubmit').textContent=existing?'로그인':'비밀번호 설정하고 시작';
+    const rememberBox=$('#loginForm')?.querySelector?.('[name="remember"]');
+    if(rememberBox){rememberBox.disabled=name===privateAvatarOwner;if(rememberBox.disabled)rememberBox.checked=false;}
+    if(name===privateAvatarOwner)return;
     try{const saved=remembered||await V.recall();if(existing&&saved?.name===name&&$('#loginName')?.value===name)$('#loginPassword').value=saved.password;}catch{}
   }
   function connectionBar(){return D.connection(health);}
@@ -590,13 +632,26 @@
   document.addEventListener('drop',e=>{const lane=e.target.closest('[data-lane]');if(!lane||!draggedCard)return;e.preventDefault();moveBoardCard(draggedCard,lane.dataset.lane);draggedCard='';clearDragPreview();});
   document.addEventListener('dragend',()=>{draggedCard='';clearDragPreview();document.querySelectorAll('.is-dragging,.is-drop-target').forEach(el=>el.classList.remove('is-dragging','is-drop-target'));});
   document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(el)act(el).catch(err=>{if(err.name!=='AbortError')toast(err.message);});else if(!e.target.closest('button,input,select,textarea,a,label')){const card=e.target.closest('[data-home-target]');if(card)act({dataset:{action:'page',page:card.dataset.homeTarget}}).catch(err=>toast(err.message));}});
-  document.addEventListener('input',e=>{const el=e.target;if(!heroDraft||!el.closest?.('#heroDesignForm'))return;const config=heroDraft[heroDraft.mode];if(el.dataset.heroColor){config[el.dataset.heroColor]=el.value;const check=document.querySelector('[data-hero-transparent="'+el.dataset.heroColor+'"]');if(check)check.checked=false;}else if(el.dataset.heroTransparent){const key=el.dataset.heroTransparent;config[key]=el.checked?'transparent':document.querySelector('[data-hero-color="'+key+'"]').value;}else if(el.hasAttribute('data-hero-flip')){config.flip=el.checked;}else if(el.dataset.heroPosition){config[el.dataset.heroPosition]=Number(el.value);const output=document.querySelector('[data-hero-output="'+el.dataset.heroPosition+'"]');if(output)output.textContent=el.value+(BoardBriefingHero.positions.find(p=>p[0]===el.dataset.heroPosition)?.[4]||'');}else return;heroDraft[heroDraft.mode]=BoardBriefingHero.clean(config,BoardBriefingHero.defaults(user,heroDraft.mode));$('#heroPreview').innerHTML=BoardBriefingHero.render({user,rows:heroRows(),C,N,esc,record:heroDraft,preview:true});BoardBriefingHero.mount(document);});
+  document.addEventListener('input',e=>{const el=e.target;if(!heroDraft||!el.closest?.('#heroDesignForm'))return;const config=heroDraft[heroDraft.mode];if(el.dataset.heroColor){config[el.dataset.heroColor]=el.value;const check=document.querySelector('[data-hero-transparent="'+el.dataset.heroColor+'"]');if(check)check.checked=false;}else if(el.dataset.heroTransparent){const key=el.dataset.heroTransparent;config[key]=el.checked?'transparent':document.querySelector('[data-hero-color="'+key+'"]').value;}else if(el.hasAttribute('data-hero-flip')){config.flip=el.checked;}else if(el.dataset.heroPosition){config[el.dataset.heroPosition]=Number(el.value);const output=document.querySelector('[data-hero-output="'+el.dataset.heroPosition+'"]');if(output)output.textContent=el.value+(BoardBriefingHero.positions.find(p=>p[0]===el.dataset.heroPosition)?.[4]||'');}else return;heroDraft[heroDraft.mode]=BoardBriefingHero.clean(config,BoardBriefingHero.defaults(displayProfile(user),heroDraft.mode));$('#heroPreview').innerHTML=BoardBriefingHero.render({user:displayProfile(user),rows:heroRows(),C,N,esc,record:heroDraft,preview:true});BoardBriefingHero.mount(document);});
   document.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
   document.addEventListener('submit',e=>{
     const formId=e.target.getAttribute?.('id')??e.target.id;
+    if(formId==='privateAvatarForm'){
+      e.preventDefault();
+      if(!canUsePrivateAvatar())return;
+      const form=e.target,session=privateAvatarSession,file=new FormData(form).get('image');
+      const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
+      (async()=>{
+        if(file?.type!=='image/gif')throw Error('GIF 파일을 선택해 주세요.');
+        const src=await BoardAvatars.imageFile(file);
+        if(!canUsePrivateAvatar()||privateAvatarSession!==session)return;
+        if(await updatePrivateAvatar(session,{src,active:true})){$('#editor').close();render();}
+      })().catch(error=>{if(form.isConnected){form.querySelector('#privateAvatarError').textContent=error.message;submit.disabled=false;}});
+      return;
+    }
     if(formId==='addAvatarForm'){e.preventDefault();const name=$('#avatarName').value.trim(),file=$('#avatarFile').files[0],owner=user.name;$('#avatarSubmit').disabled=true;BoardAvatars.imageFile(file).then(src=>{if(!user||user.name!==owner)throw Error('다시 로그인해 주세요.');const item={id:'custom-'+crypto.randomUUID(),name,src},items=[...(state.customAvatars||[]),item];BoardAvatars.validateCustom(items);state.customAvatars=items;state=P.setAvatar(state,owner,item.id);changed();$('#editor').close();render();toast('캐릭터와 핑크 브리핑을 추가했습니다. 공용 반영은 내용 저장을 눌러 주세요.');}).catch(err=>{if($('#avatarError'))$('#avatarError').textContent=err.message;if($('#avatarSubmit'))$('#avatarSubmit').disabled=false;});return;}
 
-    if(formId==='heroDesignForm'){e.preventDefault();try{heroDesign.save(user,heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
+    if(formId==='heroDesignForm'){e.preventDefault();try{heroDesign.save(displayProfile(user),heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
     if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(formId==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
     if(['leadersForm','memberForm','memberRankForm','removeMemberForm'].includes(formId)&&!P.canManage(state,user?.name)){e.preventDefault();toast('전체관리자만 사용할 수 있습니다.');return;}

@@ -14,5 +14,22 @@
   const forget=()=>write([['key',undefined],['login',undefined]]);
   const rememberConnections=value=>write([['connections',value]]);
   const recallConnections=()=>read('connections');
-  const api={newKey,seal,unseal,remember,recall,forget,rememberConnections,recallConnections};if(typeof module!=='undefined')module.exports=api;else root.BoardVault=api;
+  const privateAvatarSlot='private-avatar:owner-v1';
+  async function unlockPrivateAvatar(password,salt){
+    const material=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('WorkLog/private-avatar/'+salt),iterations:600000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+    const record=await read(privateAvatarSlot);
+    let profile=null;
+    if(record){
+      try{profile=JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:record.iv},key,record.data)));}
+      catch{ /* A password reset requires registering the GIF again. */ }
+    }
+    return {key,profile};
+  }
+  async function savePrivateAvatar(key,profile){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const data=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(profile)));
+    await write([[privateAvatarSlot,{iv,data}]]);
+  }
+  const api={newKey,seal,unseal,remember,recall,forget,rememberConnections,recallConnections,unlockPrivateAvatar,savePrivateAvatar};if(typeof module!=='undefined')module.exports=api;else root.BoardVault=api;
 })(typeof window!=='undefined'?window:globalThis);
