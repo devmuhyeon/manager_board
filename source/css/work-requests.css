@@ -56,7 +56,7 @@ html[data-workplace-theme][data-style] #requestsView .request-row .request-row-t
 html[data-workplace-theme][data-style] #requestsView .request-row .request-row-tools button:focus-visible{opacity:1;filter:none}
 /* Composer with a stable footer and an independently scrollable recipient list. */
 html[data-workplace-theme] #editor:has(#workRequestForm){width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;overflow:hidden;border:0;border-radius:16px;background:#fff;color:#172033}
-#editor:has(#workRequestForm)>.modal-head{padding:20px 24px;border-bottom:1px solid #e8edf3;background:#fff}
+#editor:has(#workRequestForm)>.modal-head{padding:20px 24px;border-bottom:1px solid #e8edf3}
 #editor:has(#workRequestForm)>.modal-head h2{font-size:20px;font-weight:700;margin:0}
 #workRequestForm{display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 128px)}
 html[data-workplace-theme] #workRequestForm .request-form-body{display:flex;flex-direction:column;gap:20px;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;padding:24px;flex:1}

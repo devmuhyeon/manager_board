@@ -90,9 +90,6 @@ html[data-workplace-theme][data-style] :is(.card,.home-panel,.table-wrap,.memo-c
 html[data-workplace-theme][data-style] .home-panel > .card {
   border-radius: 0;
 }
-html[data-workplace-theme][data-style] :is(.sectionhead,.modal-head) {
-  background: var(--color-background-card);
-}
 html[data-workplace-theme][data-style] :is(.work-table th, .table-wrap thead th) {
   background: var(--color-background-muted);
   color: var(--color-text-secondary);

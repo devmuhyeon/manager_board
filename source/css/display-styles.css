@@ -18,7 +18,6 @@
 :root[data-style="briefing"] [data-home-section="nextWeek"]{grid-column:span 1;order:-1}
 :root[data-style="briefing"] .home-wide{grid-column:1/-1}
 :root[data-style="briefing"] .overview-counts>span{border-right:0;border-bottom:0;padding-bottom:16px}
-:root[data-style="briefing"] .home-panel .sectionhead{background:var(--surface)}
 :root[data-style="navy"] .sidebar{background:#242b36}
 :root[data-style="navy"] .sidebar .nav button.active{background:var(--accent)}
 :root[data-style="navy"] .home-panel[data-home-section="work"]{border-top:1px solid var(--border)}
@@ -30,7 +29,7 @@
 :root[data-style="soft"] .sidebar .nav button:hover{background:var(--accent-soft);color:var(--accent-text)}
 :root[data-style="soft"] .sidebar .subbrand,:root[data-style="soft"] .sidebar .nav-group,:root[data-style="soft"] .sidebar .user .muted,:root[data-style="soft"] .sidebar .user button{color:var(--muted)}
 :root[data-style="soft"] .sidebar .user{border-color:var(--border)}
-:root[data-style="soft"] .home-panels{gap:28px}:root[data-style="soft"] .home-panel .sectionhead{background:var(--surface);padding:28px}
+:root[data-style="soft"] .home-panels{gap:28px}:root[data-style="soft"] .home-panel .sectionhead{padding:28px}
 :root[data-style="compact"]{--panel-radius:8px}
 :root[data-style="compact"] .main .content{padding:24px 24px}
 :root[data-style="compact"] .home-panels{gap:12px}
