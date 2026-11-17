@@ -300,3 +300,18 @@ test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 �
  await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/<td>공통<\/td>/);assert.match(h.element('#app').innerHTML,/bulletin-notice[^>]*><span[^>]*>📢/);assert.doesNotMatch(h.element('#app').innerHTML,/>고정</);assert.equal(h.api.read().state.teamPosts[0].pinned,true);assert.match(h.element('#app').innerHTML,/검토 글/);
  assert.throws(()=>B.setNotice(h.api.read().state,'정윤정',{id:post.id,type:'일반글',pinned:false}),/권한/);
 });
+
+test('일반 주소에서 원본 연결 전에는 UI·UX 샘플을 보여주고 실제 과업 저장에는 포함하지 않는다',async()=>{
+ const h=harness();h.context.BoardPreviewData=require('./preview-data.js');h.api.seed(fixture());h.api.session('김무현');
+ await h.api.act({dataset:{action:'page',page:'work'}});
+ assert.equal((h.element('#app').innerHTML.match(/class="workflow-dashboard-row"/g)||[]).length,12);
+ const id='source:uiux-history';await h.api.act({dataset:{action:'workflowDetail',id}});
+ assert.match(h.element('#editor').innerHTML,/신청서 접근성 점검/);assert.doesNotMatch(h.element('#editor').innerHTML,/data-action="edit"/);
+ for(const page of ['report','customers','projects']){
+  await h.api.act({dataset:{action:'relatedProject',page,id}});
+  assert.match(h.element('#app').innerHTML,/신청서 접근성 점검/);
+ }
+ assert.equal(h.api.read().state.projects.length,0);
+ const src=handle('[]');h.api.connect(src,null,null);await h.api.act({dataset:{action:'page',page:'work'}});
+ assert.doesNotMatch(h.element('#app').innerHTML,/신청서 접근성 점검/);
+});

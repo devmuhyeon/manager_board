@@ -99,6 +99,8 @@ html[data-workplace-theme][data-style] .main .content:has(> .bulletin-board){dis
 .bulletin-table th:nth-child(6){width:92px}
 .bulletin-table td:first-child:not([colspan]){text-align:center}
 .bulletin-table .project-button{display:block;width:100%;overflow:hidden;text-align:left;text-overflow:ellipsis;white-space:nowrap}
+.bulletin-table tbody tr[data-action="postDetail"]{cursor:pointer}
+.bulletin-table tbody tr[data-action="postDetail"]:hover td{background:var(--surface-soft)}
 .bulletin-table tr:has([aria-pressed="true"]) td{background:var(--surface-soft)}
 .bulletin-table [aria-pressed="true"]{font-weight:700}
 .bulletin-table .bulletin-notice{text-align:center}

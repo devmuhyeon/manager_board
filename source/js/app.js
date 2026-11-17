@@ -30,12 +30,18 @@
   }
   const heroRows=()=>sourceRows();
   const reportViews={work:'UI·UX',report:'주간 업무',customers:'고객별',projects:'과업별'};
+  let disconnectedSamples;
+  function disconnectedWorkflowRows(){
+    if(demoSession||sourceHandle||state.projects.some(project=>project.raw)||typeof BoardPreviewData==='undefined')return [];
+    disconnectedSamples??=BoardPreviewData.workflowSamples(C).map(project=>({...project,readOnlySample:true}));
+    return disconnectedSamples;
+  }
   function relatedRows(includeRemoved=false){
-    return sourceRows({includeRemoved,forReports:true}).filter(project=>!linkedProject||project.id===linkedProject);
+    return [...sourceRows({includeRemoved,forReports:true}),...disconnectedWorkflowRows()].filter(project=>!linkedProject||project.id===linkedProject);
   }
   function projectLinks(id){
     if(!id)return '';
-    const activeInSource=demoSession||!state.sourceSnapshotIds||state.sourceSnapshotIds.includes(id);
+    const activeInSource=demoSession||!state.sourceSnapshotIds||state.sourceSnapshotIds.includes(id)||disconnectedWorkflowRows().some(project=>project.id===id);
     return '<div class="related-project-links" role="group" aria-label="같은 과업 보기">'+Object.entries(reportViews).filter(([key])=>key!==page&&(activeInSource||key==='report'||key==='projects')).map(([key,label])=>button('relatedProject',label,'','data-page="'+key+'" data-id="'+esc(id)+'"')).join('')+'</div>';
   }
   function linkedProjectBar(){
@@ -130,7 +136,7 @@
       +((boardName||scope!=='all'||Object.entries(filters).some(([key,value])=>key!=='dateField'&&value))?button('clearFilters','전체 보기'):'' )
       +'</div></div>':'';
     const content=isBoard&&boardMode==='workflow'&&boardLayout==='table'?'<div class="board-table-view">'+projectTable(BoardTaskBoard.cards(relatedRows(),boardAssignee(),true,C,{from:filters.from,to:filters.to}).map(card=>card.project))+'</div>':isBoard&&boardMode==='workflow'&&boardLayout==='cards'
-      ?BoardTaskBoard.renderWorkflow({rows:relatedRows(),internalRows:rows,name:boardAssignee(),C,esc,button,actor:user.name,period:{from:filters.from,to:filters.to},sourceIds:state.sourceSnapshotIds,demo:demoSession,includeSamples:demoSession})
+      ?BoardTaskBoard.renderWorkflow({rows:relatedRows(),internalRows:rows,name:boardAssignee(),C,esc,button,actor:user.name,period:{from:filters.from,to:filters.to},demo:demoSession,includeSamples:demoSession})
       :isBoard?BoardTaskBoard.render({rows,name:boardAssignee(),showDone,mode:boardMode==='workflow'?'project':boardMode,layout:boardLayout,closedWeeks,closedLanes,expandedCards,period:{from:filters.from,to:filters.to},members:state.members,rankOrder:P.ranks(state),actor:user.name,C,N,esc,button,dday:P.dday,orderNames:names=>P.orderNames(state,names)})
       :view==='category'?categorizedTable(rows):projectTable(rows);
     return (page==='customers'?customerCards():'')+'<section class="card '+(isBoard?'board-surface':'')+'"><div class="table-toolbar"><h2>'
@@ -159,7 +165,7 @@
     changed();render();toast('목록을 변경했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');
   }
   function openWorkflowDetail(id,role=''){
-    const original=state.projects.find(project=>project.id===id);
+    const original=state.projects.find(project=>project.id===id)||disconnectedWorkflowRows().find(project=>project.id===id);
     if(!original)return;
     const project=C.effective(original),raw=BoardTaskBoard.sourceDetails(project,role);
     const roles=role?[role]:['기획','디자인','퍼블'];
@@ -172,7 +178,7 @@
       +(raw.start?'<p>원문 작업시작일자: '+esc(raw.start)+'</p>':'')
       +(raw.end?'<p>작업종료일자: '+esc(raw.end)+'</p>':'')
       +'<h3>고객 작업 내용</h3><pre>'+esc(raw.notes||'기재된 작업 내용이 없습니다.')+'</pre>'+BoardProjectReport.sourceTimeline(original,esc)+'</div>'
-      +'<div class="modal-foot">'+projectLinks(id)+button('edit','수정','primary','data-id="'+esc(id)+'"')+'</div>');
+      +'<div class="modal-foot">'+projectLinks(id)+(project.readOnlySample?'':button('edit','수정','primary','data-id="'+esc(id)+'"'))+'</div>');
   }
   async function refreshWorkflowSource(){
     if(demoSession||!sourceHandle||!user)return;
@@ -189,7 +195,8 @@
     }catch(error){toast('최신 고객 요청을 읽지 못했습니다. '+error.message);}
   }
   function goToRelatedProject(id,destination){
-    if(!Object.hasOwn(reportViews,destination)||!state.projects.some(project=>project.id===id)||state.hiddenProjects?.includes(id))return;
+    if(!Object.hasOwn(reportViews,destination)||state.hiddenProjects?.includes(id))return;
+    if(!state.projects.some(project=>project.id===id)&&!disconnectedWorkflowRows().some(project=>project.id===id))return;
     if($('#editor').open)$('#editor').close();
     linkedProject=id;selectedProject=destination==='projects'?id:'';
     page=destination;view=page==='work'?'board':'category';scope='all';boardName='';
