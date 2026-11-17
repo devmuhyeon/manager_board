@@ -3,6 +3,8 @@
  const chevron='m6 9 6 6 6-6';
  const directions=['down','up','left','right'];
  const paths={reply:'M5 5v4a5 5 0 0 0 5 5h9m-5-5 5 5-5 5',sort:'m7 9 5-5 5 5m-10 6 5 5 5-5',external:'M7 17 17 7M7 7h10v10',refresh:'M20 7v5h-5m5 0a8 8 0 1 0-2 5'};
+ paths.edit='m14 6 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z';
+ paths.trash='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13m-8 3v7m4-7v7';
  function arrow(kind){
   const direction=directions.includes(kind)?kind:'';
   const path=direction?chevron:paths[kind];
