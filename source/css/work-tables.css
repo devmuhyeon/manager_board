@@ -169,3 +169,22 @@ html[data-workplace-theme][data-style] #bulletinDetail .bulletin-reply-form>summ
 
 .private-profile-picker{margin:0 0 16px;padding:12px 16px;border:1px solid var(--border);border-radius:8px}
 .private-profile-picker h3{margin:0 0 8px}.private-profile-picker img{object-fit:contain}
+
+.card-expenses{padding:20px}
+.expense-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.expense-toolbar:last-child,.expense-toolbar p{margin:0}.expense-toolbar .tabs{flex-wrap:wrap}
+.expense-period{display:flex;gap:8px}
+.expense-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.expense-metrics>div{display:grid;gap:8px;min-width:0;padding:12px;background:var(--surface-soft);border-radius:8px}
+.expense-metrics span{font-size:12px;color:var(--muted)}.expense-metrics strong{font-size:clamp(16px,2vw,24px);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.expense-metrics>div:last-child{background:#e9f2ff;color:#163e7b}.expense-metrics>div:last-child span{color:#254e85}
+.expense-excluded,.expense-excluded-total{color:var(--muted);font-size:12px}.expense-excluded{display:block;margin-top:4px}
+.card-expenses .table-wrap{overflow:auto}.card-expenses table{min-width:680px}
+.card-expenses th,.card-expenses td{padding:12px;vertical-align:top}.card-expenses td:nth-child(2){min-width:160px}.card-expenses td:first-child,.expense-amount{white-space:nowrap}.card-expenses td:nth-child(3) p{white-space:pre-wrap;overflow-wrap:anywhere}.card-expenses td:last-child{overflow-wrap:anywhere}
+.expense-form-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.expense-form>p{margin:0 0 12px}
+.expense-exclude-switch{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600}
+.expense-exclude-switch input{appearance:none;position:relative;width:36px;height:20px;padding:0;border:1px solid var(--border);border-radius:20px;background:#dce2e9;cursor:pointer;margin:0}
+.expense-exclude-switch input::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.expense-exclude-switch input:checked{background:#305da8;border-color:#305da8}.expense-exclude-switch input:checked::after{transform:translateX(16px)}
+@media(max-width:900px){.expense-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.card-expenses{padding:16px}.expense-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-form-pair{grid-template-columns:minmax(0,1fr)}}

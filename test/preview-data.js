@@ -1,9 +1,31 @@
 (function(root){
  'use strict';
  const Avatars=typeof module!=='undefined'?require('../source/js/avatar-catalog.js'):root.BoardAvatars;
+ const CardExpenses=typeof module!=='undefined'?require('../source/js/card-expenses.js'):root.BoardCardExpenses;
  const representativeAvatars={성아미:'sailor-moon',정윤정:'quokka',임정규:'young-goku',김무현:'penguin-new',홍소영:'powerpuff',김민재:'frog',최완이:'kitty',김아영:'terriermon',김다솔:'hamtaro',최지안:'bbiyak'};
  const sampleAvatar=name=>Object.hasOwn(representativeAvatars,name)?representativeAvatars[name]:undefined;
  function relativeDays(today){return offset=>{const date=new Date(today+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10);};}
+ function cardSamples(){
+  const today=CardExpenses.today(),month=today.slice(0,7);
+  const date=new Date(month+'-01T00:00:00Z');date.setUTCDate(0);
+  const previous=date.toISOString().slice(0,7);
+  const cards=[
+   {id:'sample-operations',name:'[샘플] 운영 카드',limits:[{month:previous,amount:500000}],extra:{[month]:100000}},
+   {id:'sample-design',name:'[샘플] 디자인 카드',limits:[{month:previous,amount:300000}],extra:{}},
+   {id:'sample-shared',name:'[샘플] 공용 카드',limits:[{month:previous,amount:200000}],extra:{[previous]:50000}}
+  ];
+  const entries=[
+   [0,today,'회의 음료 구입','주간 회의 참석자 음료 6잔','김무현',27000,'영수증 제출',false],
+   [0,month+'-01','사무용품 구입','회의실 메모지와 마커','성아미',43500,'',false],
+   [0,today,'결제 취소 예정','중복 결제 확인 건','정윤정',12000,'합계에서 제외',true],
+   [0,previous+'-20','워크숍 간식','기획·퍼블 협업 회의','임정규',55000,'',false],
+   [1,today,'시안 출력','고객 검토용 컬러 출력 12부','홍소영',36000,'',false],
+   [1,previous+'-12','디자인 검수용 소모품','색상 비교용 인쇄용지','김민재',52000,'',false],
+   [2,today,'공용 케이블 구매','회의실 모니터 HDMI 케이블','최지안',19800,'',false],
+   [2,previous+'-18','업무 회의 준비','회의 자료 제본비','김아영',25000,'',false]
+  ].map(([cardIndex,date,purpose,detail,author,amount,note,excluded],index)=>({id:'sample-expense-'+index,cardId:cards[cardIndex].id,date,purpose,detail,author,amount,note,excluded}));
+  return {cards,entries};
+ }
  function workflowSamples(C,day=relativeDays(C.today())){
   const rows=[
    {id:'uiux-intake',과업명:'[샘플] 모바일 회원가입 개선',요청팀:'서비스 운영팀',진행상태:'접수',완료요청일:day(4),요청내용:'가입 첫 화면의 안내 문구를 검토해 주세요.'},
@@ -25,6 +47,7 @@
  }
  function create(C,P){
   const state=P.upgrade({...C.emptyState(),projects:[],demo:false});
+  state.cardExpenses=cardSamples();
   const today=C.today(),day=relativeDays(today);
   state.overallAdmin='김무현';state.teamLeaders={기획:'성아미',퍼블:'김무현',디자인:'홍소영',콘텐츠:'김아영'};
   const statuses=['접수','진행중','완료','완료 후 수정','운영반영완료','보류'];
@@ -87,5 +110,5 @@
   for(const post of sample.teamPosts)if(!state.teamPosts.some(p=>p.id===post.id)){const author=active.find(m=>m.name===post.author&&m.team===post.team)||active.find(m=>m.team===post.team);if(author)state.teamPosts.push({...post,author:author.name,sampleFixture:true});}
   state.developmentSamplesVersion=1;state.demo=false;return state;
  }
- const api={create,ensure,workflowSamples,sampleAvatar};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
+ const api={create,ensure,workflowSamples,sampleAvatar,cardSamples};if(typeof module!=='undefined')module.exports=api;else root.BoardPreviewData=api;
 })(typeof window!=='undefined'?window:globalThis);

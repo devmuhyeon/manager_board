@@ -1,6 +1,7 @@
 (function (root) {
   'use strict';
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
+  const CardExpenses=typeof module!=='undefined'?require('./card-expenses.js'):root.BoardCardExpenses;
   const MEMBERS = [
     ['성아미','기획','차장'],['정윤정','기획','대리'],['임정규','퍼블','차장'],['김무현','퍼블','대리'],
     ['홍소영','디자인','과장'],['김민재','디자인','대리'],['최완이','디자인','대리'],
@@ -193,6 +194,7 @@
       }
     }
     if(s.quickLinks!==undefined&&(!Array.isArray(s.quickLinks)||s.quickLinks.length>4||s.quickLinks.some(l=>!l||typeof l.label!=='string'||typeof l.url!=='string'||(l.url&&!/^https?:\/\//i.test(l.url)))))throw new Error('바로가기 형식을 확인하세요.');
+    if(s.cardExpenses!==undefined)CardExpenses.validate(s.cardExpenses);
     if(s.contentOptions!==undefined&&(!s.contentOptions||typeof s.contentOptions!=='object'||['level2','level3'].some(k=>!Array.isArray(s.contentOptions[k])||s.contentOptions[k].some(v=>typeof v!=='string'||v.length>100))))throw new Error('콘텐츠 선택 항목 형식이 올바르지 않습니다.');
     if(s.leaveAllowances!==undefined){if(!s.leaveAllowances||typeof s.leaveAllowances!=='object'||Array.isArray(s.leaveAllowances))throw new Error('연차 총수 형식을 확인하세요.');for(const [year,values] of Object.entries(s.leaveAllowances)){if(!/^\d{4}$/.test(year)||!values||typeof values!=='object'||Object.values(values).some(n=>!Number.isFinite(n)||n<0||n>366||n*2%1))throw new Error('연차 총수 형식을 확인하세요.');}}
     if(s.homeLayouts!==undefined&&(!s.homeLayouts||typeof s.homeLayouts!=='object'||Array.isArray(s.homeLayouts)||Object.values(s.homeLayouts).some(order=>!Array.isArray(order)||order.some(k=>!['memo','thisWeek','nextWeek','deadlines','leaves','work'].includes(k)))))throw new Error('홈 배치 정보가 올바르지 않습니다.');

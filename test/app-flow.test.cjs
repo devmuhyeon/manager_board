@@ -4,7 +4,7 @@ function harness(){
  const events={};
  const nodes=new Map(),element=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},hidden:false,disabled:false,open:false,addEventListener(){},insertAdjacentHTML(_,html){this.innerHTML+=html;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(selector);};
  const store=new Map(),vault={rememberConnections:async v=>{vault.connections=v;},recallConnections:async()=>vault.connections,recall:async()=>null,forget:async()=>{}};
- const context={BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
+ const context={BoardCardExpenses:require('../source/js/card-expenses.js'),BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../source/js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
@@ -361,4 +361,42 @@ test('주간 일정은 월요일 시작으로 구분하고 이전 주와 이번 
  assert.ok(previous[0]<current);assert.equal(previous[1],current);
  await h.api.act({dataset:{action:'scheduleWeek',step:'current'}});
  assert.equal(h.element('#app').innerHTML.match(/data-week-start="([^"]+)"/)[1],current);
+});
+
+test('법인카드에서 카드별 월 금액·작성자·합계 제외를 반영한다',async()=>{
+ const h=harness(),E=h.context.BoardCardExpenses;h.api.seed(fixture());h.api.session('김무현');
+ await h.api.act({dataset:{action:'page',page:'cardHistory'}});
+ assert.match(h.element('#app').innerHTML,/법인카드 사용내역/);assert.doesNotMatch(h.element('#app').innerHTML,/기타 디자인/);
+ await h.api.act({dataset:{action:'expenseAddCard'}});
+ const month=E.today().slice(0,7);
+ h.submit({id:'expenseCardForm',fields:{id:'',name:'운영 카드',month,limit:'300000',extra:'50000'}});
+ const card=h.api.read().state.cardExpenses.cards[0];
+ await h.api.act({dataset:{action:'expenseAddEntry',id:card.id}});
+ assert.match(h.element('#editor').innerHTML,/작성자<input readonly value="김무현"/);
+ const entry={id:'',cardId:card.id,date:month+'-01',purpose:'회의비',amount:'25000',author:'임의 작성자'};
+ h.submit({id:'expenseEntryForm',fields:entry});
+ h.submit({id:'expenseEntryForm',fields:{...entry,purpose:'제외 테스트',amount:'15000',excluded:'on'}});
+ const saved=C.validateState(h.api.read().state).cardExpenses;
+ assert.ok(saved.entries.every(item=>item.author==='김무현'));
+ assert.equal(E.monthly(saved,card.id,month).used,25000);assert.equal(E.monthly(saved,card.id,month).balance,325000);
+ assert.match(h.element('#app').innerHTML,/합계 제외 금액 15,000원/);
+ const next=new Date(month+'-01T00:00:00Z');next.setUTCMonth(next.getUTCMonth()+1);const following=next.toISOString().slice(0,7);
+ assert.equal(E.monthly(saved,card.id,following).balance,300000);
+ const service=E.create({uid:C.uid,isAdmin:P.isOverallAdmin});
+ assert.throws(()=>service.saveCard(h.api.read().state,'정윤정',{id:card.id,name:card.name,month,limit:'0',extra:'0'}),/전체관리자/);
+ assert.throws(()=>service.saveEntry(h.api.read().state,'정윤정',{...entry,id:saved.entries[0].id}),/수정할 수 없습니다/);
+});
+
+test('기본 금액을 바꾸면 이후 설정을 덮고 월별 추가금액만 해당 달에 남긴다',()=>{
+ const E=require('../source/js/card-expenses.js'),service=E.create({uid:C.uid,isAdmin:P.isOverallAdmin});
+ let result=service.saveCard(fixture(),'김무현',{name:'공용 카드',month:'2026-10',limit:'500000',extra:'10000'});
+ const id=result.id,base={id,name:'공용 카드'};
+ result=service.saveCard(result.state,'김무현',{...base,month:'2027-01',limit:'800000',extra:'20000'});
+ result=service.saveCard(result.state,'김무현',{...base,month:'2026-12',limit:'600000',extra:'30000'});
+ const data=result.state.cardExpenses;
+ assert.equal(E.monthly(data,id,'2026-10').balance,510000);
+ assert.equal(E.monthly(data,id,'2026-11').balance,500000);
+ assert.equal(E.monthly(data,id,'2026-12').balance,630000);
+ assert.equal(E.monthly(data,id,'2027-01').balance,620000);
+ assert.equal(E.monthly(data,id,'2027-02').balance,600000);
 });

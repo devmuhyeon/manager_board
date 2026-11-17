@@ -93,3 +93,10 @@ test('기존 게시판 묶음에서 글과 댓글을 개별 저장하고 수정�
  await save(handle,{revision:3,teamPosts:[]});assert.deepEqual(JSON.parse(await read(handle)).teamPosts,[]);
  assert.equal(postFolder.children.size,3);assert.equal(oldFile.value,original);
 });
+
+test('법인카드 내역은 공용 업무의 카드 모듈로 저장하고 복원한다',async()=>{
+ const state={cardExpenses:{cards:[{id:'sample',name:'샘플',limits:[],extra:{}}],entries:[]}},dir=directory(),h=await M.open(dir);
+ await save(h,state);
+ assert.ok(dir.children.get('process').children.get('cards'));
+ assert.deepEqual(JSON.parse(await read(h)),state);
+});
