@@ -58,6 +58,10 @@
    const authors=state.members.filter(member=>member.team===team);
    return {id:'ux-post:'+i+':'+j,team,type:isNotice?'전체공지':'일반글',author:authors[Math.floor(j/3)%authors.length].name,title:'[샘플] '+title,content,pinned:isNotice&&i===0,sampleFixture:true,createdAt:day(-(isNotice?i:j))+'T09:00:00Z',updatedAt:day(-(isNotice?i:j))+'T09:00:00Z'};
   }));
+  state.teamPosts[0].comments=[
+   {id:'sample-comment-1',author:'김무현',team:'퍼블',content:'모바일 화면도 함께 확인하겠습니다.',createdAt:day(0)+'T09:10:00Z',sampleFixture:true},
+   {id:'sample-comment-2',parentId:'sample-comment-1',author:'홍소영',team:'디자인',content:'오류 안내 문구가 길어지는 경우도 같이 봐 주세요.',createdAt:day(0)+'T09:24:00Z',sampleFixture:true}
+  ];
   state.customerTeams=['샘플 서비스팀','샘플 운영팀','샘플 콘텐츠팀'];return C.validateState(state);
  }
  function ensure(input,C,P){

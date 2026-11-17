@@ -174,7 +174,13 @@
     if(s.overallAdmins!==undefined&&(!Array.isArray(s.overallAdmins)||!s.overallAdmins.length||s.overallAdmins.some(name=>!people.some(m=>m.name===name&&m.active!==false))))throw Error('전체관리자 목록을 확인하세요.');
     if(s.overallAdmin!==undefined&&(typeof s.overallAdmin!=='string'||!people.some(m=>m.name===s.overallAdmin&&m.active!==false)))throw new Error('전체관리자는 재직자 한 명이어야 합니다.');
     if(s.teamPosts!==undefined){if(!Array.isArray(s.teamPosts)||new Set(s.teamPosts.map(p=>p.id)).size!==s.teamPosts.length||s.teamPosts.some(p=>!p||typeof p.id!=='string'||!TEAMS.includes(p.team)||(p.type!==undefined&&!['전체공지','팀별공지','일반글'].includes(p.type))||typeof p.author!=='string'||typeof p.title!=='string'||typeof p.content!=='string'||typeof p.createdAt!=='string'||typeof p.updatedAt!=='string'))throw new Error('팀 게시판 자료 형식을 확인하세요.');}
-    if(s.teamPosts?.some(post=>post.comments!==undefined&&(!Array.isArray(post.comments)||post.comments.some(comment=>!comment||typeof comment.id!=='string'||typeof comment.author!=='string'||typeof comment.content!=='string'||!comment.content.trim()||comment.content.length>2000||typeof comment.createdAt!=='string'))))throw new Error('게시글 댓글 형식을 확인하세요.');
+    for(const post of s.teamPosts||[]){
+      if(post.comments===undefined)continue;
+      const valid=Array.isArray(post.comments)&&post.comments.every(comment=>comment&&typeof comment.id==='string'&&typeof comment.author==='string'&&typeof comment.content==='string'&&comment.content.trim()&&comment.content.length<=2000&&typeof comment.createdAt==='string'&&(comment.team===undefined||TEAMS.includes(comment.team))&&(comment.parentId===undefined||typeof comment.parentId==='string'));
+      if(!valid)throw new Error('게시글 댓글 형식을 확인하세요.');
+      const roots=new Set(post.comments.filter(comment=>!comment.parentId).map(comment=>comment.id));
+      if(new Set(post.comments.map(comment=>comment.id)).size!==post.comments.length||post.comments.some(comment=>comment.parentId&&!roots.has(comment.parentId)))throw new Error('답글의 연결된 댓글을 확인하세요.');
+    }
     if(s.quickLinks!==undefined&&(!Array.isArray(s.quickLinks)||s.quickLinks.length>4||s.quickLinks.some(l=>!l||typeof l.label!=='string'||typeof l.url!=='string'||(l.url&&!/^https?:\/\//i.test(l.url)))))throw new Error('바로가기 형식을 확인하세요.');
     if(s.contentOptions!==undefined&&(!s.contentOptions||typeof s.contentOptions!=='object'||['level2','level3'].some(k=>!Array.isArray(s.contentOptions[k])||s.contentOptions[k].some(v=>typeof v!=='string'||v.length>100))))throw new Error('콘텐츠 선택 항목 형식이 올바르지 않습니다.');
     if(s.leaveAllowances!==undefined){if(!s.leaveAllowances||typeof s.leaveAllowances!=='object'||Array.isArray(s.leaveAllowances))throw new Error('연차 총수 형식을 확인하세요.');for(const [year,values] of Object.entries(s.leaveAllowances)){if(!/^\d{4}$/.test(year)||!values||typeof values!=='object'||Object.values(values).some(n=>!Number.isFinite(n)||n<0||n>366||n*2%1))throw new Error('연차 총수 형식을 확인하세요.');}}

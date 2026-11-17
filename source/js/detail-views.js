@@ -21,9 +21,11 @@
     const date=new Date(post.createdAt);
     return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
   }
-  function postByline(post){
-    const avatar=samplePostAvatar(post)||member(post.author)?.avatar;
-    return '<span class="post-byline">'+characterImage(avatar,24,24)+'<strong>'+esc(post.author)+'</strong></span>';
+  function postByline(post,showTeam=false){
+    const person=member(post.author),authorTeam=person?.team||post.team;
+    const avatar=samplePostAvatar(post)||person?.avatar;
+    const teamLabel=showTeam&&authorTeam?'<span class="bulletin-author-team"> · '+team(authorTeam)+'</span>':'';
+    return '<span class="post-byline">'+characterImage(avatar,24,24)+'<strong>'+esc(post.author)+teamLabel+'</strong></span>';
   }
   function board(state,user,selected,postId){
     const allowed=selected==='all'||selected==='common'||B.canRead(state,user.name,selected);
@@ -45,12 +47,34 @@
     if(!post||!B.canViewPost(state,user.name,post))throw Error('게시글을 볼 권한이 없습니다.');
     const data='data-id="'+esc(id)+'"';
     const edit=B.canEdit(state,user.name,post)?button('editPost','수정','bulletin-edit',data):'';
-    return '<article class="bulletin-detail"><header><div class="bulletin-heading"><span class="post-type">'+esc(postTypeLabel(post))+'</span><h2>'+esc(post.title)+'</h2></div><div class="bulletin-meta">'+postByline(post)+'<time>'+esc(postDate(post))+'</time>'+edit+'</div></header><p class="bulletin-content">'+esc(post.content)+'</p>'+postComments(post)+'</article>';
+    return '<article class="bulletin-detail"><header><div class="bulletin-heading"><span class="post-type">'+esc(postTypeLabel(post))+'</span><h2>'+esc(post.title)+'</h2></div><div class="bulletin-meta">'+postByline(post,true)+'<time>'+esc(postDate(post))+'</time>'+edit+'</div></header><p class="bulletin-content">'+esc(post.content)+'</p>'+postComments(post)+'</article>';
+  }
+  const commentClock=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  function commentTime(comment){
+    const date=new Date(comment.createdAt);
+    return Number.isNaN(date.getTime())?'<span>—</span>':'<time datetime="'+esc(date.toISOString())+'">'+esc(postDate(comment)+' '+commentClock.format(date))+'</time>';
+  }
+  function commentComposer(postId,parentId=''){
+    const id=parentId?'postReplyForm-'+parentId:'postCommentForm';
+    const label=parentId?'답글':'댓글';
+    return '<form id="'+esc(id)+'" class="bulletin-comment-form"><input type="hidden" name="id" value="'+esc(postId)+'">'+(parentId?'<input type="hidden" name="parentId" value="'+esc(parentId)+'">':'')+'<div class="bulletin-comment-input"><input type="text" name="content" aria-label="'+label+'" maxlength="2000" required placeholder="'+label+'을 입력하세요"><button class="primary" type="submit">'+label+' 등록</button></div><p class="error" role="alert"></p></form>';
   }
   function postComments(post){
     const comments=post.comments||[];
-    const list=comments.map(comment=>'<li><div class="bulletin-comment-meta">'+postByline(comment)+'<time>'+esc(postDate(comment))+'</time></div><p>'+esc(comment.content)+'</p></li>').join('');
-    return '<section class="bulletin-comments" aria-labelledby="bulletinCommentsTitle"><h3 id="bulletinCommentsTitle">댓글 <span>'+comments.length+'</span></h3>'+(list?'<ol>'+list+'</ol>':'<p class="muted">아직 댓글이 없습니다.</p>')+'<form id="postCommentForm"><input type="hidden" name="id" value="'+esc(post.id)+'"><label class="sr-only" for="bulletinComment">댓글</label><textarea id="bulletinComment" name="content" maxlength="2000" rows="3" required placeholder="댓글을 입력하세요"></textarea><div class="bulletin-comment-actions"><p class="error" id="bulletinCommentError" role="alert"></p><button class="primary" type="submit">댓글 등록</button></div></form></section>';
+    const replies=new Map();
+    for(const comment of comments){
+      if(!comment.parentId)continue;
+      if(!replies.has(comment.parentId))replies.set(comment.parentId,[]);
+      replies.get(comment.parentId).push(comment);
+    }
+    const body=comment=>'<div class="bulletin-comment-meta">'+postByline(comment,true)+commentTime(comment)+'</div><p>'+esc(comment.content)+'</p>';
+    const rowStart=comment=>'<li data-comment-id="'+esc(comment.id)+'" tabindex="-1">';
+    const list=comments.filter(comment=>!comment.parentId).map(comment=>{
+      const thread=replies.get(comment.id)||[];
+      return rowStart(comment)+body(comment)+(thread.length?'<ol class="bulletin-replies">'+thread.map(reply=>rowStart(reply)+body(reply)+'</li>').join('')+'</ol>':'')+
+        '<details class="bulletin-reply-form"><summary>답글</summary>'+commentComposer(post.id,comment.id)+'</details></li>';
+    }).join('');
+    return '<section class="bulletin-comments" aria-labelledby="bulletinCommentsTitle"><h3 id="bulletinCommentsTitle">댓글 <span>'+comments.length+'</span></h3>'+(list?'<ol>'+list+'</ol>':'<p class="muted">아직 댓글이 없습니다.</p>')+commentComposer(post.id)+'</section>';
   }
   function postTypeOptions(selected){
     const labels={'일반글':'일반글','팀별공지':'팀 공지','전체공지':'공통'};

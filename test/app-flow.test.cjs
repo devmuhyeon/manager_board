@@ -296,9 +296,15 @@ test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 �
  h.api.session('정윤정','board');await assert.rejects(h.api.act({dataset:{action:'postDetail',id:post.id}}),/권한/);
  h.api.session('김무현','board');await h.api.act({dataset:{action:'postDetail',id:post.id}});assert.match(h.element('#app').innerHTML,/id="bulletinDetail"[\s\S]*상세 내용/);assert.equal(h.element('#editor').open,false);assert.match(h.element('#app').innerHTML,/댓글 등록/);assert.doesNotMatch(h.element('#app').innerHTML,/공지 설정/);
  h.submit({id:'postCommentForm',fields:{id:post.id,content:'확인했습니다.'}});assert.match(h.element('#app').innerHTML,/확인했습니다\./);
+ const comment=h.api.read().state.teamPosts[0].comments[0];
+ assert.match(h.element('#app').innerHTML,/김무현<span class="bulletin-author-team"> · 퍼블리싱/);
+ assert.match(h.element('#app').innerHTML,/\d{4}-\d{2}-\d{2} \d{2}:\d{2}<\/time>/);
+ h.submit({id:'postReplyForm-'+comment.id,fields:{id:post.id,parentId:comment.id,content:'답글도 확인했습니다.'}});
+ assert.match(h.element('#app').innerHTML,/class="bulletin-replies">[\s\S]*답글도 확인했습니다\./);
  await h.api.act({dataset:{action:'editPost',id:post.id}});assert.match(h.element('#editor').innerHTML,/공지 설정/);
  h.submit({id:'postForm',fields:{id:post.id,team:post.team,title:post.title,content:post.content,type:'전체공지',pinned:'on'}});
  assert.equal(h.api.read().state.teamPosts[0].comments[0].content,'확인했습니다.');
+ assert.equal(C.validateState(JSON.parse(JSON.stringify(h.api.read().state))).teamPosts[0].comments[1].parentId,comment.id);
  await h.api.act({dataset:{action:'boardTeam',team:'common'}});assert.match(h.element('#app').innerHTML,/<td>공통<\/td>/);assert.match(h.element('#app').innerHTML,/bulletin-notice[^>]*><span[^>]*>📢/);assert.doesNotMatch(h.element('#app').innerHTML,/>고정</);assert.equal(h.api.read().state.teamPosts[0].pinned,true);assert.match(h.element('#app').innerHTML,/검토 글/);
  assert.throws(()=>B.save(h.api.read().state,'정윤정',{...post,type:'일반글',pinned:false}),/권한/);
  assert.throws(()=>B.addComment({...s,teamPosts:[post]},'정윤정',{id:post.id,content:'권한 확인'}),/권한/);

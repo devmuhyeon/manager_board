@@ -606,16 +606,19 @@
       if(query.from&&query.to&&query.from>query.to){$('#statsQueryError').textContent='종료일은 시작일 이후로 지정하세요.';return;}
       statsQuery=query;render();
     }
-    if(formId==='postCommentForm'){
+    if(formId==='postCommentForm'||formId?.startsWith('postReplyForm-')){
       e.preventDefault();
       try{
         const data=Object.fromEntries(new FormData(e.target));
         const list=$('.bulletin-table-wrap');
         const top=list?.scrollTop||0,left=list?.scrollLeft||0;
-        state=B.addComment(state,user.name,data);boardPostId=data.id;changed();render();
+        state=B.addComment(state,user.name,data);
+        const added=state.teamPosts.find(post=>post.id===data.id).comments.at(-1);
+        boardPostId=data.id;changed();render();
         const nextList=$('.bulletin-table-wrap');if(nextList){nextList.scrollTop=top;nextList.scrollLeft=left;}
-        $('#bulletinComment')?.focus?.();
-      }catch(err){$('#bulletinCommentError').textContent=err.message;}
+        const latest=[...document.querySelectorAll('[data-comment-id]')].find(row=>row.dataset.commentId===added.id);
+        latest?.focus?.({preventScroll:true});latest?.scrollIntoView?.({block:'nearest'});
+      }catch(err){const error=e.target.querySelector?.('[role="alert"]');if(error)error.textContent=err.message;else toast(err.message);}
     }
     if(formId==='postForm'){e.preventDefault();try{const data=Object.fromEntries(new FormData(e.target));state=B.save(state,user.name,data);changed();$('#editor').close();render();toast('게시글을 저장했습니다. 내용 저장으로 공용 파일에 반영하세요.');}catch(err){$('#postError').textContent=err.message;}}
     if(formId==='quickLinksForm'){e.preventDefault();try{if(!P.isOverallAdmin(state,user?.name))throw Error('전체관리자만 설정할 수 있습니다.');const data=new FormData(e.target);state.quickLinks=N.cleanLinks(Array.from({length:4},(_,i)=>({label:data.get('label'+i),url:data.get('url'+i)})).filter(l=>l.label||l.url));changed();$('#editor').close();render();}catch(err){$('#quickLinksError').textContent=err.message;}}
