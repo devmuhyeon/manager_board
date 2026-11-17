@@ -457,11 +457,7 @@
     else if(a==='expenseAddEntry'||a==='expenseEditEntry'){
       const data=state.cardExpenses||BoardCardExpenses.empty(),entry=a==='expenseEditEntry'?data.entries.find(item=>item.id===el.dataset.id):null;
       if(a==='expenseEditEntry'&&(!entry||!expenseService.canEdit(state,user.name,entry)))throw Error('이 사용 내역을 수정할 수 없습니다.');
-      if(!data.cards.length){
-        if(!expenseService.canBudget(state,user.name))throw Error('전체관리자가 카드 종류를 등록하면 사용 내역을 추가할 수 있습니다.');
-        showDialog(BoardCardExpenses.cardForm({data,month:expenseMonth,esc,button,addEntryAfter:true}));
-        return;
-      }
+      if(!data.cards.length)throw Error('카드 종류가 등록되면 카드 사용내역을 추가할 수 있습니다.');
       showDialog(BoardCardExpenses.entryForm({data,entry,cardId:el.dataset.id,month:expenseMonth,actor:user.name,esc,button}));
     }
     else if(a==='expenseDeleteEntry'){
@@ -693,9 +689,7 @@
           state=expenseService.saveEntry(state,user.name,data);expenseCardId=data.cardId;expenseMonth=data.date.slice(0,7);
         }
         changed();$('#editor').close();render();
-        if(formId==='expenseCardForm'&&data.addEntryAfter==='yes'){
-          showDialog(BoardCardExpenses.entryForm({data:state.cardExpenses,cardId:expenseCardId,month:expenseMonth,actor:user.name,esc,button}));
-        }else toast('법인카드 내역을 반영했습니다. 내용 저장을 누르면 공용 폴더에 저장됩니다.');
+        toast((formId==='expenseCardForm'?'카드 설정':'카드 사용내역')+'을 반영했습니다. 내용 저장을 누르면 공용 폴더에 저장됩니다.');
       }catch(error){$('#expenseFormError').textContent=error.message;}
       return;
     }

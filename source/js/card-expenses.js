@@ -92,8 +92,8 @@
   const data=state.cardExpenses||sampleData||empty(),sampleOnly=Boolean(sampleData&&!state.cardExpenses);
   const card=data.cards.find(item=>item.id===cardId)||data.cards[0],canBudget=service.canBudget(state,actor);
   const addCard=canBudget?button('expenseAddCard','＋ 카드 종류 추가'):'';
-  const addEntry=button('expenseAddEntry','＋ 사용 내역 추가','primary',card&&!sampleOnly?'data-id="'+esc(card.id)+'"':'');
-  if(!card)return '<section class="card card-expenses"><div class="expense-toolbar"><p>등록된 법인카드가 없습니다.</p><div class="actions">'+addCard+addEntry+'</div></div></section>';
+  const addEntry=button('expenseAddEntry','＋ 카드 사용내역 추가','primary',card&&!sampleOnly?'data-id="'+esc(card.id)+'"':'disabled title="카드 종류를 먼저 등록해 주세요."');
+  if(!card)return '<section class="card card-expenses"><div class="expense-toolbar"><p>카드 종류를 등록하면 사용내역을 추가할 수 있습니다.</p><div class="actions">'+addCard+addEntry+'</div></div></section>';
   const current=today().slice(0,7),m=monthly(data,card.id,month),live=monthly(data,card.id,current);
   const tabs=data.cards.map(item=>button('expenseSelectCard',esc(item.name),item.id===card.id?'active':'','data-id="'+esc(item.id)+'" aria-pressed="'+(item.id===card.id)+'"')).join('');
   const settings=canBudget&&!sampleOnly?button('expenseEditBudget','월 금액 설정','','data-id="'+esc(card.id)+'"'):'';
@@ -108,14 +108,14 @@
    return '<tr><td><time datetime="'+esc(item.date)+'">'+esc(item.date)+'</time></td><td>'+edit+'</td><td>'+detail+'</td><td>'+esc(item.author)+'</td><td class="expense-amount">'+won(item.amount)+(item.excluded?'<span class="expense-excluded">합계 제외</span>':'')+'</td><td>'+esc(item.note||'—')+'</td></tr>';
   }).join('');
   return '<section class="card card-expenses"><div class="expense-toolbar"><div class="tabs" role="group" aria-label="법인카드 종류">'+tabs+'</div>'+addCard+'</div>'
-   +'<div class="expense-toolbar"><div class="expense-period"><select id="expenseYear" aria-label="조회 연도">'+yearOptions+'</select><select id="expenseMonth" aria-label="조회 월">'+monthOptions+'</select></div><div class="actions">'+(sampleOnly?'<span class="muted">샘플 내역</span>':settings)+addEntry+'</div></div>'
+   +'<div class="expense-toolbar"><div class="expense-period"><select id="expenseYear" aria-label="조회 연도">'+yearOptions+'</select><select id="expenseMonth" aria-label="조회 월">'+monthOptions+'</select></div><div class="actions">'+(sampleOnly?'<span class="muted">샘플 내역 · 실제 카드 등록 후 추가 가능</span>':settings)+addEntry+'</div></div>'
    +'<div class="expense-metrics">'+metric('월 기본 금액',m.limit)+metric('월 추가 금액',m.extra)+metric('월 총사용금액',m.used)+metric('월 잔여금액',m.balance)+metric('실시간 잔여금액 · '+esc(current.slice(5))+'월',live.balance)+'</div>'
    +(m.excluded?'<p class="expense-excluded-total">합계 제외 금액 '+won(m.excluded)+'</p>':'')
    +'<div class="table-wrap" tabindex="0" aria-label="법인카드 사용 내역"><table><caption class="sr-only">'+esc(card.name+' '+month+' 사용 내역')+'</caption><thead><tr>'+tableHeader.map(label=>'<th scope="col">'+label+'</th>').join('')+'</tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="empty">이 달에 등록된 사용 내역이 없습니다.</td></tr>')+'</tbody></table></div></section>';
  }
- function cardForm({data,card,month,esc,button,addEntryAfter=false}){
+ function cardForm({data,card,month,esc,button}){
   const m=monthly(data,card?.id,month);
-  return '<div class="modal-head"><h2>'+(card?'월 금액 설정':'카드 종류 추가')+'</h2>'+button('close','닫기')+'</div><form id="expenseCardForm"><div class="modal-body expense-form"><input type="hidden" name="id" value="'+esc(card?.id||'')+'">'+(addEntryAfter?'<input type="hidden" name="addEntryAfter" value="yes"><p class="muted">카드 종류를 먼저 등록하면 사용 내역 추가로 이동합니다.</p>':'')+'<label class="field">카드 이름<input name="name" maxlength="40" required value="'+esc(card?.name||'')+'"></label><label class="field">적용 연월<input type="month" name="month" required '+(card?'readonly ':'')+'value="'+esc(month)+'"></label><label class="field">월 기본 금액(원)<input type="number" name="limit" min="0" max="'+LIMIT+'" step="1" required value="'+m.limit+'"></label><p class="muted">기본 금액을 바꾸면 적용 월부터 이후 모든 달에 반영됩니다. 추가 금액은 해당 월에만 더합니다.</p><label class="field">해당 월 추가 금액(원)<input type="number" name="extra" min="0" max="'+LIMIT+'" step="1" required value="'+m.extra+'"></label><p id="expenseFormError" class="error" role="alert"></p></div><div class="modal-foot">'+button('close','취소')+'<button class="primary" type="submit">'+(addEntryAfter?'저장하고 다음':'저장')+'</button></div></form>';
+  return '<div class="modal-head"><h2>'+(card?'월 금액 설정':'카드 종류 추가')+'</h2>'+button('close','닫기')+'</div><form id="expenseCardForm"><div class="modal-body expense-form"><input type="hidden" name="id" value="'+esc(card?.id||'')+'">'+'<label class="field">카드 이름<input name="name" maxlength="40" required value="'+esc(card?.name||'')+'"></label><label class="field">적용 연월<input type="month" name="month" required '+(card?'readonly ':'')+'value="'+esc(month)+'"></label><label class="field">월 기본 금액(원)<input type="number" name="limit" min="0" max="'+LIMIT+'" step="1" required value="'+m.limit+'"></label><p class="muted">기본 금액을 바꾸면 적용 월부터 이후 모든 달에 반영됩니다. 추가 금액은 해당 월에만 더합니다.</p><label class="field">해당 월 추가 금액(원)<input type="number" name="extra" min="0" max="'+LIMIT+'" step="1" required value="'+m.extra+'"></label><p id="expenseFormError" class="error" role="alert"></p></div><div class="modal-foot">'+button('close','취소')+'<button class="primary" type="submit">저장</button></div></form>';
  }
  function entryForm({data,entry,cardId,month,actor,esc,button}){
   const date=today(),last=data.entries.findLast(item=>item.author===actor);
