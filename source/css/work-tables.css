@@ -84,8 +84,11 @@
 
 .bulletin-toolbar,.linked-project-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .bulletin-toolbar{padding:12px 20px}.bulletin-toolbar .tabs{flex-wrap:wrap}
-.bulletin-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;padding:0 20px 20px}
-.bulletin-table-wrap,.bulletin-pane{min-width:0;height:clamp(300px,54vh,600px);overflow:auto;scrollbar-width:thin;border:1px solid var(--border);border-radius:8px}
+html[data-workplace-theme][data-style] .main:has(.content > .bulletin-board){height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr)}
+html[data-workplace-theme][data-style] .main .content:has(> .bulletin-board){display:grid;grid-template-rows:minmax(0,1fr);min-height:0;margin:0;overflow:hidden}
+.bulletin-board{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden}
+.bulletin-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-height:0;gap:12px;padding:0 20px 20px}
+.bulletin-table-wrap,.bulletin-pane{min-width:0;min-height:0;overflow:auto;scrollbar-width:thin;border:1px solid var(--border);border-radius:8px}
 .bulletin-table{width:100%;min-width:460px;border-collapse:separate;border-spacing:0}
 .bulletin-table :is(th,td){padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
 .bulletin-table th{position:sticky;top:0;z-index:1;background:var(--surface-soft);font-weight:600;white-space:nowrap}
@@ -104,5 +107,5 @@
 .bulletin-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;flex-wrap:wrap}
 .linked-project-bar{padding:12px 16px;margin-bottom:16px;background:var(--surface);border-radius:8px;color:var(--text)}
 .linked-project-bar>strong{margin-right:auto;overflow-wrap:anywhere}
-@media(max-width:1050px){.bulletin-split{grid-template-columns:1fr}.bulletin-table-wrap{height:auto;max-height:36vh}.bulletin-pane{height:auto;min-height:180px;max-height:52vh}}
+@media(max-width:1050px){.bulletin-split{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,2fr) minmax(0,3fr)}}
 @media(max-width:760px){.bulletin-toolbar{padding:12px 16px}.bulletin-split{padding:0 16px 16px}}

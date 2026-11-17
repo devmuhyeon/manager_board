@@ -3,7 +3,7 @@ const C=require('./core-fixture.cjs'),P=require('./people-fixture.cjs'),Preview=
 test('development fixtures fill every section without replacing accounts, avatars or edited data',()=>{
  const state=P.upgrade({...C.sampleState(),demo:false});state.accounts={김무현:{salt:'existing',hash:'existing',iterations:150000}};state.members.find(m=>m.name==='김무현').avatar='kitty';
  const original=structuredClone(state),filled=Preview.ensure(state,C,P);
- assert.deepEqual(state,original);assert.deepEqual(filled.accounts,original.accounts);assert.equal(filled.members.find(m=>m.name==='김무현').avatar,'kitty');assert.ok(filled.projects.length>=36);assert.ok(filled.teamPosts.length>=36);assert.ok(filled.leaves.length>=20);assert.ok(Object.values(filled.personal).every(items=>items.length>=12));
+ assert.deepEqual(state,original);assert.deepEqual(filled.accounts,original.accounts);assert.equal(filled.members.find(m=>m.name==='김무현').avatar,'kitty');assert.ok(filled.projects.length>=36);assert.equal(filled.teamPosts.filter(post=>post.sampleFixture&&post.type!=='일반글').length,3);assert.ok(filled.teamPosts.filter(post=>post.type==='일반글').length>=12);assert.ok(filled.leaves.length>=20);assert.ok(Object.values(filled.personal).every(items=>items.length>=12));
  filled.projects.find(p=>p.id==='ux-preview:0').title='수정한 샘플';assert.equal(Preview.ensure(filled,C,P),filled);assert.equal(filled.projects.find(p=>p.id==='ux-preview:0').title,'수정한 샘플');C.validateState(filled);
 });
 test('custom character survives shared JSON and generates a pink briefing with safe image source',()=>{

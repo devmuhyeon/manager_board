@@ -14,10 +14,13 @@
  function list(s,actor,team){if(!canRead(s,actor,team))throw Error('해당 팀 게시판 접근 권한이 없습니다.');return (s.teamPosts||[]).filter(p=>typeOf(p)==='전체공지'||p.team===team).slice().sort((a,b)=>TYPES.indexOf(typeOf(a))-TYPES.indexOf(typeOf(b))||Number(b.pinned)-Number(a.pinned)||b.updatedAt.localeCompare(a.updatedAt));}
  function boardPosts(s,actor,tab){
   if(!s.members.some(member=>member.name===actor&&member.active!==false))return [];
-  return (s.teamPosts||[]).filter(post=>{
+  const posts=(s.teamPosts||[]).filter(post=>typeOf(post)==='전체공지'||canRead(s,actor,post.team))
+   .sort((a,b)=>Number(b.pinned)-Number(a.pinned)||TYPES.indexOf(typeOf(a))-TYPES.indexOf(typeOf(b))||b.updatedAt.localeCompare(a.updatedAt));
+  let sampleNotices=0;
+  return posts.filter(post=>!post.sampleFixture||typeOf(post)==='일반글'||++sampleNotices<=3).filter(post=>{
    if(typeOf(post)==='전체공지')return tab==='all'||tab==='common';
-   return (tab==='all'||tab===post.team)&&canRead(s,actor,post.team);
-  }).sort((a,b)=>Number(b.pinned)-Number(a.pinned)||TYPES.indexOf(typeOf(a))-TYPES.indexOf(typeOf(b))||b.updatedAt.localeCompare(a.updatedAt));
+   return tab==='all'||tab===post.team;
+  });
  }
  function setNotice(s,actor,{id,type,pinned}){
   const post=(s.teamPosts||[]).find(item=>item.id===id);
