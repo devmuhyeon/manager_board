@@ -9,7 +9,8 @@
  }
  function render({state,user,C,P,B,N,esc,button,table,hint,weekBlocks,leaveItems,calendar=''}){
   const rows=state.projects.filter(p=>!state.hiddenProjects?.includes(p.id)).map(C.effective).filter(p=>!C.isComplete(p.status)),posts=B.list(state,user.name,user.team),items=schedule(state,user,C,P);
-  const leaves=state.leaves.filter(l=>l.end>=C.today()).sort((a,b)=>a.start.localeCompare(b.start));
+  const compare=P.nameComparator(state);
+  const leaves=state.leaves.filter(l=>l.end>=C.today()).sort((a,b)=>a.start.localeCompare(b.start)||compare(a.owner,b.owner));
   const head=(title,action,page)=>'<div class="sectionhead"><h2>'+title+'</h2>'+button('page',action,'home-detail-button','data-page="'+page+'"')+'</div>';
   return '<div class="home-panels briefing-panels">'+calendar+'<div class="briefing-schedules">'
    +'<section class="card" data-home-section="schedule">'+head('나의 일정','전체 일정 '+Icons.arrow('right'),'schedule')+'<div class="briefing-agenda-slot"><div class="agenda-list briefing-agenda" tabindex="0" role="region" aria-label="나의 일정 목록">'+(items.map(i=>'<article class="agenda-item"><div><small>'+esc(i.kind)+' · '+esc(i.date)+(i.end&&i.end!==i.date?' ~ '+esc(i.end):'')+' '+esc(i.time||'')+'</small>'+(i.projectId?button('boardDetail',esc(i.title),'project-button','data-id="'+esc(i.projectId)+'"'):'<strong>'+esc(i.title)+'</strong>')+'</div>'+weekBlocks(i.date,i.done)+'</article>').join('')||hint(user.avatar,'등록된 나의 일정이 없어요','개인 메모에 기간을 지정하면 달력과 함께 표시됩니다.'))+'</div></div></section>'

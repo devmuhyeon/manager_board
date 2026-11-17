@@ -58,6 +58,9 @@
   }
   return (byParent.get(null)||[]).map(node=>branch(node,false)).filter(Boolean);
  }
+ function walk(groups){
+  return groups.flatMap(node=>[node,...walk(node.children)]);
+ }
  function descendants(chart,id){
   const ids=new Set([id]);
   let size=0;
@@ -85,6 +88,6 @@
    while(level>=chart.levels.length)chart.levels.push('레벨 '+(chart.levels.length+1));
   }
  }
- const api={validate,read,forest,descendants,remove,depth,extendLevels};
+ const api={validate,read,forest,walk,descendants,remove,depth,extendLevels};
  if(typeof module!=='undefined')module.exports=api;else root.BoardOrganization=api;
 })(typeof window!=='undefined'?window:globalThis);

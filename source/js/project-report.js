@@ -23,14 +23,14 @@
    return {...event,timestamp,date};
   }).filter(event=>event.date).sort((a,b)=>b.timestamp-a.timestamp||(b.index??-1)-(a.index??-1)||a.id.localeCompare(b.id));
  }
- function weeklyTable({rows,filters,Board,esc,button}){
+ function weeklyTable({rows,filters,Board,esc,button,orderNames}){
   const entries=rows.map(project=>({project,nextDue:project.requestedDue||project.due||'',raw:Board.sourceDetails(project)}))
    .filter(({nextDue})=>(!filters.from||nextDue>=filters.from)&&(!filters.to||nextDue&&nextDue<=filters.to))
    .sort((a,b)=>a.nextDue.localeCompare(b.nextDue)||a.raw.title.localeCompare(b.raw.title,'ko'));
   const headers=['과업명','고객','완료요청일','상태','기획','디자인','퍼블','원본 변경 횟수'];
   return '<div class="weekly-projects">'+Board.weekGroups(entries).map(week=>
    '<section class="weekly-project"><h3 class="weekly-table-title">'+esc(week.label)+' <span>'+week.entries.length+'건</span></h3><div class="table-wrap" tabindex="0"><table><caption class="sr-only">'+esc(week.label)+' 과업 목록</caption><thead><tr>'+headers.map(header=>'<th scope="col">'+header+'</th>').join('')+'</tr></thead><tbody>'+
-   week.entries.map(({project,raw,nextDue})=>'<tr><td>'+button('workflowDetail',esc(raw.title),'project-button','data-id="'+esc(project.id)+'"')+'</td>'+[raw.customer,raw.requestedDue||nextDue,project.sourceRemoved?'원본 목록 제외':raw.status,...['기획','디자인','퍼블'].map(role=>Board.sourceDetails(project,role).assignees),project.sourceHistory?.length||0].map(value=>'<td>'+esc(value??'—').replace(/^$/,'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>'
+   week.entries.map(({project,raw,nextDue})=>'<tr><td>'+button('workflowDetail',esc(raw.title),'project-button','data-id="'+esc(project.id)+'"')+'</td>'+[raw.customer,raw.requestedDue||nextDue,project.sourceRemoved?'원본 목록 제외':raw.status,...['기획','디자인','퍼블'].map(role=>Board.sourceAssignees(project,role,orderNames)),project.sourceHistory?.length||0].map(value=>'<td>'+esc(value??'—').replace(/^$/,'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>'
   ).join('')+(!entries.length?'<p class="empty">표시할 고객 원본 과업이 없습니다.</p>':'')+'</div>';
  }
  function statistics({rows,C,Board,esc,group}){

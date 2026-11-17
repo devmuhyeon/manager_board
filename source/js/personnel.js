@@ -2,15 +2,45 @@
   'use strict';
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const C=typeof module!=='undefined'?require('./core.js'):root.BoardCore;
-  function compareNames(s,a,b){
-    const members=s.members||C.MEMBERS,ma=members.find(m=>m.name===a),mb=members.find(m=>m.name===b);
-    const team=m=>{const i=C.TEAMS.indexOf(m?.team);return i<0?C.TEAMS.length:i;};
-    const order=ranks(s);
-    const rank=m=>{const index=order.indexOf(m?.rank);return index<0?order.length:index;};
-    return team(ma)-team(mb)||Number(s.teamLeaders?.[mb?.team]===b)-Number(s.teamLeaders?.[ma?.team]===a)||rank(ma)-rank(mb)||a.localeCompare(b,'ko');
+  const O=typeof module!=='undefined'?require('./organization-chart.js'):root.BoardOrganization;
+  const position=(order,key)=>order.get(key)??order.size;
+  const positions=keys=>new Map(keys.map((key,index)=>[key,index]));
+  function defaultNameOrder(s){
+    const members=new Map((s.members||C.MEMBERS).map(member=>[member.name,member]));
+    const teams=positions(C.TEAMS),rank=positions(ranks(s));
+    return (a,b)=>{
+      const ma=members.get(a),mb=members.get(b);
+      return position(teams,ma?.team)-position(teams,mb?.team)||
+        Number(s.teamLeaders?.[mb?.team]===b)-Number(s.teamLeaders?.[ma?.team]===a)||
+        position(rank,ma?.rank)-position(rank,mb?.rank)||a.localeCompare(b,'ko');
+    };
   }
-  const orderNames=(s,names)=>names.slice().sort((a,b)=>compareNames(s,a,b));
-  const orderedMembers=s=>(s.members||C.MEMBERS).slice().sort((a,b)=>compareNames(s,a.name,b.name));
+  function organization(s,members,label=team=>team){
+    const compare=defaultNameOrder(s);
+    const roster=members.filter(member=>member.active!==false).sort((a,b)=>compare(a.name,b.name));
+    return O.read(s.organizationChart,roster,C.TEAMS,label);
+  }
+  function organizationOrder(s){
+    const members=(s.members||C.MEMBERS).filter(member=>member.active!==false);
+    return O.walk(O.forest(organization(s,members),members));
+  }
+  function nameComparator(s){
+    const fallback=defaultNameOrder(s);
+    if(!s.organizationChart)return fallback;
+    const order=positions(organizationOrder(s).filter(node=>node.person).map(node=>node.person.name));
+    return (a,b)=>position(order,a)-position(order,b)||fallback(a,b);
+  }
+  function orderedTeams(s,teams=C.TEAMS){
+    if(!s.organizationChart)return teams.slice();
+    const order=positions(organizationOrder(s).filter(node=>node.team).map(node=>node.team));
+    return teams.slice().sort((a,b)=>position(order,a)-position(order,b));
+  }
+  const compareNames=(s,a,b)=>nameComparator(s)(a,b);
+  const orderNames=(s,names)=>names.length>1?names.slice().sort(nameComparator(s)):names.slice();
+  const orderedMembers=s=>{
+    const compare=nameComparator(s);
+    return (s.members||C.MEMBERS).slice().sort((a,b)=>compare(a.name,b.name));
+  };
   function ranks(s){return s.rankOrder||['부장','차장','과장','대리','사원'];}
   function setRanks(s,actor,entries){if(!isOverallAdmin(s,actor))throw Error('전체관리자만 직급을 관리할 수 있습니다.');if(!Array.isArray(entries)||entries.length>40)throw Error('직급은 최대 40개입니다.');const names=entries.map(e=>String(e.name||'').trim());if(names.some(n=>!n||n.length>30)||new Set(names).size!==names.length)throw Error('직급은 중복 없이 1~30자로 입력해 주세요.');const next=structuredClone(s),old=ranks(s);next.rankOrder=names;next.members=next.members.map(m=>{const e=entries.find(e=>e.old===m.rank);return e?{...m,rank:String(e.name).trim()}:old.includes(m.rank)?{...m,rank:''}:m;});return next;}
   function upgrade(s){
@@ -120,7 +150,8 @@
         rows.push({projectId:project.id,taskId:task.id,title:project.title,owner:owners.join(', '),role:task.role||'과업',date:start,end,due:task.due||'',status:task.status,progress,done,kind:'업무보드'});
       }
     }
-    return rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||compareNames(s,a.owner,b.owner)||a.owner.localeCompare(b.owner));
+    const compare=nameComparator(s);
+    return rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||compare(a.owner,b.owner));
   }
   function dday(date,today=C.today()){const n=Math.round((Date.parse(date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000);return n===0?'D-day':n>0?'D-'+n:'D+'+Math.abs(n);}
   function setAvatar(s,actor,avatar){if(!Avatars.keys.filter(key=>!key.startsWith('custom-')).includes(avatar)&&!(s.customAvatars||[]).some(v=>v.id===avatar))throw Error('캐릭터를 선택하세요.');const next=structuredClone(s),person=next.members.find(m=>m.name===actor&&m.active!==false);if(!person)throw Error('로그인이 필요합니다.');person.avatar=avatar;return next;}
@@ -133,5 +164,5 @@
     s.teamAdmins=[];s.teamLeaders={};
     s.rolePolicyVersion=2;return s;
   }
-  const api={ranks,setRanks,migrateRoles,compareNames,orderNames,orderedMembers,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,setAdministrators,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
+  const api={ranks,setRanks,migrateRoles,compareNames,nameComparator,organization,orderNames,orderedMembers,orderedTeams,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,setAdministrators,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
 })(typeof window!=='undefined'?window:globalThis);
