@@ -87,7 +87,7 @@
   const monthOptions=Array.from({length:12},(_,i)=>String(i+1).padStart(2,'0')).map(value=>'<option value="'+value+'"'+(value===month.slice(5)?' selected':'')+'>'+Number(value)+'월</option>').join('');
   const metric=(label,value)=>'<div><span>'+label+'</span><strong>'+won(value)+'</strong></div>';
   const rows=m.entries.map(item=>{
-   const detail=item.detail?'<details><summary>보기</summary><p>'+esc(item.detail)+'</p></details>':'—';
+   const detail=esc(item.detail||'—');
    const edit=!sampleOnly&&service.canEdit(state,actor,item)?button('expenseEditEntry',esc(item.purpose),'project-button','data-id="'+esc(item.id)+'"'):esc(item.purpose);
    return '<tr><td><time datetime="'+esc(item.date)+'">'+esc(item.date)+'</time></td><td>'+edit+'</td><td>'+detail+'</td><td>'+esc(item.author)+'</td><td class="expense-amount">'+won(item.amount)+(item.excluded?'<span class="expense-excluded">합계 제외</span>':'')+'</td><td>'+esc(item.note||'—')+'</td></tr>';
   }).join('');

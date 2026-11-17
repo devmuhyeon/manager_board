@@ -180,7 +180,7 @@ html[data-workplace-theme][data-style] #bulletinDetail .bulletin-reply-form>summ
 .expense-metrics>div:last-child{background:#e9f2ff;color:#163e7b}.expense-metrics>div:last-child span{color:#254e85}
 .expense-excluded,.expense-excluded-total{color:var(--muted);font-size:12px}.expense-excluded{display:block;margin-top:4px}
 .card-expenses .table-wrap{overflow:auto}.card-expenses table{min-width:680px}
-.card-expenses th,.card-expenses td{padding:12px;vertical-align:top}.card-expenses td:nth-child(2){min-width:160px}.card-expenses td:first-child,.expense-amount{white-space:nowrap}.card-expenses td:nth-child(3) p{white-space:pre-wrap;overflow-wrap:anywhere}.card-expenses td:last-child{overflow-wrap:anywhere}
+.card-expenses th,.card-expenses td{padding:12px;vertical-align:top}.card-expenses td:nth-child(2){min-width:160px}.card-expenses td:first-child,.expense-amount{white-space:nowrap}.card-expenses td:nth-child(3){white-space:pre-wrap;overflow-wrap:anywhere}.card-expenses td:last-child{overflow-wrap:anywhere}
 .expense-form-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.expense-form>p{margin:0 0 12px}
 .expense-exclude-switch{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600}
 .expense-exclude-switch input{appearance:none;position:relative;width:36px;height:20px;padding:0;border:1px solid var(--border);border-radius:20px;background:#dce2e9;cursor:pointer;margin:0}
