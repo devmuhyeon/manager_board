@@ -26,3 +26,16 @@ test('원본 변경 이력은 과업 ID별로 바뀐 값만 누적하고 원본�
  state=C.importRows(state,[b,changed],'2026-11-20').state;
  assert.deepEqual(R.history(state.projects.find(p=>p.id==='source:diff')).map(e=>e.kind),['원본 목록 복귀','원본 목록에서 제외','원본 수정']);
 });
+
+test('타임라인은 같은 날 수정한 두 작성자와 최초 등록 내용을 함께 표시한다',()=>{
+ const Preview=require('./preview-data.js'),P=require('./people-fixture.cjs');
+ const state=Preview.create(C,P),project=state.projects.find(item=>item.id==='source:uiux-history');
+ const html=R.sourceTimeline(project,String,B,state.members);
+ assert.match(html,/<strong>홍소영<\/strong>/);assert.match(html,/<strong>김무현<\/strong>/);
+ assert.match(html,/<strong>성아미<\/strong>/);assert.match(html,/최초 등록일/);
+ assert.match(html,/키보드 이동과 입력 오류 안내를 확인합니다/);
+ assert.match(html,/작성자 확인 안 됨/);
+ const dates=[...html.matchAll(/datetime="([^"]+)"/g)].map(match=>match[1]);
+ assert.equal(dates[0],dates[1]);assert.ok(dates.at(-1)<dates[0]);
+ assert.match(html,/source-history-avatar" alt="" src="[^"]*파워퍼프걸\.png/);
+});

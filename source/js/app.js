@@ -27,7 +27,7 @@
     const snapshot=state.sourceSnapshotIds&&new Set(state.sourceSnapshotIds);
     const useWorkflowSamples=demoSession&&forReports&&state.projects.some(project=>project.workflowFixture);
     return state.projects.filter(project=>!state.hiddenProjects?.includes(project.id)&&(demoSession?(!useWorkflowSamples||project.workflowFixture||project.id===linkedProject):project.raw&&(includeRemoved||!snapshot||snapshot.has(project.id))))
-      .map(project=>project.raw?{...C.normalize(project.raw),sourceHistory:project.sourceHistory,sourceAssignments:project.sourceAssignments,sourceRemoved:Boolean(snapshot&&!snapshot.has(project.id))}:C.effective(project));
+      .map(project=>project.raw?{...C.normalize(project.raw),sourceHistory:project.sourceHistory,sampleFixture:project.sampleFixture,sourceAssignments:project.sourceAssignments,sourceRemoved:Boolean(snapshot&&!snapshot.has(project.id))}:C.effective(project));
   }
   const heroRows=()=>sourceRows();
   const reportViews={work:'UI·UX',report:'주간 업무',customers:'고객별',projects:'과업별'};
@@ -194,7 +194,7 @@
       +(assignments.length?'<h3>담당자 시작일</h3><ul>'+assignments.join('')+'</ul>':'')
       +(raw.start?'<p>원문 작업시작일자: '+esc(raw.start)+'</p>':'')
       +(raw.end?'<p>작업종료일자: '+esc(raw.end)+'</p>':'')
-      +'<h3>고객 작업 내용</h3><pre>'+esc(raw.notes||'기재된 작업 내용이 없습니다.')+'</pre>'+BoardProjectReport.sourceTimeline(original,esc)+'</div>'
+      +'<h3>고객 작업 내용</h3><pre>'+esc(raw.notes||'기재된 작업 내용이 없습니다.')+'</pre>'+BoardProjectReport.sourceTimeline(original,esc,BoardTaskBoard,state.members)+'</div>'
       +'<div class="modal-foot">'+projectLinks(id)+(project.readOnlySample?'':button('edit','수정','primary','data-id="'+esc(id)+'"'))+'</div>');
   }
   async function refreshWorkflowSource(){
