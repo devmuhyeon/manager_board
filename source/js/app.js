@@ -93,6 +93,7 @@
   const member=n=>state.members.find(m=>m.name===n);
   const options=(arr,value,empty)=>`${empty!==undefined?`<option value="">${esc(empty)}</option>`:''}${arr.map(v=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(N.teamLabel(v))}</option>`).join('')}`;
   const button=(action,label,cls='',extra='')=>{
+    if(personnelActions.has(action)&&!P.isOverallAdmin(state,user?.name))return '';
     if(action==='save'){
       label='<span class="tossface button-icon" aria-hidden="true">💾</span><span>내용 저장</span>';
       extra+=' aria-label="내용 저장'+(dirty?' · 저장 전 변경사항 있음':'')+'" title="'+(dirty?'저장 전 변경사항 있음':'내용 저장')+'"';
@@ -356,7 +357,7 @@
     if(a==='layoutMove'){const index=layoutDraft.indexOf(el.dataset.key),next=index+Number(el.dataset.direction);if(index>=0&&next>=0&&next<layoutDraft.length){[layoutDraft[index],layoutDraft[next]]=[layoutDraft[next],layoutDraft[index]];homeLayout();}return;}
     if(a==='layoutReset'){layoutDraft=P.homeOrder({},user.name);homeLayout();return;}
     if(a==='layoutSave'){state=P.saveHomeOrder(state,user.name,layoutDraft);changed();$('#editor').close();render();toast('나의 홈 배치 순서를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');return;}
-    if(personnelActions.has(a)&&!W.canPersonnel(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
+    if(personnelActions.has(a)&&!P.isOverallAdmin(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
     if(a==='editQuickLinks'&&!P.isOverallAdmin(state,user?.name))throw new Error('WorkLog 관리자만 사용할 수 있습니다.');
     if(a==='heroMode'){const persisted=heroDesign.setMode(user,el.dataset.mode);render();if(!persisted)toast('선택한 보기는 유지됩니다. 브라우저 저장이 제한되어 새로고침 후에는 복원되지 않을 수 있습니다.');return;}
     if(a==='heroSecret'){const now=Date.now();heroSecretCount=now-heroSecretTime>5000?1:heroSecretCount+1;heroSecretTime=now;if(heroSecretCount>=5){heroSecretCount=0;heroDraft=heroDesign.get(displayProfile(user));showDialog(heroEditorHTML());}return;}
@@ -867,7 +868,7 @@
     if(formId==='heroDesignForm'){e.preventDefault();try{heroDesign.save(displayProfile(user),heroDraft);$('#editor').close();heroDraft=null;render();toast('이 캐릭터의 브리핑 디자인을 저장했습니다.');}catch(err){$('#heroDesignError').textContent='저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.';}return;}
     if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(formId==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
-    if(personnelForms.has(formId)&&!W.canPersonnel(state,user?.name)){
+    if(personnelForms.has(formId)&&!P.isOverallAdmin(state,user?.name)){
       e.preventDefault();
       toast('WorkLog 관리자만 사용할 수 있습니다.');
       return;

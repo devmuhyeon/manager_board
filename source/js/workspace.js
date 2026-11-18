@@ -2,7 +2,7 @@
  'use strict';
  const C=typeof module!=='undefined'?require('./core.js'):root.BoardCore,P=typeof module!=='undefined'?require('./personnel.js'):root.BoardPeople;
  const defaults={level2:[...Array.from({length:12},(_,i)=>(i+1)+'월 뉴스레터'),'정기과업','요청과업','홍보'],level3:['뉴스레터 정기','뉴스레터 비정기','구직노하우','정책안내','기업실무','고용동향']};
- function canPersonnel(s,name){return P.isOverallAdmin(s,name);}
+ function canPersonnel(s,name){return s.members.some(member=>member.name===name&&member.active!==false);}
  function canContent(s,name){return P.canManage(s,name)||(P.isLeader(s,name)&&s.members.find(m=>m.name===name)?.team==='콘텐츠');}
  function contentOptions(s){return {level2:s.contentOptions?.level2??defaults.level2,level3:s.contentOptions?.level3??defaults.level3};}
  function editOption(s,actor,level,value,remove=false){if(!canContent(s,actor))throw new Error('콘텐츠 팀관리자 또는 전체관리자만 선택 항목을 관리할 수 있습니다.');if(!['level2','level3'].includes(level))throw new Error('분류를 선택하세요.');value=String(value||'').trim();if(!value||value.length>100)throw new Error('항목은 1~100자로 입력하세요.');const next=structuredClone(s);next.contentOptions=structuredClone(contentOptions(s));const list=next.contentOptions[level];if(remove)next.contentOptions[level]=list.filter(x=>x!==value);else{if(list.includes(value))throw new Error('이미 있는 항목입니다.');list.push(value);}return next;}

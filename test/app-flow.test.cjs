@@ -36,15 +36,22 @@ test('WorkLog 관리자 등록과 해제를 직책 관리에서 적용하고 공
 });
 test('모든 상세 탭은 렌더되고 업무는 보드가 기본이고 고객·주간보고는 표를 제공한다',async()=>{const h=harness(),s=P.addSamples(fixture());h.api.seed(s);h.api.session('김무현');for(const page of ['dashboard','work','memo','schedule','deadlines','leaves','revisions','customers','report','people','settings']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'),page);if(page==='work')assert.match(html,/남은 과업 보드/);if(page==='work'){assert.ok(!html.includes('board-filters'));assert.match(html,/board-control-row/);}if(page==='report')assert.match(html,/weekly-projects/);if(['customers','report'].includes(page)){if(page==='customers'){assert.match(html,/분류별/);assert.match(html,/과업별/);}assert.ok(html.indexOf('data-scope="all"')<html.indexOf('data-scope="team"'));assert.ok(html.indexOf('data-scope="team"')<html.indexOf('data-scope="personal"'));}}});
 test('일정 제목에는 날짜칸이 없고 각 일정·마감·휴가에 날짜칸이 붙는다',async()=>{const h=harness();h.api.seed(P.savePersonal(C.importRows(fixture(),[{id:'scheduled',과업명:'일정 검증',담당자_퍼블:'김무현',시작일:C.today(),마감일:C.today()}]).state,'김무현',{title:'오늘 일정 검증',date:C.today()}));h.api.session('김무현');await h.api.act({dataset:{action:'page',page:'schedule'}});let html=h.element('#app').innerHTML;assert.ok(html.includes('week-countdown'));assert.ok(!/<div class="sectionhead">[\s\S]*?week-countdown[\s\S]*?<div class="agenda-list">/.test(html.split('<div class="agenda-list">')[0]));for(const page of ['deadlines']){await h.api.act({dataset:{action:'page',page}});assert.match(h.element('#app').innerHTML,/week-countdown/);}});
-test('WorkLog 관리자만 인원관리 메뉴와 설정을 사용할 수 있다',async()=>{
+test('인원관리는 재직자가 조회하고 수정 버튼과 저장은 관리자에게만 허용한다',async()=>{
  const s=P.setTeamAdmins(P.setLeaders(fixture(),{디자인:'홍소영'}),'김무현',['성아미']);
  for(const actor of ['정윤정','홍소영','성아미','김무현']){
   const h=harness();h.api.seed(s);h.api.session(actor);h.api.render();
   const hasTab=h.element('#app').innerHTML.includes('data-page="people"');
-  assert.equal(hasTab,actor==='김무현');
-  if(!hasTab){
+  assert.equal(hasTab,true);
+  if(actor!=='김무현'){
    const before=JSON.stringify(h.api.read().state);
-   await assert.rejects(h.api.act({dataset:{action:'page',page:'people'}}),/인원관리 권한/);
+   await h.api.act({dataset:{action:'page',page:'people'}});
+   for(const section of ['org','roles','members']){
+    await h.api.act({dataset:{action:'peopleSection',section}});
+    const html=h.element('#app').innerHTML;
+    assert.match(html,/people-management/);
+    assert.match(html,/김무현/);
+    assert.doesNotMatch(html,/data-action="(?:orgAdd|orgEdit|orgDelete|orgMove|orgLevel|rankAdd|rankEdit|rankDelete|rankUp|rankDown|adminSettings|addMember|rehire|removeMember|editMemberRank|passwords|resetPassword)"/);
+   }
    for(const action of ['addMember','editMemberRank','passwords','rankAdd','orgEdit','adminSettings']){
     await assert.rejects(h.api.act({dataset:{action}}),/WorkLog 관리자/);
    }
@@ -57,7 +64,7 @@ test('WorkLog 관리자만 인원관리 메뉴와 설정을 사용할 수 있다
     organizationForm:{id:'worklog',name:'다른 이름'},
     organizationLevelForm:{index:'0',name:'다른 레벨'}
    }))h.submit({id,fields});
-  assert.equal(JSON.stringify(h.api.read().state),before);
+   assert.equal(JSON.stringify(h.api.read().state),before);
    continue;
   }
   await h.api.act({dataset:{action:'page',page:'people'}});
