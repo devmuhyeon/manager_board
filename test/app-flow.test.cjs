@@ -4,7 +4,7 @@ function harness(){
  const events={};
  const nodes=new Map(),element=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},hidden:false,disabled:false,open:false,addEventListener(){},focus(){},insertAdjacentHTML(_,html){this.innerHTML+=html;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(selector);};
  const store=new Map(),vault={rememberConnections:async v=>{vault.connections=v;},recallConnections:async()=>vault.connections,recall:async()=>null,forget:async()=>{}};
- const context={BoardOrganization:require('../source/js/organization-chart.js'),BoardCardExpenses:require('../source/js/card-expenses.js'),BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}getAll(key){const value=this.get(key);return Array.isArray(value)?value:value===undefined?[]:[value];}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
+ const context={BoardLeavePolicy:require('../source/js/leave-policy.js'),BoardLeaveTypes:require('../source/js/leave-types.js'),BoardLeaveCalendar:require('../source/js/leave-calendar.js'),BoardOrganization:require('../source/js/organization-chart.js'),BoardCardExpenses:require('../source/js/card-expenses.js'),BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}getAll(key){const value=this.get(key);return Array.isArray(value)?value:value===undefined?[]:[value];}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../source/js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
@@ -14,7 +14,7 @@ function harness(){
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
 test('내 아바타 선택은 다른 사용자를 바꾸지 않고 공용 저장 후에도 유지된다',async()=>{const h=harness(),s=fixture(),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(handle('[]'),out,out.text);await h.api.act({dataset:{action:'avatarSettings'}});assert.match(h.element('#editor').innerHTML,/용용이/);assert.match(h.element('#editor').innerHTML,/삐약이/);await h.api.act({dataset:{action:'setAvatar',avatar:'bbiyak'}});assert.equal(h.api.read().state.members.find(m=>m.name==='김무현').avatar,'bbiyak');assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').avatar,undefined);assert.match(h.element('#app').innerHTML,/내 캐릭터 변경: 삐약이/);await h.api.act({dataset:{action:'save'}});assert.equal(C.validateState(JSON.parse(out.text)).members.find(m=>m.name==='김무현').avatar,'bbiyak');await assert.rejects(h.api.act({dataset:{action:'setAvatar',avatar:'unknown'}}));});
 test('상단 한 줄에 원본·저장 연결 상태와 재연결을 두고 바로가기·사이드바 중복을 제거한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML,header=html.match(/<header class="topbar">[\s\S]*?<\/header>/)[0];assert.equal((html.match(/class="topbar"/g)||[]).length,1);assert.match(header,/원본 연결안됨/);assert.match(header,/저장 연결안됨/);assert.match(header,/data-action="connections"/);assert.match(header,/data-connection="source"/);assert.match(header,/data-connection="target"/);assert.ok(!header.includes('folder-icon'));assert.ok(!header.includes('pending-dot'));assert.ok(!html.includes('W24DG'));assert.equal((html.match(/data-action="connections"/g)||[]).length,2);assert.ok(!html.split('</aside>')[0].includes('workspace-tools'));});
-test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day가 없다',async()=>{const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현');for(const page of ['board','today','users','leaves']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'));assert.match(html,/202\d년/);assert.match(html,/퍼블리싱 팀/);if(page==='leaves'){assert.ok(!html.includes('week-countdown'));for(const label of ['팀','이름','직급','연차구분','연차 기간','편집'])assert.ok(html.includes('>'+label+'</th>'));}}});
+test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day가 없다',async()=>{const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현');for(const page of ['board','today','users','leaves']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'));assert.match(html,/202\d년/);assert.match(html,/퍼블리싱 팀/);if(page==='leaves'){await h.api.act({dataset:{action:'leaveView',view:'table'}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('week-countdown'));for(const label of ['팀','이름','직급','연차구분','연차 기간','편집'])assert.ok(html.includes('>'+label+'</th>'));}}});
 test('팀 게시글 UI 저장 후 공용 파일 저장·다시 읽기에 보존된다',async()=>{const h=harness(),s=fixture(),src=handle('[]'),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(src,out,out.text);await h.api.act({dataset:{action:'page',page:'board'}});await h.api.act({dataset:{action:'newPost'}});assert.match(h.element('#editor').innerHTML,/postForm/);h.submit({id:'postForm',fields:{id:'',team:'퍼블',title:'안내 <script>',content:'공유 내용',pinned:'on'}});assert.equal(h.api.read().state.teamPosts.length,1);assert.match(h.element('#app').innerHTML,/안내 &lt;script&gt;/);await h.api.act({dataset:{action:'save'}});const loaded=C.validateState(JSON.parse(out.text));assert.equal(loaded.teamPosts[0].content,'공유 내용');assert.equal(src.writes,0);});
 test('WorkLog 관리자 등록과 해제를 직책 관리에서 적용하고 공용으로 저장한다',async()=>{
  const h=harness(),s=P.migrateRoles(fixture()),src=handle('[]'),out=handle(JSON.stringify(s),true);
@@ -50,7 +50,7 @@ test('인원관리는 재직자가 조회하고 수정 버튼과 저장은 관�
     const html=h.element('#app').innerHTML;
     assert.match(html,/people-management/);
     assert.match(html,/김무현/);
-    assert.doesNotMatch(html,/data-action="(?:orgAdd|orgEdit|orgDelete|orgMove|orgLevel|rankAdd|rankEdit|rankDelete|rankUp|rankDown|adminSettings|addMember|rehire|removeMember|editMemberRank|passwords|resetPassword)"/);
+    assert.doesNotMatch(html,/data-action="(?:orgAdd|orgEdit|orgDelete|orgMove|orgLevel|orgInsertLevel|rankAdd|rankEdit|rankDelete|rankUp|rankDown|adminSettings|addMember|rehire|removeMember|editMemberRank|passwords|resetPassword)"/);
    }
    for(const action of ['addMember','editMemberRank','passwords','rankAdd','orgEdit','adminSettings']){
     await assert.rejects(h.api.act({dataset:{action}}),/WorkLog 관리자/);
@@ -124,8 +124,8 @@ test('조직도 레벨과 항목을 추가·편집하고 기존 계정과 분리
  await h.api.act({dataset:{action:'orgLevel',index:'1'}});
  assert.match(h.element('#editor').innerHTML,/레벨 이름 편집/);
  h.submit({id:'organizationLevelForm',fields:{index:'1',name:'부서'}});
- await h.api.act({dataset:{action:'orgLevel',index:'3'}});
- h.submit({id:'organizationLevelForm',fields:{index:'3',name:'파트'}});
+ await h.api.act({dataset:{action:'orgInsertLevel'}});
+ h.submit({id:'organizationLevelForm',fields:{mode:'insert',index:'3',name:'파트',content:'기본 파트'}});
  await h.api.act({dataset:{action:'orgEdit',id:'worklog'}});
  h.submit({id:'organizationForm',fields:{id:'worklog',name:'우리 조직',parent:''}});
  await h.api.act({dataset:{action:'orgAdd',parent:'member:정윤정'}});
@@ -355,7 +355,7 @@ test('업무조회 메뉴는 고객별 다음에 과업별을 표시하고 클�
  await h.api.act({dataset:{action:'editBoardTask',id:projects[0].id,taskId:projects[0].tasks[0].id}});assert.match(h.element('#editor').innerHTML,/projectForm/);
 });
 test('휴가 개인별 보기는 기존 조회 권한 안에서 이름으로 분리하고 인원 추가는 팀 이름 직급을 받는다',async()=>{
- const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','leaves');h.api.render();await h.api.act({dataset:{action:'leaveView',view:'person'}});let html=h.element('#app').innerHTML;assert.match(html,/id="leavePerson"/);assert.match(html,/leave-person-group/);
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','leaves');h.api.render();await h.api.act({dataset:{action:'leaveView',view:'table'}});let html=h.element('#app').innerHTML;assert.match(html,/id="leavePerson"/);assert.match(html,/leave-table/);
  await h.change({id:'leavePerson',value:'김무현',dataset:{}});const table=h.element('#app').innerHTML.match(/<table class="leave-table">[\s\S]*?<\/table>/)[0];assert.ok(!table.includes('정윤정'));
  await h.api.act({dataset:{action:'page',page:'people'}});await h.api.act({dataset:{action:'peopleSection',section:'members'}});html=h.element('#app').innerHTML;assert.match(html,/입사·퇴사 인원 관리/);assert.match(html,/<th scope="col">직급<\/th>/);
  await h.api.act({dataset:{action:'addMember'}});for(const field of ['memberTeam','memberName','memberRank'])assert.ok(h.element('#editor').innerHTML.includes('id="'+field+'"'));
@@ -550,4 +550,85 @@ test('기본 금액을 바꾸면 이후 설정을 덮고 월별 추가금액만 
  assert.equal(E.monthly(data,id,'2026-12').balance,630000);
  assert.equal(E.monthly(data,id,'2027-01').balance,620000);
  assert.equal(E.monthly(data,id,'2027-02').balance,600000);
+});
+test('조직도 중간에 레벨을 삽입하면 기존 팀과 멤버가 함께 내려간다',async()=>{
+ const h=harness(),O=require('../source/js/organization-chart.js');
+ h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','people');h.api.render();
+ const initial=P.orderedMembers(h.api.read().state).map(member=>member.name);
+ await h.api.act({dataset:{action:'orgInsertLevel'}});
+ assert.match(h.element('#editor').innerHTML,/추가 위치/);
+ h.submit({id:'organizationLevelForm',fields:{mode:'insert',index:'1',name:'사업부',content:'UI·UX 사업부'}});
+ const state=h.api.read().state,chart=state.organizationChart;
+ C.validateState(state);
+ assert.deepEqual(chart.levels,['조직','사업부','팀','멤버']);
+ assert.equal(O.depth(chart,'team:기획'),2);
+ assert.equal(O.depth(chart,'member:김무현'),3);
+ const parent=chart.nodes.find(node=>node.id===chart.nodes.find(node=>node.id==='team:기획').parent);
+ assert.equal(parent.name,'UI·UX 사업부');
+ assert.deepEqual(P.orderedMembers(state).map(member=>member.name),initial);
+});
+test('카드 선택과 월 추가금액 설정은 기본금액 및 다른 달의 금액을 보존한다',async()=>{
+ const h=harness(),E=require('../source/js/card-expenses.js');
+ h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','cardHistory');
+ const month=E.today().slice(0,7);
+ h.submit({id:'expenseCardForm',fields:{name:'첫 카드',month,limit:'300000',extra:'0'}});
+ h.submit({id:'expenseCardForm',fields:{name:'둘째 카드',month,limit:'500000',extra:'10000'}});
+ const cards=h.api.read().state.cardExpenses.cards;
+ await h.change({id:'expenseCard',value:cards[0].id});
+ assert.match(h.element('#app').innerHTML,/id="expenseCard"[^]*?id="expenseYear"[^]*?id="expenseMonth"[^]*?data-action="expenseExtra"/);
+ assert.doesNotMatch(h.element('#app').innerHTML,/expenseEditBudget|data-action="expenseSelectCard"/);
+ await h.api.act({dataset:{action:'expenseExtra',id:cards[0].id}});
+ h.submit({id:'expenseExtraForm',fields:{cardId:cards[0].id,month,extra:'20000'}});
+ const data=C.validateState(h.api.read().state).cardExpenses;
+ assert.equal(E.monthly(data,cards[0].id,month).balance,320000);
+ assert.equal(E.monthly(data,cards[1].id,month).balance,510000);
+ assert.deepEqual(data.cards[0].limits,[{month,amount:300000}]);
+ const service=E.create({uid:C.uid,isAdmin:P.isOverallAdmin});
+ assert.throws(()=>service.saveExtra(h.api.read().state,'정윤정',{cardId:cards[0].id,month,extra:'1000'}),/관리자/);
+});
+test('관리자 휴가 카드 편집과 삭제는 기존 휴가의 이름과 차감량을 보존한다',async()=>{
+ const h=harness(),Types=require('../source/js/leave-types.js'),month=C.today().slice(0,7);
+ h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','leaves');h.api.render();
+ assert.deepEqual(Types.active(h.api.read().state).map(type=>type.name),['연차','오전반차','오후반차','특별휴가']);
+ assert.match(h.element('#app').innerHTML,/leave-type-scroll[^]*?data-action="leaveTypeAdd"/);
+ await h.api.act({dataset:{action:'leaveTypeAdd'}});
+ h.submit({id:'leaveTypeForm',fields:{name:'리프레시',icon:'🌿',description:'충전 시간',units:'0.5'}});
+ const type=Types.active(h.api.read().state).find(item=>item.name==='리프레시');
+ const date=month+'-02';
+ await h.api.act({dataset:{action:'leaveTypeRequest',id:type.id}});
+ assert.match(h.element('#editor').innerHTML,/<option value="리프레시" selected/);
+ h.submit({id:'leaveForm',fields:{owner:'김무현',type:'리프레시',start:date,end:date,note:''}});
+ const before=structuredClone(h.api.read().state.leaves[0]);
+ await h.api.act({dataset:{action:'leaveTypeEdit',id:type.id}});
+ h.submit({id:'leaveTypeForm',fields:{id:type.id,name:'리프레시 휴가',icon:'🌿',description:'이름 변경',units:'1'}});
+ await h.api.act({dataset:{action:'leaveTypeDelete',id:type.id}});
+ const saved=C.validateState(h.api.read().state);
+ assert.deepEqual(saved.leaves[0],before);
+ assert.ok(!Types.active(saved).some(item=>item.id===type.id));
+ await h.api.act({dataset:{action:'leaveView',view:'table'}});
+ assert.match(h.element('#app').innerHTML,/리프레시/);
+ h.api.session('정윤정','leaves');h.api.render();
+ assert.doesNotMatch(h.element('#app').innerHTML,/data-action="leaveType(?:Add|Edit|Delete)"/);
+ await assert.rejects(h.api.act({dataset:{action:'leaveTypeAdd'}}),/관리자/);
+});
+test('오전·오후 반차는 같은 날 등록하며 근속연수 정책은 개별 설정을 우선한다',async()=>{
+ const h=harness(),W=require('../source/js/workspace.js');
+ const date='2026-11-02';
+ let s=P.migrateRoles(fixture());
+ s=P.saveLeave(s,'김무현',{owner:'김무현',type:'오전반차',start:date,end:date});
+ s=P.saveLeave(s,'김무현',{owner:'김무현',type:'오후반차',start:date,end:date});
+ assert.equal(W.leaveLedger(s,'김무현','2026','2026-11-03').used,1);
+ h.api.seed(s);h.api.session('김무현','leaves');
+ await h.api.act({dataset:{action:'leavePolicy'}});
+ h.submit({id:'leavePolicyForm',fields:{enabled:'on',count:'2',members:'1',
+   year0:'0',days0:'5',year1:'1',days1:'15',hireName0:'김무현',hire0:'2024-01-01'}});
+ assert.equal(W.leaveLedger(h.api.read().state,'김무현','2026').allowance,15);
+ const personal=W.setAllowance(h.api.read().state,'김무현','김무현','2026',20);
+ assert.equal(W.leaveLedger(personal,'김무현','2026').allowance,20);
+ C.validateState(personal);
+ h.api.session('정윤정','leaves');
+ const before=JSON.stringify(h.api.read().state);
+ await assert.rejects(h.api.act({dataset:{action:'leavePolicy'}}),/관리자/);
+ h.submit({id:'leavePolicyForm',fields:{enabled:'on',count:'1',members:'0',year0:'0',days0:'100'}});
+ assert.equal(JSON.stringify(h.api.read().state),before);
 });

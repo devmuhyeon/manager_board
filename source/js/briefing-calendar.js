@@ -17,8 +17,8 @@
   const first=new Date(month+'-01T00:00:00Z'),offset=(first.getUTCDay()+6)%7,last=new Date(first);last.setUTCMonth(last.getUTCMonth()+1);last.setUTCDate(0);
   return Array.from({length:Math.ceil((last.getUTCDate()+offset)/7)},(_,w)=>Array.from({length:7},(_,i)=>{const d=new Date(first);d.setUTCDate(1-offset+w*7+i);return d.toISOString().slice(0,10);}));
  }
- function segments(all,days){
-  const occupied=[Array(7).fill(false),Array(7).fill(false)],visible=[],overflow=[];
+ function segments(all,days,maxRows=2){
+  const occupied=Array.from({length:maxRows},()=>Array(7).fill(false)),visible=[],overflow=[];
   all.filter(e=>e.start<=days[6]&&e.end>=days[0]).forEach(event=>{
    const start=Math.max(0,days.findIndex(day=>day>=event.start)),end=event.end>=days[6]?6:days.findLastIndex(day=>day<=event.end);
    const row=occupied.findIndex(cells=>cells.slice(start,end+1).every(value=>!value));

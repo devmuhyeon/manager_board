@@ -1,31 +1,105 @@
-/* Leave workspace uses the official Astryx Neutral semantic theme. */
-.leave-workspace {display:grid;gap:24px;}
-html[data-workplace-theme][data-style] .leave-workspace .card {margin:0;border:1px solid var(--color-border);border-radius:var(--radius-container);background:var(--color-background-surface);box-shadow:none;overflow:hidden;}
-.leave-workspace .sectionhead {padding:20px 24px;border-bottom:1px solid var(--color-border);gap:16px;}
-.leave-workspace .sectionhead h2 {font-size:18px;font-weight:700;}
-.leave-workspace .sectionhead .actions {gap:12px;align-items:center;}
-.leave-workspace .sectionhead label {display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-text-secondary);}
-.leave-workspace #leaveYear {width:94px;}
-html[data-workplace-theme][data-style] .leave-workspace .annual-totals {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:24px;margin:0;background:var(--color-background-surface);}
-html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div {display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:20px;border:0;border-radius:var(--radius-container);background:var(--color-background-muted);}
-.leave-workspace .annual-totals small {font-size:12px;color:var(--color-text-secondary);}
-.leave-workspace .annual-totals strong {font-size:28px;line-height:1.2;letter-spacing:-.04em;font-variant-numeric:tabular-nums;}
-html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div:nth-child(3) {background:var(--color-info-muted);color:var(--color-on-info-muted);}
-.leave-workspace .annual-totals>div:nth-child(3) small {color:inherit;}
-.leave-workspace .annual-panel>details {margin:0 24px 16px;padding:12px 0;border-top:1px solid var(--color-border);}
-.leave-workspace summary {cursor:pointer;font-size:13px;font-weight:600;}
-.leave-workspace .panel-note {margin:0;padding:0 24px 20px;color:var(--color-text-secondary);font-size:12px;line-height:1.7;}
-.leave-workspace .leave-schedule-panel .panel-note {padding:16px 24px;}
-.leave-workspace .allowance-form {padding:16px 0 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.leave-workspace .table-wrap {padding:0;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table th {background:var(--color-background-muted);color:var(--color-text-secondary);font-size:12px;font-weight:600;padding:16px 20px;border-inline:0;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table td {padding:20px 20px;border-inline:0;background:var(--color-background-surface);border-bottom:1px solid var(--color-border);font-size:13px;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:last-child td {border-bottom:0;}
-html[data-workplace-theme][data-style] .leave-workspace .leave-table tbody tr:hover td {background:var(--color-background-muted);}
-.leave-type-badge {display:inline-flex;align-items:center;border-radius:var(--radius-element);background:var(--color-info-muted);color:var(--color-on-info-muted);padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap;}
-.leave-date-cell {font-variant-numeric:tabular-nums;white-space:nowrap;}
-#leaveForm .modal-body {display:grid;gap:16px;}
-#leaveForm .field {margin:0;}
-#leaveForm textarea {min-height:70px;}
-@media(max-width:1100px){html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(3,minmax(0,1fr));}.leave-workspace .sectionhead{flex-wrap:wrap;}}
-@media(max-width:600px){html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;gap:8px;}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:16px;}.leave-workspace .annual-totals strong{font-size:24px;}.leave-workspace .sectionhead{padding:16px;}.leave-workspace .leave-table{min-width:650px;}}
+/* Leave balance, request cards and schedule views. */
+.leave-workspace{display:grid;gap:24px;min-width:0}
+html[data-workplace-theme][data-style] .leave-workspace .card{margin:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:none;overflow:hidden}
+.leave-workspace .sectionhead{padding:16px 20px;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.leave-workspace .sectionhead h2,.leave-types-section h2{font-size:16px;font-weight:700;margin:0}
+.leave-workspace .actions{align-items:center}
+.leave-workspace select{max-width:100%;min-height:36px}
+.annual-overview{display:grid;grid-template-columns:minmax(240px,1.2fr) minmax(0,3fr);align-items:center;padding:24px;gap:32px}
+.annual-person{min-width:0;display:grid;gap:12px}
+.annual-person>strong{font-size:12px;font-weight:600;color:var(--muted)}
+.annual-person-line{display:flex;align-items:center;gap:8px}
+.annual-person-line .avatar{width:40px;height:40px;flex:none}
+.annual-person-line>span{font-size:13px;font-weight:600}
+.annual-person-line small{display:block;font-size:12px;font-weight:400;color:var(--accent-text);margin-top:4px}
+.annual-person progress{display:block;width:100%;height:4px;accent-color:#4b9cf3;border:0;border-radius:4px;overflow:hidden}
+.annual-person progress::-webkit-progress-bar{background:#edf3fa}
+.annual-person progress::-webkit-progress-value{background:#4b9cf3}
+.annual-person progress::-moz-progress-bar{background:#4b9cf3}
+.annual-progress-label{text-align:right;font-size:12px;color:var(--muted)}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0;padding:0;background:transparent}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{display:grid;gap:12px;padding:8px 16px;border-left:1px solid var(--border);border-radius:0;background:transparent;min-width:0}
+.annual-totals small{color:var(--muted);font-size:12px;white-space:nowrap}
+.annual-totals strong{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.annual-totals>div:first-child strong{color:#287bd3}
+.leave-calculation{padding:12px 24px;border-top:1px solid var(--border)}
+.leave-calculation summary{display:flex;justify-content:space-between;align-items:center;color:var(--muted);cursor:pointer;font-size:12px}
+.leave-calculation[open] summary svg{transform:rotate(180deg)}
+.leave-calculation p{margin:12px 0 0;font-size:12px;color:var(--muted)}
+.leave-calendar-warning{padding:0 24px}
+.leave-search-form{display:flex;align-items:center;gap:8px;padding:0 20px 16px}
+.leave-search-form input{max-width:320px;min-width:0}
+.leave-search-form select{margin-left:auto}
+dialog:has(#leaveTypeForm){width:920px}
+.leave-type-editor{display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:min(720px,calc(90dvh - 96px));min-height:0;overflow:hidden}
+.leave-type-list{padding:20px 16px;border-right:1px solid var(--border);background:var(--surface-soft);overflow-y:auto}
+.leave-type-list>.people-cell-actions{margin-bottom:16px;gap:8px}
+.leave-type-list>.people-cell-actions>strong{font-size:13px}
+.leave-type-list .leave-type-list-item{display:grid;width:100%;gap:8px;margin-bottom:8px;padding:12px;border:0;background:transparent;box-shadow:none;text-align:left}
+.leave-type-list .leave-type-list-item.active{background:var(--surface);color:var(--accent-text)}
+.leave-type-list-item strong{font-size:13px}
+.leave-type-list-item small{font-size:12px;line-height:20px;color:var(--muted)}
+#leaveTypeForm{min-width:0;min-height:0;display:flex;flex-direction:column}
+#leaveTypeForm .modal-body{flex:1;min-height:0;overflow-y:auto}
+#leaveTypeForm .modal-foot{flex:none}
+#leaveTypeForm h3{margin:0 0 20px;font-size:16px}
+#leaveTypeForm h4{margin:24px 0 16px;font-size:14px}
+.leave-type-basic{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#leaveTypeForm .field input,#leaveTypeForm .field select{width:100%;min-width:0}
+.leave-policy-grants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.leave-policy-grant{display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px}
+.leave-policy-grant label{display:flex;align-items:center;gap:4px;font-size:12px}
+.leave-policy-grant input{width:64px;min-width:0;padding:8px}
+.leave-policy-grant button{margin-left:auto;padding:4px;border:0;background:transparent}
+.leave-policy-members{display:grid;gap:8px}
+.leave-policy-members>label{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+#leavePolicyForm .sectionhead{padding:16px 0}
+#leavePolicyForm h3{font-size:14px}
+#leavePolicyForm .modal-body{max-height:calc(90dvh - 160px);overflow:auto}
+.leave-types-section{min-width:0;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.leave-types-section h2{margin-bottom:16px}
+.leave-types-row{display:flex;gap:12px;min-width:0}
+.leave-type-scroll{display:flex;gap:12px;flex:1;min-width:0;overflow-x:auto;padding:0 0 8px;scrollbar-width:thin;scrollbar-color:#b7c0cd transparent;scroll-snap-type:x proximity}
+.leave-type-card{position:relative;flex:0 0 196px;min-width:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;scroll-snap-align:start}
+html[data-workplace-theme][data-style] .leave-type-request{display:flex;flex-direction:column;gap:12px;width:100%;min-height:124px;padding:16px;border:0;border-radius:0;background:transparent;box-shadow:none;text-align:left}
+.leave-type-request strong{padding-right:24px;font-size:13px;line-height:20px;display:flex;gap:8px;align-items:center}
+.leave-type-request>span{font-size:12px;line-height:20px;color:var(--muted)}
+.leave-type-request small{margin-top:auto;font-size:12px;color:var(--accent-text)}
+html[data-workplace-theme][data-style] .leave-type-edit{position:absolute;right:8px;top:12px;display:grid;place-items:center;width:24px;min-height:24px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--muted)}
+html[data-workplace-theme][data-style] .leave-type-add{display:grid;place-items:center;align-self:stretch;flex:0 0 48px;padding:0;border:1px dashed var(--border);background:var(--surface-soft);box-shadow:none;border-radius:12px;font-size:24px;color:var(--muted)}
+.leave-schedule-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 20px}
+.leave-month-nav,.leave-view-controls{display:flex;align-items:center;gap:8px}
+.leave-workspace .leave-view-controls{padding:0;flex-wrap:wrap}
+.leave-month-nav strong{font-size:16px;min-width:112px;text-align:center;font-weight:700}
+.leave-month-nav button{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:4px 8px}
+.leave-calendar-scroll{overflow:auto}
+.leave-calendar{min-width:640px}
+.leave-calendar-weekdays,.leave-calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.leave-calendar-weekdays{padding:12px 0;background:var(--surface-soft);border-block:1px solid var(--border);font-size:12px;text-align:center;color:var(--muted)}
+.leave-calendar-week{position:relative;grid-template-rows:28px repeat(var(--leave-lanes),28px);row-gap:4px;padding:8px 0;min-height:96px;border-bottom:1px solid var(--border);align-content:start}
+.leave-calendar-week:last-child{border-bottom:0}
+.leave-calendar-gridlines{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));pointer-events:none}
+.leave-calendar-gridlines>span+span{border-left:1px solid var(--border)}
+.leave-calendar-date{display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:12px;z-index:1}
+.leave-calendar-date time{display:grid;place-items:center;min-width:24px;height:24px;border-radius:8px}
+.leave-calendar-date.outside{color:var(--muted);opacity:.5}
+.leave-calendar-date.today time{background:var(--accent);color:#fff;font-weight:700}
+.leave-calendar-event.annual,.leave-calendar-legend .annual{--leave-bg:#edf3ff;--leave-ink:#2854a6}
+.leave-calendar-event.half,.leave-calendar-legend .half{--leave-bg:#fff4e5;--leave-ink:#8b5a14}
+.leave-calendar-event.other,.leave-calendar-legend .other{--leave-bg:#ecf5ef;--leave-ink:#286342}
+html[data-workplace-theme][data-style] .leave-calendar-event{position:relative;display:block;min-width:0;min-height:28px;height:28px;padding:4px 8px;margin:0 4px;border:0;border-radius:4px;background:var(--leave-bg);color:var(--leave-ink);box-shadow:none;line-height:20px;font-size:12px;font-weight:500;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.leave-calendar-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+.leave-calendar-legend span{display:flex;align-items:center;gap:8px}
+.leave-calendar-legend i{display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--leave-ink)}
+.leave-workspace .table-wrap{padding:0}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table th{background:var(--surface-soft);color:var(--muted);padding:12px 20px;border-inline:0;font-size:12px;font-weight:600}
+html[data-workplace-theme][data-style] .leave-workspace .leave-table td{padding:16px 20px;border-inline:0;border-bottom:1px solid var(--border);font-size:13px}
+.leave-type-badge{display:inline-flex;padding:4px 8px;border-radius:4px;background:var(--surface-soft);font-size:12px;font-weight:500}
+.leave-date-cell{font-variant-numeric:tabular-nums;white-space:nowrap}
+#leaveForm .modal-body{display:grid;gap:16px}
+#leaveForm .field{margin:0}
+#leaveForm textarea{min-height:72px}
+@media(max-width:1100px){.annual-overview{grid-template-columns:1fr;gap:24px}.annual-person{max-width:400px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div:first-child{border-left:0;padding-left:0}}
+@media(max-width:640px){.annual-overview{padding:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:4px 8px}.annual-totals strong{font-size:16px}.leave-workspace .sectionhead,.leave-schedule-toolbar,.leave-types-section{padding:16px}.leave-type-card{flex-basis:180px}.leave-view-controls{width:100%}}
+@media(max-width:640px){.leave-type-editor{grid-template-columns:minmax(0,1fr)}.leave-type-list{display:none}.leave-search-form{flex-wrap:wrap}.leave-search-form input{flex:1}}
+@media(max-width:640px){.leave-policy-grants{grid-template-columns:minmax(0,1fr)}}

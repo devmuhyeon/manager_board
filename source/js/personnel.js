@@ -3,6 +3,7 @@
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const C=typeof module!=='undefined'?require('./core.js'):root.BoardCore;
   const O=typeof module!=='undefined'?require('./organization-chart.js'):root.BoardOrganization;
+  const LeaveTypes=typeof module!=='undefined'?require('./leave-types.js'):root.BoardLeaveTypes;
   const position=(order,key)=>order.get(key)??order.size;
   const positions=keys=>new Map(keys.map((key,index)=>[key,index]));
   function defaultNameOrder(s){
@@ -125,11 +126,29 @@
     if(!canEditLeave(s,actor,owner)||(old&&!canEditLeave(s,actor,old.owner)))throw new Error('이 팀원의 휴가를 변경할 권한이 없습니다.');
     if(!s.members.some(m=>m.name===owner&&m.active!==false))throw new Error('재직자를 선택하세요.');
     if(!validDate(input.start)||!validDate(input.end)||input.end<input.start)throw new Error('휴가 시작일과 종료일을 확인하세요.');
-    if(!['연차','오전 반차','오후 반차','기타 휴가','추가 사용'].includes(input.type))throw new Error('휴가 종류를 선택하세요.');
-    if(input.type.includes('반차')&&input.start!==input.end)throw new Error('반차는 같은 날로 등록하세요.');
+    const legacyTypes={연차:1,'오전 반차':.5,'오후 반차':.5,'기타 휴가':0,'추가 사용':1};
+    const type=LeaveTypes.active(s).find(type=>type.name===input.type)||
+      (!s.leaveTypes&&Object.hasOwn(legacyTypes,input.type)?{units:legacyTypes[input.type]}:undefined);
+    if(!type&&old?.type!==input.type)throw new Error('휴가 종류를 선택하세요.');
+    const units=old?.type===input.type&&old.dailyUnits!==undefined?old.dailyUnits:
+      type?.units??legacyTypes[input.type]??1;
+    if(units===.5&&input.start!==input.end)throw new Error('반차는 같은 날로 등록하세요.');
+    if(type&&(type.minDays!==undefined||type.maxDays!==undefined)){
+      let days=0;
+      for(const day=new Date(input.start+'T00:00:00Z');day.toISOString().slice(0,10)<=input.end;day.setUTCDate(day.getUTCDate()+1)){
+        if(![0,6].includes(day.getUTCDay()))days+=units===.5?.5:1;
+      }
+      if(days<(type.minDays||0)||type.maxDays!==undefined&&days>type.maxDays)throw Error('신청 가능 일수를 확인하세요. 최소 '+(type.minDays||0)+'일'+(type.maxDays!==undefined?', 최대 '+type.maxDays+'일':''));
+    }
     const leave={id:old?.id||C.uid(),owner,start:input.start,end:input.end,type:input.type,note:String(input.note||'').slice(0,300),updatedBy:actor,updatedAt:new Date().toISOString()};
-    leave.dailyUnits=input.type==='추가 사용'?Number(input.dailyUnits||1):input.type.includes('반차')?.5:input.type==='기타 휴가'?0:1;if(![0,.5,1].includes(leave.dailyUnits))throw new Error('추가 사용은 0.5일 또는 1일로 입력하세요.');
-    const overlap=next.leaves.some(l=>l.id!==old?.id&&l.owner===owner&&l.start<=input.end&&l.end>=input.start&&!(l.start===l.end&&input.start===input.end&&['오전 반차','오후 반차'].includes(l.type)&&['오전 반차','오후 반차'].includes(input.type)&&l.type!==input.type));if(overlap)throw new Error('이미 휴가가 등록된 날짜와 겹칩니다. 기존 휴가를 수정하세요.');
+    leave.dailyUnits=input.type==='추가 사용'?Number(input.dailyUnits||1):units;
+    leave.typeId=old?.type===input.type?old.typeId||type?.id:type?.id;
+    if(![0,.5,1].includes(leave.dailyUnits))throw new Error('추가 사용은 0.5일 또는 1일로 입력하세요.');
+    const halfPeriod=leave=>leave.typeId==='morning'||leave.type.replace(/\s/g,'')==='오전반차'?'morning':
+      leave.typeId==='afternoon'||leave.type.replace(/\s/g,'')==='오후반차'?'afternoon':'';
+    const overlap=next.leaves.some(item=>item.id!==old?.id&&item.owner===owner&&item.start<=input.end&&item.end>=input.start&&
+      !(item.start===item.end&&input.start===input.end&&halfPeriod(item)&&halfPeriod(leave)&&halfPeriod(item)!==halfPeriod(leave)));
+    if(overlap)throw new Error('이미 휴가가 등록된 날짜와 겹칩니다. 기존 휴가를 수정하세요.');
     if(old)next.leaves[next.leaves.indexOf(old)]=leave;else next.leaves.push(leave);return next;
   }
   function deleteLeave(s,actor,id){const l=s.leaves.find(l=>l.id===id);if(!l)throw new Error('휴가를 찾을 수 없습니다.');if(!canEditLeave(s,actor,l.owner))throw new Error('이 팀원의 휴가를 삭제할 권한이 없습니다.');const next=structuredClone(s);next.leaves=next.leaves.filter(l=>l.id!==id);return next;}

@@ -88,6 +88,26 @@
    while(level>=chart.levels.length)chart.levels.push('레벨 '+(chart.levels.length+1));
   }
  }
- const api={validate,read,forest,walk,descendants,remove,depth,extendLevels};
+ function insertLevel(chart,index,label,name,uid){
+  if(!Number.isInteger(index)||index<0||index>chart.levels.length||!isName(label)||!isName(name))throw Error('추가 위치와 레벨 이름, 항목 내용을 확인해 주세요.');
+  const groups=new Map();
+  for(const node of chart.nodes)if(depth(chart,node.id)===index){
+   if(!groups.has(node.parent))groups.set(node.parent,[]);
+   groups.get(node.parent).push(node);
+  }
+  if(index===chart.levels.length){
+   for(const node of chart.nodes)if(depth(chart,node.id)===index-1)groups.set(node.id,[]);
+  }
+  if(!chart.nodes.length)groups.set(null,[]);
+  const additions=[];
+  for(const [parent,children] of groups){
+   const id=uid();
+   additions.push({id,parent,name});
+   children.forEach(node=>{node.parent=id;});
+  }
+  chart.levels.splice(index,0,label);
+  chart.nodes.push(...additions);
+ }
+ const api={validate,read,forest,walk,descendants,remove,depth,extendLevels,insertLevel};
  if(typeof module!=='undefined')module.exports=api;else root.BoardOrganization=api;
 })(typeof window!=='undefined'?window:globalThis);
