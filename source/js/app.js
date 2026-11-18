@@ -383,9 +383,9 @@
         '<button class="primary" type="submit">저장</button></div></form>');
       return;
     }
-    if(a==='leaveTypeAdd'||a==='leaveTypeEdit'){
+    if(a==='leaveTypeAdd'||a==='leaveTypeEdit'||a==='leaveTypeManage'){
       if(!P.isOverallAdmin(state,user?.name))throw Error('WorkLog 관리자만 휴가 종류를 설정할 수 있습니다.');
-      leaveTypeEditor(a==='leaveTypeEdit'?el.dataset.id:'');return;
+      leaveTypeEditor(a==='leaveTypeEdit'?el.dataset.id:a==='leaveTypeManage'?BoardLeaveTypes.all(state)[0]?.id:'');return;
     }
     if(a==='leavePolicy'||a==='leavePolicyAdd'||a==='leavePolicyRemove'){
       if(!P.isOverallAdmin(state,user?.name))throw Error('WorkLog 관리자만 연차 정책을 설정할 수 있습니다.');
@@ -839,8 +839,7 @@
     const cards=BoardLeaveTypes.active(state).map(type=>'<article class="leave-type-card">'+
       button('leaveTypeRequest','<strong><span class="tossface" aria-hidden="true">'+esc(type.icon)+'</span>'+esc(type.name)+'</strong>'+
         '<span>'+esc(type.description)+'</span><small>'+(type.units?'하루당 연차 '+type.units+'일 차감':'연차 차감 없음')+'</small>',
-        'leave-type-request','data-id="'+esc(type.id)+'"')+
-      (editable?button('leaveTypeEdit',Icons.arrow('edit'),'leave-type-edit','data-id="'+esc(type.id)+'" aria-label="'+esc(type.name)+' 수정"'):'')+'</article>').join('');
+        'leave-type-request','data-id="'+esc(type.id)+'"')+'</article>').join('');
     return '<section class="leave-types-section" aria-label="휴가 신청"><h2>휴가 신청</h2><div class="leave-types-row">'+
       '<div class="leave-type-scroll" tabindex="0" role="region" aria-label="휴가 종류 카드">'+(cards||'<p class="muted">등록된 휴가 종류가 없습니다.</p>')+'</div>'+
       (editable?button('leaveTypeAdd','＋','leave-type-add','aria-label="휴가 종류 추가" title="휴가 종류 추가"'):'')+'</div></section>';
@@ -889,6 +888,7 @@
       button('leavePolicyRemove',Icons.arrow('trash'),'people-icon-button','data-index="'+index+'" aria-label="'+(index+1)+'번째 근속연수 삭제" '+(policy.grants.length===1?'disabled':''))+'</div>').join('');
     showDialog('<div class="modal-head"><h2>연차 정책 설정</h2>'+button('close','닫기')+'</div><form id="leavePolicyForm"><div class="modal-body">'+
       '<input name="count" type="hidden" value="'+policy.grants.length+'"><input name="members" type="hidden" value="'+members.length+'">'+
+      '<div class="leave-policy-types">'+button('leaveTypeManage','휴가 유형 관리')+'</div>'+
       '<label class="remember-check"><input type="checkbox" name="enabled" '+(policy.enabled?'checked':'')+'>근속연수별 연차 자동 적용</label>'+
       '<p class="muted">매년 1월 1일의 근속연수에 맞춰 아래 일수를 적용합니다. 마지막 연수 이후에는 마지막 일수를 적용합니다. 개인별 연차 총수 설정이 있으면 그 값을 우선합니다.</p>'+
       '<div class="sectionhead"><h3>근속연수별 연차</h3>'+button('leavePolicyAdd','＋ 추가')+'</div><div class="leave-policy-grants">'+grants+'</div>'+

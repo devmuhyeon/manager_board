@@ -591,6 +591,7 @@ test('관리자 휴가 카드 편집과 삭제는 기존 휴가의 이름과 차
  h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','leaves');h.api.render();
  assert.deepEqual(Types.active(h.api.read().state).map(type=>type.name),['연차','오전반차','오후반차','특별휴가']);
  assert.match(h.element('#app').innerHTML,/leave-type-scroll[^]*?data-action="leaveTypeAdd"/);
+ assert.doesNotMatch(h.element('#app').innerHTML,/data-action="leaveTypeEdit"/);
  await h.api.act({dataset:{action:'leaveTypeAdd'}});
  h.submit({id:'leaveTypeForm',fields:{name:'리프레시',icon:'🌿',description:'충전 시간',units:'0.5'}});
  const type=Types.active(h.api.read().state).find(item=>item.name==='리프레시');
@@ -599,6 +600,10 @@ test('관리자 휴가 카드 편집과 삭제는 기존 휴가의 이름과 차
  assert.match(h.element('#editor').innerHTML,/<option value="리프레시" selected/);
  h.submit({id:'leaveForm',fields:{owner:'김무현',type:'리프레시',start:date,end:date,note:''}});
  const before=structuredClone(h.api.read().state.leaves[0]);
+ await h.api.act({dataset:{action:'leavePolicy'}});
+ assert.match(h.element('#editor').innerHTML,/data-action="leaveTypeManage"/);
+ await h.api.act({dataset:{action:'leaveTypeManage'}});
+ assert.match(h.element('#editor').innerHTML,/휴가 유형 관리/);
  await h.api.act({dataset:{action:'leaveTypeEdit',id:type.id}});
  h.submit({id:'leaveTypeForm',fields:{id:type.id,name:'리프레시 휴가',icon:'🌿',description:'이름 변경',units:'1'}});
  await h.api.act({dataset:{action:'leaveTypeDelete',id:type.id}});
