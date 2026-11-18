@@ -144,6 +144,8 @@
     leave.dailyUnits=input.type==='추가 사용'?Number(input.dailyUnits||1):units;
     leave.typeId=old?.type===input.type?old.typeId||type?.id:type?.id;
     if(![0,.5,1].includes(leave.dailyUnits))throw new Error('추가 사용은 0.5일 또는 1일로 입력하세요.');
+    leave.borrowNextYear=input.borrowNextYear===true||input.borrowNextYear==='on';
+    if(leave.borrowNextYear&&leave.dailyUnits===0)throw Error('연차를 차감하는 휴가에서 내년 연차를 사용할 수 있습니다.');
     const halfPeriod=leave=>leave.typeId==='morning'||leave.type.replace(/\s/g,'')==='오전반차'?'morning':
       leave.typeId==='afternoon'||leave.type.replace(/\s/g,'')==='오후반차'?'afternoon':'';
     const overlap=next.leaves.some(item=>item.id!==old?.id&&item.owner===owner&&item.start<=input.end&&item.end>=input.start&&

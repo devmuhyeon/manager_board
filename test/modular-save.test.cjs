@@ -102,3 +102,26 @@ test('법인카드 내역은 공용 업무의 카드 모듈로 저장하고 복�
  assert.ok(dir.children.get('process').children.get('cards'));
  assert.deepEqual(JSON.parse(await read(h)),state);
 });
+test('휴가를 save/휴가의 연도별로 나누고 이전 통합 자료와 저장 이력을 보존한다',async()=>{
+ const dir=directory(),legacy=await dir.getFileHandle('통합관리 대시보드.json',{create:true});
+ const initial={leaves:[{id:'next',start:'2027-01-04',end:'2027-01-04'},{id:'current',start:'2026-11-18',end:'2026-11-18',borrowNextYear:true}],
+  leaveAllowances:{2026:{A:15},2027:{A:16}},leaveTypes:[{id:'annual',name:'연차'}],leavePolicy:{enabled:false}};
+ legacy.value=JSON.stringify(initial);const original=legacy.value,handle=await M.open(dir);
+ assert.deepEqual(JSON.parse(await read(handle)),initial);
+ await save(handle,initial);
+ const folder=dir.children.get('save').children.get('휴가');
+ assert.ok(folder.children.get('2026'));assert.ok(folder.children.get('2027'));assert.ok(folder.children.get('설정'));
+ assert.deepEqual(JSON.parse(await read(handle)),initial);
+ const firstYear=[...folder.children.get('2026').children.values()][0];
+ assert.equal(JSON.parse(firstYear.value).leaves[0].borrowNextYear,true);
+ const updated={...initial,leaves:[{...initial.leaves[0],note:'변경'},initial.leaves[1]]};
+ await save(handle,updated);
+ assert.equal(folder.children.get('2026').children.size,1);
+ assert.equal(folder.children.get('2027').children.size,2);
+ assert.equal(folder.children.get('설정').children.size,1);
+ assert.deepEqual(JSON.parse(await read(handle)),updated);
+ assert.equal(legacy.value,original);
+ await save(handle,{...updated,leaves:[],leaveAllowances:{}});
+ assert.deepEqual(JSON.parse(await read(handle)).leaves,[]);
+ assert.equal(folder.children.get('2027').children.size,2);
+});

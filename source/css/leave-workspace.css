@@ -5,11 +5,14 @@ html[data-workplace-theme][data-style] .leave-workspace .card{margin:0;border:1p
 .leave-workspace .sectionhead h2,.leave-types-section h2{font-size:16px;font-weight:700;margin:0}
 .leave-workspace .actions{align-items:center}
 .leave-workspace select{max-width:100%;min-height:36px}
-.annual-overview{display:grid;grid-template-columns:minmax(240px,1.2fr) minmax(0,3fr);align-items:center;padding:24px;gap:32px}
+.annual-overview{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,2fr);align-items:center;padding:20px;gap:24px}
+.leave-workspace .annual-panel .sectionhead{align-items:center;gap:12px}
+.leave-workspace .annual-panel .sectionhead .actions{justify-content:flex-end;gap:8px}
+html[data-workplace-theme][data-style] .annual-panel .sectionhead .actions button{min-height:36px;padding:8px 12px;font-size:12px}
 .annual-person{min-width:0;display:grid;gap:12px}
 .annual-person>strong{font-size:12px;font-weight:600;color:var(--muted)}
 .annual-person-line{display:flex;align-items:center;gap:8px}
-.annual-person-line .avatar{width:40px;height:40px;flex:none}
+html[data-workplace-theme][data-style] .annual-person-line .avatar{width:40px;height:40px;flex:none;background:transparent;border:0;box-shadow:none}
 .annual-person-line>span{font-size:13px;font-weight:600}
 .annual-person-line small{display:block;font-size:12px;font-weight:400;color:var(--accent-text);margin-top:4px}
 .annual-person progress{display:block;width:100%;height:4px;accent-color:#4b9cf3;border:0;border-radius:4px;overflow:hidden}
@@ -17,11 +20,14 @@ html[data-workplace-theme][data-style] .leave-workspace .card{margin:0;border:1p
 .annual-person progress::-webkit-progress-value{background:#4b9cf3}
 .annual-person progress::-moz-progress-bar{background:#4b9cf3}
 .annual-progress-label{text-align:right;font-size:12px;color:var(--muted)}
-html[data-workplace-theme][data-style] .leave-workspace .annual-totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0;padding:0;background:transparent}
+html[data-workplace-theme][data-style] .leave-workspace .annual-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0;padding:0;background:transparent}
 html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{display:grid;gap:12px;padding:8px 16px;border-left:1px solid var(--border);border-radius:0;background:transparent;min-width:0}
 .annual-totals small{color:var(--muted);font-size:12px;white-space:nowrap}
 .annual-totals strong{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .annual-totals>div:first-child strong{color:#287bd3}
+.annual-reservations{display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;padding:0 20px 16px;color:var(--muted);font-size:12px}
+.annual-reservations span{display:flex;gap:8px;align-items:center}
+.annual-reservations strong{font-weight:600;color:var(--text)}
 .leave-calculation{padding:12px 24px;border-top:1px solid var(--border)}
 .leave-calculation summary{display:flex;justify-content:space-between;align-items:center;color:var(--muted);cursor:pointer;font-size:12px}
 .leave-calculation[open] summary svg{transform:rotate(180deg)}
@@ -30,6 +36,16 @@ html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{displ
 .leave-search-form{display:flex;align-items:center;gap:8px;padding:0 20px 16px}
 .leave-search-form input{max-width:320px;min-width:0}
 .leave-search-form select{margin-left:auto}
+.leave-week-scroll{padding:0 20px 20px;overflow-x:auto}
+.leave-week-overview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:560px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+html[data-workplace-theme][data-style] .leave-week-day{display:flex;flex-direction:column;align-items:stretch;gap:16px;padding:12px 8px;min-height:116px;border:0;border-radius:0;background:transparent;box-shadow:none;font-size:12px}
+html[data-workplace-theme][data-style] .leave-week-day.weekend{background:var(--surface-soft)}
+html[data-workplace-theme][data-style] .leave-week-day.selected{background:#f0f7ff;box-shadow:inset 0 0 0 1px #479ce9}
+.leave-week-date{display:flex;align-items:center;gap:8px;padding:0 4px;color:var(--muted)}
+.leave-week-date strong{color:var(--text);font-weight:600}
+.leave-week-count{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#179bea;color:#fff;border-radius:4px;gap:4px;font-size:12px}
+.leave-week-empty{text-align:center;color:var(--muted)}
+.leave-month-nav.weekly strong{min-width:220px;font-size:14px}
 dialog:has(#leaveTypeForm){width:920px}
 .leave-type-editor{display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:min(720px,calc(90dvh - 96px));min-height:0;overflow:hidden}
 .leave-type-list{padding:20px 16px;border-right:1px solid var(--border);background:var(--surface-soft);overflow-y:auto}
@@ -96,10 +112,11 @@ html[data-workplace-theme][data-style] .leave-workspace .leave-table th{backgrou
 html[data-workplace-theme][data-style] .leave-workspace .leave-table td{padding:16px 20px;border-inline:0;border-bottom:1px solid var(--border);font-size:13px}
 .leave-type-badge{display:inline-flex;padding:4px 8px;border-radius:4px;background:var(--surface-soft);font-size:12px;font-weight:500}
 .leave-date-cell{font-variant-numeric:tabular-nums;white-space:nowrap}
+.leave-borrow-label{display:block;margin-top:4px;font-size:12px;color:#287bd3}
 #leaveForm .modal-body{display:grid;gap:16px}
 #leaveForm .field{margin:0}
 #leaveForm textarea{min-height:72px}
 @media(max-width:1100px){.annual-overview{grid-template-columns:1fr;gap:24px}.annual-person{max-width:400px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div:first-child{border-left:0;padding-left:0}}
-@media(max-width:640px){.annual-overview{padding:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:4px 8px}.annual-totals strong{font-size:16px}.leave-workspace .sectionhead,.leave-schedule-toolbar,.leave-types-section{padding:16px}.leave-types-row{--leave-card-width:180px}.leave-view-controls{width:100%}}
+@media(max-width:640px){.annual-overview{padding:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:4px 8px}.annual-totals strong{font-size:20px}.leave-workspace .sectionhead,.leave-schedule-toolbar,.leave-types-section{padding:16px}.leave-types-row{--leave-card-width:180px}.leave-view-controls{width:100%}}
 @media(max-width:640px){.leave-type-editor{grid-template-columns:minmax(0,1fr)}.leave-type-list{display:none}.leave-search-form{flex-wrap:wrap}.leave-search-form input{flex:1}}
 @media(max-width:640px){.leave-policy-grants{grid-template-columns:minmax(0,1fr)}}

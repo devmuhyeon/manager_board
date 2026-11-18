@@ -12,10 +12,36 @@
  function revisionDraft(s,parentId,actor){const parent=s.projects.find(p=>p.id===parentId);if(!parent)throw new Error('원본 과업을 찾을 수 없습니다.');const rootId=parent.parentProjectId||parent.id,original=s.projects.find(p=>p.id===rootId);if(!original)throw new Error('원본 과업이 없습니다.');const p=C.effective(original),number=Math.max(0,...s.projects.filter(x=>x.parentProjectId===rootId).map(x=>Number(x.revisionNumber)||0))+1;return {...structuredClone(p),id:C.uid(),source:'manual',parentProjectId:rootId,revisionNumber:number,title:p.title+' · '+number+'차 수정',status:'예정',requested:C.today(),requestedDue:'',started:C.today(),due:'',logs:[],overrides:{},description:'',tasks:(p.tasks||[]).map(t=>({...t,id:C.uid(),status:'예정',started:C.today(),due:'',notes:'',assignees:t.assignees.length?t.assignees:[actor]}))};}
  function setAllowance(s,actor,owner,year,days){if(!(actor===owner&&s.members.some(m=>m.name===actor&&m.active!==false))&&!P.canManage(s,actor))throw new Error('본인 또는 전체관리자만 연차 총수를 설정할 수 있습니다.');days=Number(days);year=String(year);if(!/^\d{4}$/.test(year)||!Number.isFinite(days)||days<0||days>366||days*2%1)throw new Error('연차 총수는 0~366일, 0.5일 단위로 입력하세요.');const next=structuredClone(s);next.leaveAllowances??={};next.leaveAllowances[year]??={};next.leaveAllowances[year][owner]=days;return next;}
  function leaveLedger(s,owner,year,today=C.today()){
-   const holidays=holidayCalendar(year),excluded=new Map();
-   const usedDates=new Map(),yearStart=year+'-01-01',yearEnd=year+'-12-31';
-   for(const l of s.leaves||[]){if(l.owner!==owner||l.end<yearStart||l.start>yearEnd||(l.typeId?l.dailyUnits===0:l.type==='기타 휴가'))continue;const start=l.start>yearStart?l.start:yearStart,end=l.end<yearEnd?l.end:yearEnd,d=new Date(start+'T00:00:00Z');while(d.toISOString().slice(0,10)<=end){const date=d.toISOString().slice(0,10),weekday=d.getUTCDay();if(holidays?.[date])excluded.set(date,{date,name:holidays[date]});if(weekday!==0&&weekday!==6&&!holidays?.[date]){const units=l.typeId&&l.dailyUnits!==undefined?l.dailyUnits:l.type.includes('반차')?.5:l.type==='추가 사용'?Number(l.dailyUnits||1):1;const previous=usedDates.get(date)||{date,days:0,types:[]};previous.days=Math.min(1,previous.days+units);previous.types.push(l.type);usedDates.set(date,previous);}d.setUTCDate(d.getUTCDate()+1);}}
-   const entries=[...usedDates.values()].sort((a,b)=>a.date.localeCompare(b.date)),used=entries.filter(x=>x.date<=today).reduce((n,x)=>n+x.days,0),planned=entries.filter(x=>x.date>today).reduce((n,x)=>n+x.days,0),allowance=s.leaveAllowances?.[year]?.[owner]??LeavePolicy.allowance(s,owner,year);return {allowance,used,planned,remaining:allowance===null?null:allowance-used,available:allowance===null?null:allowance-used-planned,entries,calendarSupported:holidays!==null,excluded:[...excluded.values()].sort((a,b)=>a.date.localeCompare(b.date))};
+  const excluded=new Map(),usedDates=new Map();
+  let calendarSupported=holidayCalendar(year)!==null;
+  for(const leave of s.leaves||[]){
+   if(leave.owner!==owner||(leave.typeId?leave.dailyUnits===0:leave.type==='기타 휴가'))continue;
+   const sourceYear=String(Number(year)-(leave.borrowNextYear?1:0)),yearStart=sourceYear+'-01-01',yearEnd=sourceYear+'-12-31';
+   if(leave.end<yearStart||leave.start>yearEnd)continue;
+   const holidays=holidayCalendar(sourceYear);
+   if(holidays===null)calendarSupported=false;
+   const start=leave.start>yearStart?leave.start:yearStart,end=leave.end<yearEnd?leave.end:yearEnd;
+   const day=new Date(start+'T00:00:00Z');
+   while(day.toISOString().slice(0,10)<=end){
+    const date=day.toISOString().slice(0,10),weekday=day.getUTCDay();
+    if(holidays?.[date])excluded.set(date,{date,name:holidays[date]});
+    if(weekday!==0&&weekday!==6&&!holidays?.[date]){
+     const units=leave.typeId&&leave.dailyUnits!==undefined?leave.dailyUnits:
+      leave.type.includes('반차')?.5:leave.type==='추가 사용'?Number(leave.dailyUnits||1):1;
+     const previous=usedDates.get(date)||{date,days:0,types:[],borrowed:Boolean(leave.borrowNextYear)};
+     previous.days=Math.min(1,previous.days+units);previous.types.push(leave.type);usedDates.set(date,previous);
+    }
+    day.setUTCDate(day.getUTCDate()+1);
+   }
+  }
+  const entries=[...usedDates.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  const used=entries.filter(entry=>entry.date<=today).reduce((sum,entry)=>sum+entry.days,0);
+  const planned=entries.filter(entry=>entry.date>today).reduce((sum,entry)=>sum+entry.days,0);
+  const borrowed=entries.filter(entry=>entry.borrowed).reduce((sum,entry)=>sum+entry.days,0);
+  const allowance=s.leaveAllowances?.[year]?.[owner]??LeavePolicy.allowance(s,owner,year);
+  return {allowance,used,planned,borrowed,remaining:allowance===null?null:allowance-used,
+   available:allowance===null?null:allowance-used-planned,entries,calendarSupported,
+   excluded:[...excluded.values()].sort((a,b)=>a.date.localeCompare(b.date))};
  }
  // Offline snapshot, checked 2026-10-26. Sources and update policy: docs/공휴일.md.
  const holidayData={

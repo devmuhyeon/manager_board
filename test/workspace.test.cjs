@@ -7,4 +7,27 @@ test('수정작업은 원본과 연결되고 원본의 완료 상태·기록을 
 test('개인은 본인 연차 총수만, 팀관리자는 전체 연차 총수를 설정한다',()=>{let s=base();s=P.setLeaders(s,{기획:'성아미'});assert.throws(()=>W.setAllowance(s,'성아미','정윤정','2026',15));s=W.setAllowance(s,'정윤정','정윤정','2026',15.5);assert.equal(s.leaveAllowances['2026'].정윤정,15.5);s=P.setTeamAdmins(s,'김무현',['성아미']);s=W.setAllowance(s,'성아미','김다솔','2026',20);assert.equal(s.leaveAllowances['2026'].김다솔,20);assert.throws(()=>W.setAllowance(s,'김무현','김다솔','2026',1.3));});
 test('연차·반차·추가사용·예정과 연도 경계를 일별로 계산한다',()=>{let s=base();s=W.setAllowance(s,'김무현','김무현','2026',15);const add=(start,end,type,dailyUnits)=>{s=P.saveLeave(s,'김무현',{owner:'김무현',start,end,type,note:'',dailyUnits});};add('2026-10-22','2026-10-22','연차');add('2026-10-23','2026-10-23','오전 반차');add('2026-10-26','2026-10-26','추가 사용',.5);add('2026-10-30','2026-11-02','연차');const l=W.leaveLedger(s,'김무현','2026','2026-10-26');assert.equal(l.used,2);assert.equal(l.planned,2);assert.equal(l.remaining,13);assert.equal(l.available,11);assert.equal(l.entries.length,5);add('2026-12-31','2027-01-04','연차');assert.equal(W.leaveLedger(s,'김무현','2027','2026-10-26').planned,1);assert.equal(W.leaveLedger(s,'정윤정','2026').allowance,null);});
 test('겹치는 휴가는 중복 차감하지 않도록 거절하며 오전·오후 반차는 1일 합산한다',()=>{let s=P.saveLeave(base(),'김무현',{owner:'김무현',start:'2026-10-26',end:'2026-10-26',type:'오전 반차'});assert.throws(()=>P.saveLeave(s,'김무현',{owner:'김무현',start:'2026-10-26',end:'2026-10-26',type:'연차'}));s=P.saveLeave(s,'김무현',{owner:'김무현',start:'2026-10-26',end:'2026-10-26',type:'오후 반차'});assert.equal(W.leaveLedger(s,'김무현','2026','2026-10-26').used,1);});
+test('내년 연차 선사용은 실제 휴가 연도의 공휴일을 제외하고 다음 연차에서 차감한다',()=>{
+ let s=base();
+ s=W.setAllowance(s,'김무현','김무현','2026',15);s=W.setAllowance(s,'김무현','김무현','2027',16);
+ s=P.saveLeave(s,'김무현',{owner:'김무현',type:'연차',start:'2026-12-24',end:'2026-12-28',borrowNextYear:'on'});
+ assert.equal(W.leaveLedger(s,'김무현','2026','2026-12-26').available,15);
+ const next=W.leaveLedger(s,'김무현','2027','2026-12-26');
+ assert.equal(next.used,1);assert.equal(next.planned,1);assert.equal(next.borrowed,2);assert.equal(next.available,14);
+ assert.equal(next.excluded[0].date,'2026-12-25');
+ C.validateState(s);
+ const removed=P.deleteLeave(s,'김무현',s.leaves[0].id);
+ assert.equal(W.leaveLedger(removed,'김무현','2027','2026-12-26').available,16);
+});
+test('연말을 넘긴 선사용도 날짜별 다음 연도에 배분하고 반차의 각 차감 연도를 구분한다',()=>{
+ let s=P.saveLeave(base(),'김무현',{owner:'김무현',type:'연차',start:'2026-12-31',end:'2027-01-04',borrowNextYear:true});
+ assert.equal(W.leaveLedger(s,'김무현','2026','2027-01-05').used,0);
+ assert.equal(W.leaveLedger(s,'김무현','2027','2027-01-05').used,1);
+ assert.equal(W.leaveLedger(s,'김무현','2028','2027-01-05').used,1);
+ s=P.saveLeave(base(),'김무현',{owner:'김무현',type:'오전반차',start:'2026-11-18',end:'2026-11-18',borrowNextYear:true});
+ s=P.saveLeave(s,'김무현',{owner:'김무현',type:'오후반차',start:'2026-11-18',end:'2026-11-18'});
+ assert.equal(W.leaveLedger(s,'김무현','2026','2026-11-18').used,.5);
+ assert.equal(W.leaveLedger(s,'김무현','2027','2026-11-18').used,.5);
+ assert.throws(()=>P.saveLeave(base(),'김무현',{owner:'김무현',type:'특별휴가',start:'2026-11-18',end:'2026-11-18',borrowNextYear:true}),/차감하는 휴가/);
+});
 test('HTML과 CSS의 로컬 파일 참조가 재배치된 폴더에 존재한다',()=>{const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'source/html/index.html'),'utf8');const resources=JSON.parse(html.match(/<script id="runtimeResources" type="application\/json">(.*?)<\/script>/s)[1]);for(const ref of [...resources.styles.map(s=>s.path),...resources.scripts])assert.ok(fs.existsSync(path.join(root,ref)),ref);const css=fs.readFileSync(path.join(root,'source/css/theme.css'),'utf8');assert.ok(css.includes('../font/PretendardVariable.woff2'));for(const name of ['source/html','source/js','source/images','source/font','source/css','test','prg','process','dist'])assert.ok(fs.statSync(path.join(root,name)).isDirectory());});

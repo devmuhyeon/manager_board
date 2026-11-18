@@ -45,7 +45,8 @@
   const expenseService=BoardCardExpenses.create({uid:C.uid,isAdmin:P.isOverallAdmin});
   let expenseCardId='',expenseMonth=BoardCardExpenses.today().slice(0,7);
   let scheduleWeekOffset=0,statsQuery={};
-  let linkedProject='',selectedProject='',leaveView='calendar',leavePerson='',leaveSort='date',leaveMonth=C.today().slice(0,7),leaveSearch='',leaveTypeFilter='';
+  let linkedProject='',selectedProject='',leaveView='table',leavePerson='',leaveSort='date',leaveMonth=C.today().slice(0,7),leaveSearch='',leaveTypeFilter='';
+  let leaveWeekDate=C.today(),leaveSelectedDay='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
   let sourceDir=null,targetDir=null,pendingSource=null,pendingTeams=null,setupDone=false,deferredConnection=false,health={source:false,target:false},dialogOpener=null;
   state=P.migrateRoles(state);P.upgrade(state);C.setMembers(P.orderedMembers(state));
@@ -373,8 +374,16 @@
     }
     if(a==='leaveMonth'){
       leaveMonth=el.dataset.step==='today'?C.today().slice(0,7):BoardBriefingCalendar.shift(leaveMonth,Number(el.dataset.step));
-      leaveYear=leaveMonth.slice(0,4);render();return;
+      leaveWeekDate=leaveMonth+'-01';leaveSelectedDay='';leaveYear=leaveMonth.slice(0,4);render();return;
     }
+    if(a==='leaveWeek'){
+      const date=new Date(leaveWeekDate+'T00:00:00Z');
+      date.setUTCDate(date.getUTCDate()+Number(el.dataset.step||0)*7);
+      leaveWeekDate=el.dataset.step==='today'?C.today():date.toISOString().slice(0,10);
+      leaveMonth=leaveWeekDate.slice(0,7);leaveYear=leaveWeekDate.slice(0,4);leaveSelectedDay='';render();return;
+    }
+    if(a==='leaveDay'){leaveSelectedDay=leaveSelectedDay===el.dataset.date?'':el.dataset.date;render();return;}
+    if(a==='leaveBorrow'){openLeave('','annual',true,leaveOwner||user.name);return;}
     if(a==='leaveAllowance'){
       const ledger=W.leaveLedger(state,leaveOwner,leaveYear);
       showDialog('<div class="modal-head"><h2>연차 총수 설정</h2>'+button('close','닫기')+'</div><form id="allowanceForm"><div class="modal-body">'+
@@ -654,7 +663,7 @@
     return '<div class="weekly-schedule-toolbar"><span id="scheduleWeekHeading" tabindex="-1">'+(P.isLeader(state,user.name)?'팀 일정':'내 일정')+'</span><div class="actions">'+button('scheduleWeek','이전 주','','data-step="previous"')+button('scheduleWeek','이번 주','','data-step="current"')+button('scheduleWeek','다음 주','','data-step="next"')+'</div></div><div class="home-panels weekly-schedule-panels">'+panels+'</div>';
   }
 
-  function openLeave(id,typeId){const selectedType=BoardLeaveTypes.active(state).find(type=>type.id===typeId);const i=state.leaves.find(l=>l.id===id)||{id:'',owner:user.name,start:C.today(),end:C.today(),type:selectedType?.name||BoardLeaveTypes.active(state)[0]?.name||'',note:''},leader=P.isLeader(state,user.name)||P.canManage(state,user.name);if(!P.canEditLeave(state,user.name,i.owner))throw new Error('이 팀원의 휴가를 변경할 권한이 없습니다.');showDialog(`<div class="modal-head"><h2>${i.id?'휴가 수정':'휴가 등록'}</h2>${button('close','닫기')}</div><form id="leaveForm"><div class="modal-body"><input name="id" type="hidden" value="${esc(i.id)}"><div class="field"><label for="leaveOwner">이름</label><select name="owner" id="leaveOwner">${options(activeMembers().filter(m=>P.canEditLeave(state,user.name,m.name)).map(m=>m.name),i.owner)}</select></div><div class="field"><label for="leaveType">휴가 종류</label><select name="type" id="leaveType">${options([...new Set([...BoardLeaveTypes.active(state).map(type=>type.name),...(i.id?[i.type]:[])])],i.type)}</select></div><div class="form-grid"><div class="field"><label for="leaveStart">시작일</label><input name="start" id="leaveStart" type="date" required value="${esc(i.start)}"></div><div class="field"><label for="leaveEnd">종료일</label><input name="end" id="leaveEnd" type="date" required value="${esc(i.end)}"></div></div><div class="field"><label for="leaveUnits">추가 사용 시 하루 차감량</label><select id="leaveUnits" name="dailyUnits">${options(['1','0.5'],String(i.dailyUnits||1))}</select></div><div class="field"><label for="leaveNote">메모 (선택)</label><textarea name="note" id="leaveNote" maxlength="300">${esc(i.note)}</textarea></div><p class="muted">${P.canManage(state,user.name)?'모든 재직자의 휴가를 등록·수정할 수 있습니다.':leader?'소속 팀원의 휴가를 등록·수정할 수 있습니다.':'본인의 휴가를 등록·수정할 수 있습니다.'} 등록한 휴가는 팀 일정에 표시됩니다.</p><div id="leaveError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteLeave','휴가 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">휴가 저장</button></div></form>`);}
+  function openLeave(id,typeId,borrowNextYear=false,owner=user.name){const selectedType=BoardLeaveTypes.active(state).find(type=>type.id===typeId);const i=state.leaves.find(l=>l.id===id)||{id:'',owner,start:C.today(),end:C.today(),type:selectedType?.name||BoardLeaveTypes.active(state)[0]?.name||'',note:'',borrowNextYear},leader=P.isLeader(state,user.name)||P.canManage(state,user.name);if(!P.canEditLeave(state,user.name,i.owner))throw new Error('이 팀원의 휴가를 변경할 권한이 없습니다.');showDialog(`<div class="modal-head"><h2>${i.id?'휴가 수정':'휴가 등록'}</h2>${button('close','닫기')}</div><form id="leaveForm"><div class="modal-body"><input name="id" type="hidden" value="${esc(i.id)}"><div class="field"><label for="leaveOwner">이름</label><select name="owner" id="leaveOwner">${options(activeMembers().filter(m=>P.canEditLeave(state,user.name,m.name)).map(m=>m.name),i.owner)}</select></div><div class="field"><label for="leaveType">휴가 종류</label><select name="type" id="leaveType">${options([...new Set([...BoardLeaveTypes.active(state).map(type=>type.name),...(i.id?[i.type]:[])])],i.type)}</select></div><div class="form-grid"><div class="field"><label for="leaveStart">시작일</label><input name="start" id="leaveStart" type="date" required value="${esc(i.start)}"></div><div class="field"><label for="leaveEnd">종료일</label><input name="end" id="leaveEnd" type="date" required value="${esc(i.end)}"></div></div><div class="field" ${i.type==='추가 사용'?'':'hidden'}><label for="leaveUnits">추가 사용 시 하루 차감량</label><select id="leaveUnits" name="dailyUnits">${options(['1','0.5'],String(i.dailyUnits||1))}</select></div><label class="remember-check leave-borrow-toggle"><input name="borrowNextYear" type="checkbox" ${i.borrowNextYear?'checked':''}> 내년 연차 사용</label><p class="muted">체크하면 휴가 사용일의 다음 연도 연차에서 차감합니다.</p><div class="field"><label for="leaveNote">메모 (선택)</label><textarea name="note" id="leaveNote" maxlength="300">${esc(i.note)}</textarea></div><p class="muted">${P.canManage(state,user.name)?'모든 재직자의 휴가를 등록·수정할 수 있습니다.':leader?'소속 팀원의 휴가를 등록·수정할 수 있습니다.':'본인의 휴가를 등록·수정할 수 있습니다.'} 등록한 휴가는 팀 일정에 표시됩니다.</p><div id="leaveError" class="error" role="alert"></div></div><div class="modal-foot">${i.id?button('deleteLeave','휴가 삭제','danger',`data-id="${esc(i.id)}"`):''}${button('close','취소')}<button class="primary">휴가 저장</button></div></form>`);}
   function leaveList(){const leader=P.isLeader(state,user.name)||P.canManage(state,user.name),team=member(user.name).team;const items=state.leaves.filter(l=>P.canEditLeave(state,user.name,l.owner)).slice().sort((a,b)=>b.start.localeCompare(a.start));showDialog(`<div class="modal-head"><h2>${P.canManage(state,user.name)?'전체':leader?'우리 팀':'나의'} 휴가 관리</h2>${button('close','닫기')}</div><div class="modal-body"><div class="agenda-list">${items.map(l=>`<article class="agenda-item"><strong>${esc(l.owner)} · ${esc(l.type)}</strong><small>${esc(l.start)} ~ ${esc(l.end)}</small>${P.canEditLeave(state,user.name,l.owner)?button('editLeave','편집','',`data-id="${esc(l.id)}"`):''}</article>`).join('')||'<p class="empty">등록된 휴가가 없습니다.</p>'}</div></div><div class="modal-foot">${button('newLeave','＋ 휴가 등록','primary')}${button('close','닫기')}</div>`);}
   function rankEditor(rank){
     if(rank&&!P.ranks(state).includes(rank))return;
@@ -686,24 +695,31 @@
     const allowed=state.leaves.filter(leave=>P.canManage(state,user.name)||member(leave.owner)?.team===user.team);
     const names=activeMembers().filter(person=>P.canManage(state,user.name)||person.team===user.team).map(person=>person.name);
     if(leavePerson&&!names.includes(leavePerson))leavePerson='';
-    const days=BoardBriefingCalendar.weeks(leaveMonth),start=days[0][0],end=days.at(-1)[6];
+    const days=BoardBriefingCalendar.weeks(leaveMonth),week=BoardLeaveCalendar.week(leaveWeekDate);
+    const start=leaveView==='calendar'?days[0][0]:week[0],end=leaveView==='calendar'?days.at(-1)[6]:week[6];
     const rows=allowed.filter(leave=>(!leavePerson||leave.owner===leavePerson)&&
       (!leaveTypeFilter||leave.typeId===leaveTypeFilter||!leave.typeId&&BoardLeaveTypes.all(state).some(type=>type.id===leaveTypeFilter&&type.name.replace(/\s/g,'')===leave.type.replace(/\s/g,'')))&&
       (!leaveSearch||(leave.owner+' '+(member(leave.owner)?.team||'')+' '+leave.type+' '+leave.note).toLocaleLowerCase().includes(leaveSearch.toLocaleLowerCase()))&&
-      (leaveView==='calendar'?leave.start<=end&&leave.end>=start:leave.start.slice(0,7)<=leaveMonth&&leave.end.slice(0,7)>=leaveMonth));
+      leave.start<=end&&leave.end>=start);
     const views=[['calendar','달력형'],['table','도표형']].map(([view,label])=>button('leaveView',label,leaveView===view?'active':'',
       'data-view="'+view+'" aria-pressed="'+(leaveView===view)+'"')).join('');
-    const controls='<div class="leave-schedule-toolbar"><div class="leave-month-nav">'+
-      button('leaveMonth',Icons.arrow('left'),'','data-step="-1" aria-label="이전 달"')+'<strong>'+esc(leaveMonth.replace('-','년 '))+'월</strong>'+
-      button('leaveMonth',Icons.arrow('right'),'','data-step="1" aria-label="다음 달"')+button('leaveMonth','이번 달','','data-step="today"')+'</div>'+
+    const weekNav=button('leaveWeek',Icons.arrow('left'),'','data-step="-1" aria-label="이전 주"')+
+      '<strong>'+week[0]+' ~ '+week[6]+'</strong>'+button('leaveWeek',Icons.arrow('right'),'','data-step="1" aria-label="다음 주"')+
+      button('leaveWeek','이번 주','','data-step="today"');
+    const monthNav=button('leaveMonth',Icons.arrow('left'),'','data-step="-1" aria-label="이전 달"')+
+      '<strong>'+esc(leaveMonth.replace('-','년 '))+'월</strong>'+button('leaveMonth',Icons.arrow('right'),'','data-step="1" aria-label="다음 달"')+
+      button('leaveMonth','이번 달','','data-step="today"');
+    const controls='<div class="leave-schedule-toolbar"><div class="leave-month-nav'+(leaveView==='table'?' weekly':'')+'">'+
+      (leaveView==='table'?weekNav:monthNav)+'</div>'+
       '<div class="leave-view-controls"><select id="leavePerson" aria-label="휴가 조회 인원">'+options(names,leavePerson,'전체 인원')+'</select>'+
       (leaveView==='table'?'<select id="leaveSort" aria-label="휴가 정렬">'+options(['날짜순','조직도순'],leaveSort==='date'?'날짜순':'조직도순')+'</select>':'')+
       '<div class="tabs" role="group" aria-label="휴가 보기">'+views+'</div></div></div>';
     const search='<form id="leaveSearchForm" class="leave-search-form"><input type="search" name="query" aria-label="휴가 검색" placeholder="이름 · 팀 · 휴가 내용 검색" value="'+esc(leaveSearch)+'"><button type="submit">검색</button><select id="leaveTypeFilter" aria-label="휴가 유형 조회"><option value="">전체 휴가</option>'+BoardLeaveTypes.all(state).map(type=>'<option value="'+esc(type.id)+'" '+(leaveTypeFilter===type.id?'selected':'')+'>'+esc(type.name)+'</option>').join('')+'</select></form>';
     const content=leaveView==='calendar'?BoardLeaveCalendar.render({rows,month:leaveMonth,C,Calendar:BoardBriefingCalendar,esc,button,
-      canEdit:leave=>P.canEditLeave(state,user.name,leave.owner)}):D.leaves(state,user,rows,leaveSort);
+      canEdit:leave=>P.canEditLeave(state,user.name,leave.owner)}):D.leaves(state,user,rows.filter(leave=>!leaveSelectedDay||leave.start<=leaveSelectedDay&&leave.end>=leaveSelectedDay),leaveSort);
+    const overview=leaveView==='table'?BoardLeaveCalendar.weekOverview({rows,date:leaveWeekDate,selected:leaveSelectedDay,esc,button}):'';
     return '<div class="leave-workspace">'+annualLeavePanel()+leaveTypeCards()+'<section class="card leave-schedule-panel"><div class="sectionhead"><h2>휴가 일정</h2>'+
-      button('newLeave','＋ 휴가 등록','primary')+'</div>'+controls+search+content+
+      button('newLeave','＋ 휴가 등록','primary')+'</div>'+controls+overview+search+content+
       (leaveView==='calendar'?'<div class="leave-calendar-legend"><span><i class="annual"></i>연차</span><span><i class="half"></i>반차</span><span><i class="other"></i>기타 휴가</span></div>':'')+'</section></div>';
   }
   const readOrganization=()=>P.organization(state,state.members,N.teamLabel);
@@ -816,19 +832,20 @@
     const ledger=W.leaveLedger(state,leaveOwner,leaveYear),number=value=>value===null?'미설정':value+'일';
     const years=Array.from(new Set([Number(leaveYear),Number(C.today().slice(0,4))-1,Number(C.today().slice(0,4)),Number(C.today().slice(0,4))+1])).sort((a,b)=>b-a);
     const count=state.leaves.filter(leave=>leave.owner===leaveOwner&&leave.start.slice(0,4)===leaveYear).length;
-    const tiles=[['잔여 연차',ledger.remaining],['사용 연차',ledger.used],['총 연차',ledger.allowance],['사용 예정',ledger.planned],['휴가 건수',count+'건']];
+    const tiles=[['잔여 연차',ledger.remaining],['사용 연차',ledger.used],['총 연차',ledger.allowance],['휴가 건수',count+'건']];
     const total=ledger.allowance||0,used=ledger.used;
     const profile=displayProfile(member(leaveOwner));
     return '<section class="card annual-panel"><div class="sectionhead"><h2>연차 현황</h2><div class="actions">'+
       '<select id="leaveYear" aria-label="연차 조회 연도">'+years.map(year=>'<option value="'+year+'" '+(String(year)===leaveYear?'selected':'')+'>'+year+'년</option>').join('')+'</select>'+
       '<select id="leaveOwner" aria-label="연차 조회 인원">'+options(allowed.map(person=>person.name),leaveOwner)+'</select>'+
       (P.isOverallAdmin(state,user?.name)?button('leavePolicy','연차 정책 설정'):'')+
-      button('leaveAllowance','연차 총수 설정')+'</div></div>'+
+      button('leaveAllowance','연차 총수 설정')+button('leaveBorrow','내년 연차 사용')+'</div></div>'+
       '<div class="annual-overview"><div class="annual-person"><strong>'+esc(leaveYear)+'-01-01 ~ '+esc(leaveYear)+'-12-31</strong>'+
       '<div class="annual-person-line">'+D.avatar(profile,false)+'<span>'+esc(leaveOwner)+'<small>'+(used?'연차 '+used+'일 사용':'사용한 연차가 없습니다.')+'</small></span></div>'+
       '<progress max="'+Math.max(1,total)+'" value="'+Math.max(0,total-used)+'" aria-label="잔여 연차"></progress>'+
       '<small class="annual-progress-label">연차 소진율 '+(total?Math.round(used/total*100):0)+'% ('+used+'/'+total+')</small></div>'+
-      '<div class="annual-totals">'+tiles.map(([label,value],index)=>'<div><small>'+label+'</small><strong>'+(index===4?value:number(value))+'</strong></div>').join('')+'</div></div>'+
+      '<div class="annual-totals">'+tiles.map(([label,value],index)=>'<div><small>'+label+'</small><strong>'+(index===3?value:number(value))+'</strong></div>').join('')+'</div></div>'+
+      '<div class="annual-reservations"><span>사용 예정 <strong>'+number(ledger.planned)+'</strong></span><span>예정 반영 잔여 <strong>'+number(ledger.available)+'</strong></span></div>'+
       '<details class="leave-calculation"><summary>연차 계산 기준</summary>'+
       '<p>연차 1일, 반차 0.5일. 주말·공휴일은 차감에서 제외됩니다. 사용 예정은 오늘 이후의 휴가입니다. 예정 반영 잔여 '+number(ledger.available)+'.</p>'+
       (ledger.excluded.length?'<p>공휴일 차감 제외 '+ledger.excluded.map(item=>esc(item.date+' '+item.name)).join(', ')+'</p>':'')+'</details>'+
@@ -841,8 +858,8 @@
         '<span>'+esc(type.description)+'</span><small>'+type.units+'일 차감</small>',
         'leave-type-request','data-id="'+esc(type.id)+'"')+'</article>').join('');
     return '<section class="leave-types-section" aria-label="휴가 신청"><h2>휴가 신청</h2><div class="leave-types-row">'+
-      '<div class="leave-type-scroll" tabindex="0" role="region" aria-label="휴가 종류 카드">'+(cards||'<p class="muted">등록된 휴가 종류가 없습니다.</p>')+'</div>'+
-      (editable?button('leaveTypeAdd','＋','leave-type-add','aria-label="휴가 종류 추가" title="휴가 종류 추가"'):'')+'</div></section>';
+      '<div class="leave-type-scroll" tabindex="0" role="region" aria-label="휴가 종류 카드">'+(cards||'<p class="muted">등록된 휴가 종류가 없습니다.</p>')+
+      (editable?button('leaveTypeAdd','＋','leave-type-add','aria-label="휴가 종류 추가" title="휴가 종류 추가"'):'')+'</div></div></section>';
   }
   function leaveTypeEditor(id){
     const type=BoardLeaveTypes.all(state).find(item=>item.id===id);
@@ -1141,6 +1158,7 @@
       return;
     }
     if(el.dataset.revisionRequired){try{const index=state.projects.findIndex(p=>p.id===el.dataset.revisionRequired);state.projects[index]=BoardTaskBoard.setRevisionRequired(state.projects[index],el.dataset.taskId,el.checked,C,user.name);changed();render();}catch(err){toast(err.message);render();}return;}
+    if(el.id==='leaveType'){const field=$('#leaveUnits')?.closest?.('.field');if(field)field.hidden=el.value!=='추가 사용';return;}
     if(el.id==='leavePerson'){leavePerson=el.value;render();return;}
     if(el.dataset.boardDate){if(el.value&&(!/^\d{4}-\d{2}-\d{2}$/.test(el.value)||Number.isNaN(Date.parse(el.value+'T00:00:00Z'))||new Date(el.value+'T00:00:00Z').toISOString().slice(0,10)!==el.value)){toast('날짜를 YYYY-MM-DD 형식으로 입력해 주세요.');el.value=filters[el.dataset.boardDate];return;}const next={...filters,[el.dataset.boardDate]:el.value};if(next.from&&next.to&&next.from>next.to){toast('시작 날짜는 종료 날짜보다 늦을 수 없습니다.');el.value=filters[el.dataset.boardDate];return;}filters=next;render();$('#'+el.id)?.focus?.();return;}
     if(el.dataset.taskField==='role'){collectTasks();const task=taskDraft[Number(el.closest('[data-task-index]').dataset.taskIndex)],team=BoardSimpleEditor.teamOf(el.value);task.assignees=task.assignees.filter(name=>!team||member(name)?.team===team);$('#taskList').innerHTML=taskForms();return;}
@@ -1172,7 +1190,7 @@
     if(el.dataset.boardMove){const detailOpen=$('#editor').open;moveBoardCard(el.dataset.boardMove,el.value,detailOpen?'':boardAssignee());if(detailOpen){$('#editor').close();boardDetail(el.dataset.boardMove);}return;}
     if(el.id==='leaveTypeFilter'){leaveTypeFilter=el.value;render();return;}
     if(el.id==='leaveSort'){leaveSort=el.value==='조직도순'?'person':'date';render();return;}
-    if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;leaveMonth=leaveYear+'-'+leaveMonth.slice(5);render();}return;}
+    if(el.id==='leaveYear'){if(/^\d{4}$/.test(el.value)&&Number(el.value)>=2000&&Number(el.value)<=2100){leaveYear=el.value;leaveMonth=leaveYear+'-'+leaveMonth.slice(5);leaveWeekDate=leaveMonth+'-01';leaveSelectedDay='';render();}return;}
     if(el.id==='leaveOwner'&&!el.closest('#leaveForm')){leaveOwner=el.value;render();return;}
     if(el.id==='p-taskCategory'){const isContent=el.value==='콘텐츠';for(const [container,input,show] of [['contentCategoryField','p-contentCategory',isContent],['contentTypeField','p-contentType',isContent],['platformField','p-platform',!isContent]]){$('#'+container).hidden=!show;$('#'+input).disabled=!show;$('#'+input).required=show;}}
     if(el.id==='loginTeam'){$('#loginName').innerHTML=options(activeMembers().filter(m=>m.team===el.value).map(m=>m.name),'');await updateLogin();}

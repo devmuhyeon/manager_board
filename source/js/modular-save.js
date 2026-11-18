@@ -37,6 +37,63 @@
   }
   return parts;
  }
+ const leaveKeys=['leaves','leaveAllowances','leaveTypes','leavePolicy'];
+ const validYear=year=>/^\d{4}$/.test(year);
+ async function readLeaves(directory,parts){
+  if(!parts||!Array.isArray(parts.fields)||parts.fields.some(key=>!leaveKeys.includes(key))||
+    !parts.years||typeof parts.years!=='object'||Array.isArray(parts.years)||!Array.isArray(parts.order))throw Error('휴가 저장 목록이 올바르지 않습니다.');
+  const folder=await (await directory.getDirectoryHandle('save')).getDirectoryHandle('휴가'),result={};
+  if(parts.fields.includes('leaves'))result.leaves=[];
+  if(parts.fields.includes('leaveAllowances'))result.leaveAllowances={};
+  for(const [year,revision] of Object.entries(parts.years)){
+   if(!validYear(year)||!ID.test(revision))throw Error('휴가 연도별 저장 경로가 올바르지 않습니다.');
+   const dir=await folder.getDirectoryHandle(year),data=JSON.parse(await read(await dir.getFileHandle(revision+'.json')));
+   if(!data||!Array.isArray(data.leaves)||data.leaves.some(leave=>typeof leave?.start!=='string'||leave.start.slice(0,4)!==year)||
+     !data.allowances||typeof data.allowances!=='object'||Array.isArray(data.allowances))throw Error('휴가 연도별 저장 자료를 확인하세요.');
+   if(result.leaves)result.leaves.push(...data.leaves);
+   if(result.leaveAllowances&&data.hasAllowances)result.leaveAllowances[year]=data.allowances;
+  }
+  if(result.leaves){
+   const order=new Map(parts.order.map((id,index)=>[id,index]));
+   if(order.size!==parts.order.length||result.leaves.length!==order.size||result.leaves.some(leave=>!order.has(leave.id)))throw Error('휴가 저장 순서가 올바르지 않습니다.');
+   result.leaves.sort((a,b)=>order.get(a.id)-order.get(b.id));
+  }
+  if(parts.settings){
+   if(!ID.test(parts.settings))throw Error('휴가 설정 저장 경로가 올바르지 않습니다.');
+   const dir=await folder.getDirectoryHandle('설정'),settings=JSON.parse(await read(await dir.getFileHandle(parts.settings+'.json')));
+   if(!settings||Object.keys(settings).some(key=>!['leaveTypes','leavePolicy'].includes(key)))throw Error('휴가 설정 자료를 확인하세요.');
+   Object.assign(result,settings);
+  }
+  return result;
+ }
+ const leaveYearData=(state,year)=>({leaves:(state.leaves||[]).filter(leave=>leave.start.slice(0,4)===year),
+  allowances:state.leaveAllowances?.[year]||{},hasAllowances:Object.hasOwn(state.leaveAllowances||{},year)});
+ const leaveSettings=state=>Object.fromEntries(['leaveTypes','leavePolicy'].filter(key=>Object.hasOwn(state,key)).map(key=>[key,state[key]]));
+ async function writeLeaves(directory,state,old,previousParts){
+  const fields=leaveKeys.filter(key=>Object.hasOwn(state,key));
+  if(!fields.length)return undefined;
+  const years=[...new Set([...(state.leaves||[]).map(leave=>leave.start.slice(0,4)),...Object.keys(state.leaveAllowances||{})])];
+  if(years.some(year=>!validYear(year)))throw Error('휴가 저장 연도를 확인하세요.');
+  const folder=await (await directory.getDirectoryHandle('save',{create:true})).getDirectoryHandle('휴가',{create:true});
+  const parts={fields,years:{},order:(state.leaves||[]).map(leave=>leave.id)};
+  for(const year of years){
+   const data=leaveYearData(state,year),previous=previousParts?.years?.[year];
+   if(previous&&JSON.stringify(data)===JSON.stringify(leaveYearData(old,year)))parts.years[year]=previous;
+   else{
+    const revision=crypto.randomUUID(),dir=await folder.getDirectoryHandle(year,{create:true});
+    await write(dir,revision+'.json',JSON.stringify(data,null,2));parts.years[year]=revision;
+   }
+  }
+  const settings=leaveSettings(state);
+  if(Object.keys(settings).length){
+   if(previousParts?.settings&&JSON.stringify(settings)===JSON.stringify(leaveSettings(old)))parts.settings=previousParts.settings;
+   else{
+    const revision=crypto.randomUUID(),dir=await folder.getDirectoryHandle('설정',{create:true});
+    await write(dir,revision+'.json',JSON.stringify(settings,null,2));parts.settings=revision;
+   }
+  }
+  return parts;
+ }
  async function open(directory,{folder='process',readOnly=false}={}){
   const save=readOnly?await optional(directory,folder,'directory'):await directory.getDirectoryHandle(folder,{create:true});if(!save)return null;const commits=readOnly?await optional(save,'commits','directory'):await save.getDirectoryHandle('commits',{create:true});if(!commits)return null;
   async function snapshot(){
@@ -59,6 +116,7 @@
    }
    if(manifest.personalParts){const users=await (await directory.getDirectoryHandle(manifest.personalStore==='save'?'save':'dist')).getDirectoryHandle('users');state.personal={};for(const [name,id] of Object.entries(manifest.personalParts)){if(!ID.test(id)||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 개인 저장 항목입니다.');const person=await users.getDirectoryHandle(encodeURIComponent(name));state.personal[name]=JSON.parse(await read(await person.getFileHandle(id+'.json')));}}
    if(manifest.postParts!==undefined)state.teamPosts=await readPosts(directory,manifest.postParts);
+   if(manifest.leaveParts!==undefined)Object.assign(state,await readLeaves(directory,manifest.leaveParts));
    return {text:JSON.stringify(state,null,2),manifest};
   }
   return {name:folder,modular:true,queryPermission:options=>directory.queryPermission(options),requestPermission:options=>directory.requestPermission(options),
@@ -68,18 +126,20 @@
     async close(){
      if(aborted||value===undefined)throw Error('저장이 취소되었습니다.');
      const state=JSON.parse(value),parts={},old=base.text.trim()?JSON.parse(base.text):{},buckets={};
-     for(const [key,item] of Object.entries(state))if(key!=='personal'&&key!=='teamPosts')(buckets[group(key)]??={})[key]=item;
+     for(const [key,item] of Object.entries(state))if(key!=='personal'&&key!=='teamPosts'&&!leaveKeys.includes(key))(buckets[group(key)]??={})[key]=item;
      const id=crypto.randomUUID(),personalParts={};if(state.personal){const users=await (await directory.getDirectoryHandle('save',{create:true})).getDirectoryHandle('users',{create:true});for(const [name,items] of Object.entries(state.personal)){if(!name||['__proto__','constructor','prototype'].includes(name))throw Error('잘못된 사용자 이름입니다.');if(base.manifest?.personalStore==='save'&&base.manifest.personalParts?.[name]&&JSON.stringify(old.personal?.[name])===JSON.stringify(items))personalParts[name]=base.manifest.personalParts[name];else{const person=await users.getDirectoryHandle(encodeURIComponent(name),{create:true});await write(person,id+'.json',JSON.stringify(items,null,2));personalParts[name]=id;}}}
      for(const [folder,data] of Object.entries(buckets)){
-      const previous=Object.fromEntries(Object.entries(old).filter(([key])=>group(key)===folder&&key!=='teamPosts'));
+      const previous=Object.fromEntries(Object.entries(old).filter(([key])=>group(key)===folder&&key!=='teamPosts'&&!leaveKeys.includes(key)));
       const oldBoardIncludesPosts=folder==='board'&&base.manifest?.postParts===undefined&&old.teamPosts!==undefined;
-      if(!oldBoardIncludesPosts&&base.manifest?.parts[folder]&&JSON.stringify(previous)===JSON.stringify(data))parts[folder]=base.manifest.parts[folder];
+      const oldLeaveIncludesRecords=folder==='leave'&&base.manifest?.leaveParts===undefined&&leaveKeys.some(key=>Object.hasOwn(old,key));
+      if(!oldBoardIncludesPosts&&!oldLeaveIncludesRecords&&base.manifest?.parts[folder]&&JSON.stringify(previous)===JSON.stringify(data))parts[folder]=base.manifest.parts[folder];
       else{const dir=await save.getDirectoryHandle(folder,{create:true});await write(dir,id+'.json',JSON.stringify(data,null,2));parts[folder]=id;}
      }
      const postParts=state.teamPosts===undefined?undefined:await writePosts(directory,state.teamPosts,old.teamPosts,base.manifest?.postParts);
+     const leaveParts=await writeLeaves(directory,state,old,base.manifest?.leaveParts);
      if((await snapshot()).text!==base.text)throw Error('다른 사용자가 먼저 저장했습니다. 변경사항을 백업한 뒤 새로 읽어 주세요.');
      // Publish last: incomplete module writes never become visible; concurrent commits never overwrite each other.
-     await write(commits,id+'.json',JSON.stringify({version:1,id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts,personalStore:'save'}:{}),postParts,savedAt:state.savedAt,savedBy:state.savedBy},null,2));
+     await write(commits,id+'.json',JSON.stringify({version:1,id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts,personalStore:'save'}:{}),postParts,leaveParts,savedAt:state.savedAt,savedBy:state.savedBy},null,2));
      await snapshot();
     }
    };}

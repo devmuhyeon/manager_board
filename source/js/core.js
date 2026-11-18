@@ -207,7 +207,8 @@
     LeavePolicy.validate(s.leavePolicy);
     if(s.leaves!==undefined&&(!Array.isArray(s.leaves)||s.leaves.some(l=>!l||typeof l.id!=='string'||typeof l.owner!=='string'||!date(l.start)||!date(l.end)||!l.start||!l.end||l.start>l.end||typeof l.type!=='string'||!l.type.trim()||l.type.length>40||
       (!['연차','오전 반차','오후 반차','기타 휴가','추가 사용'].includes(l.type)&&!LeaveTypes.all(s).some(type=>type.id===l.typeId))||
-      (l.dailyUnits!==undefined&&![0,.5,1].includes(l.dailyUnits))||typeof l.note!=='string')))throw new Error('휴가 일정 형식이 올바르지 않습니다.');
+      (l.dailyUnits!==undefined&&![0,.5,1].includes(l.dailyUnits))||
+      (l.borrowNextYear!==undefined&&(typeof l.borrowNextYear!=='boolean'||l.borrowNextYear&&l.dailyUnits===0))||typeof l.note!=='string')))throw new Error('휴가 일정 형식이 올바르지 않습니다.');
     if(!Array.isArray(people)||!people.length||new Set(people.map(m=>m.name)).size!==people.length||people.some(m=>typeof m.name!=='string'||!m.name||!TEAMS.includes(m.team)||['__proto__','constructor','prototype'].includes(m.name)))throw new Error('인원 정보가 올바르지 않습니다.');
     if(s.personal){if(typeof s.personal!=='object'||Array.isArray(s.personal))throw new Error('개인 메모 형식이 올바르지 않습니다.');for(const items of Object.values(s.personal))if(!Array.isArray(items)||items.some(i=>!i||typeof i.id!=='string'||typeof i.title!=='string'||typeof i.content!=='string'))throw new Error('개인 메모 형식이 올바르지 않습니다.');}
     if(s.rankOrder!==undefined&&(!Array.isArray(s.rankOrder)||s.rankOrder.length>40||new Set(s.rankOrder).size!==s.rankOrder.length||s.rankOrder.some(r=>typeof r!=='string'||!r.trim()||r.length>30)))throw Error('직급 순서 형식이 올바르지 않습니다.');

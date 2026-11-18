@@ -637,3 +637,19 @@ test('오전·오후 반차는 같은 날 등록하며 근속연수 정책은 �
  h.submit({id:'leavePolicyForm',fields:{enabled:'on',count:'1',members:'0',year0:'0',days0:'100'}});
  assert.equal(JSON.stringify(h.api.read().state),before);
 });
+test('주간 휴가 현황에서 날짜를 선택하고 내년 연차 선사용을 등록한다',async()=>{
+ const h=harness(),today=C.today(),nextYear=Number(today.slice(0,4))+1;
+ h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','leaves');h.api.render();
+ assert.match(h.element('#app').innerHTML,/leave-week-overview/);
+ await h.api.act({dataset:{action:'leaveBorrow'}});
+ assert.match(h.element('#editor').innerHTML,/name="borrowNextYear" type="checkbox" checked/);
+ h.submit({id:'leaveForm',fields:{owner:'김무현',type:'연차',start:today,end:today,borrowNextYear:'on',note:'미리 사용'}});
+ assert.equal(h.api.read().state.leaves[0].borrowNextYear,true);
+ assert.match(h.element('#app').innerHTML,new RegExp(nextYear+'년 연차 선사용'));
+ await h.api.act({dataset:{action:'leaveDay',date:today}});
+ assert.match(h.element('#app').innerHTML,/leave-week-day selected/);
+ await h.api.act({dataset:{action:'leaveWeek',step:'1'}});
+ assert.doesNotMatch(h.element('#app').innerHTML,/leave-week-day selected/);
+ await h.api.act({dataset:{action:'leaveWeek',step:'today'}});
+ assert.match(h.element('#app').innerHTML,/미리 사용|년 연차 선사용/);
+});
