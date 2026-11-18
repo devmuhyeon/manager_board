@@ -6,6 +6,7 @@
  paths.edit='m14 6 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z';
  paths.trash='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13m-8 3v7m4-7v7';
  paths.download='M12 3v12m-4-4 4 4 4-4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3';
+ paths.search='M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0';
  function arrow(kind){
   const direction=directions.includes(kind)?kind:'';
   const path=direction?chevron:paths[kind];

@@ -701,7 +701,7 @@
       (!leaveTypeFilter||leave.typeId===leaveTypeFilter||!leave.typeId&&BoardLeaveTypes.all(state).some(type=>type.id===leaveTypeFilter&&type.name.replace(/\s/g,'')===leave.type.replace(/\s/g,'')))&&
       (!leaveSearch||(leave.owner+' '+(member(leave.owner)?.team||'')+' '+leave.type+' '+leave.note).toLocaleLowerCase().includes(leaveSearch.toLocaleLowerCase()))&&
       leave.start<=end&&leave.end>=start);
-    const views=[['calendar','달력형'],['table','도표형']].map(([view,label])=>button('leaveView',label,leaveView===view?'active':'',
+    const views=[['calendar','월별'],['table','주차별']].map(([view,label])=>button('leaveView',label,leaveView===view?'active':'',
       'data-view="'+view+'" aria-pressed="'+(leaveView===view)+'"')).join('');
     const weekNav=button('leaveWeek',Icons.arrow('left'),'','data-step="-1" aria-label="이전 주"')+
       '<strong>'+week[0]+' ~ '+week[6]+'</strong>'+button('leaveWeek',Icons.arrow('right'),'','data-step="1" aria-label="다음 주"')+
@@ -709,17 +709,17 @@
     const monthNav=button('leaveMonth',Icons.arrow('left'),'','data-step="-1" aria-label="이전 달"')+
       '<strong>'+esc(leaveMonth.replace('-','년 '))+'월</strong>'+button('leaveMonth',Icons.arrow('right'),'','data-step="1" aria-label="다음 달"')+
       button('leaveMonth','이번 달','','data-step="today"');
-    const controls='<div class="leave-schedule-toolbar"><div class="leave-month-nav'+(leaveView==='table'?' weekly':'')+'">'+
-      (leaveView==='table'?weekNav:monthNav)+'</div>'+
-      '<div class="leave-view-controls"><select id="leavePerson" aria-label="휴가 조회 인원">'+options(names,leavePerson,'전체 인원')+'</select>'+
-      (leaveView==='table'?'<select id="leaveSort" aria-label="휴가 정렬">'+options(['날짜순','조직도순'],leaveSort==='date'?'날짜순':'조직도순')+'</select>':'')+
-      '<div class="tabs" role="group" aria-label="휴가 보기">'+views+'</div></div></div>';
-    const search='<form id="leaveSearchForm" class="leave-search-form"><input type="search" name="query" aria-label="휴가 검색" placeholder="이름 · 팀 · 휴가 내용 검색" value="'+esc(leaveSearch)+'"><button type="submit">검색</button><select id="leaveTypeFilter" aria-label="휴가 유형 조회"><option value="">전체 휴가</option>'+BoardLeaveTypes.all(state).map(type=>'<option value="'+esc(type.id)+'" '+(leaveTypeFilter===type.id?'selected':'')+'>'+esc(type.name)+'</option>').join('')+'</select></form>';
+    const search='<form id="leaveSearchForm" class="leave-search-form"><label class="leave-search-input">'+Icons.arrow('search')+'<input type="search" name="query" aria-label="휴가 검색" placeholder="팀, 이름, 휴가 내용을 검색하세요." value="'+esc(leaveSearch)+'"></label><button type="submit">검색</button>'+
+      '<div class="leave-list-filters"><select id="leavePerson" aria-label="휴가 조회 인원">'+options(names,leavePerson,'전체 인원')+'</select>'+
+      '<select id="leaveTypeFilter" aria-label="휴가 유형 조회"><option value="">전체 휴가</option>'+BoardLeaveTypes.all(state).map(type=>'<option value="'+esc(type.id)+'" '+(leaveTypeFilter===type.id?'selected':'')+'>'+esc(type.name)+'</option>').join('')+'</select>'+
+      (leaveView==='table'?'<select id="leaveSort" aria-label="휴가 정렬">'+options(['날짜순','조직도순'],leaveSort==='date'?'날짜순':'조직도순')+'</select>':'')+'</div></form>';
+    const controls='<div class="leave-schedule-toolbar">'+
+      '<div class="leave-view-controls"><div class="tabs" role="group" aria-label="휴가 보기">'+views+'</div>'+button('newLeave','＋ 휴가 등록')+'</div>'+
+      '<div class="leave-month-nav'+(leaveView==='table'?' weekly':'')+'">'+(leaveView==='table'?weekNav:monthNav)+'</div>'+search+'</div>';
     const content=leaveView==='calendar'?BoardLeaveCalendar.render({rows,month:leaveMonth,C,Calendar:BoardBriefingCalendar,esc,button,
       canEdit:leave=>P.canEditLeave(state,user.name,leave.owner)}):D.leaves(state,user,rows.filter(leave=>!leaveSelectedDay||leave.start<=leaveSelectedDay&&leave.end>=leaveSelectedDay),leaveSort);
-    const overview=leaveView==='table'?BoardLeaveCalendar.weekOverview({rows,date:leaveWeekDate,selected:leaveSelectedDay,esc,button}):'';
-    return '<div class="leave-workspace">'+annualLeavePanel()+leaveTypeCards()+'<section class="card leave-schedule-panel"><div class="sectionhead"><h2>휴가 일정</h2>'+
-      button('newLeave','＋ 휴가 등록','primary')+'</div>'+controls+overview+search+content+
+    const overview=leaveView==='table'?BoardLeaveCalendar.weekOverview({rows,date:leaveWeekDate,selected:leaveSelectedDay,today:C.today(),esc,button}):'';
+    return '<div class="leave-workspace">'+annualLeavePanel()+leaveTypeCards()+'<section class="card leave-schedule-panel" aria-label="휴가 일정">'+controls+overview+content+
       (leaveView==='calendar'?'<div class="leave-calendar-legend"><span><i class="annual"></i>연차</span><span><i class="half"></i>반차</span><span><i class="other"></i>기타 휴가</span></div>':'')+'</section></div>';
   }
   const readOrganization=()=>P.organization(state,state.members,N.teamLabel);
@@ -840,15 +840,15 @@
       '<select id="leaveOwner" aria-label="연차 조회 인원">'+options(allowed.map(person=>person.name),leaveOwner)+'</select>'+
       (P.isOverallAdmin(state,user?.name)?button('leavePolicy','연차 정책 설정'):'')+
       button('leaveAllowance','연차 총수 설정')+button('leaveBorrow','내년 연차 사용')+'</div></div>'+
-      '<div class="annual-overview"><div class="annual-person"><strong>'+esc(leaveYear)+'-01-01 ~ '+esc(leaveYear)+'-12-31</strong>'+
-      '<div class="annual-person-line">'+D.avatar(profile,false)+'<span>'+esc(leaveOwner)+'<small>'+(used?'연차 '+used+'일 사용':'사용한 연차가 없습니다.')+'</small></span></div>'+
+      '<div class="annual-overview"><div class="annual-person">'+
+      '<div class="annual-person-line">'+D.avatar(profile,false)+'<div class="annual-identity"><strong>'+esc(leaveOwner)+'</strong>'+
+      '<span>'+esc(N.teamLabel(profile.team))+(profile.rank?' · '+esc(profile.rank):'')+'</span>'+
+      '<small>'+esc(leaveYear)+'.01.01 — '+esc(leaveYear)+'.12.31</small></div></div>'+
+      '<div class="annual-progress-caption"><span>'+(used?used+'일 사용':'사용한 연차 없음')+'</span><strong>'+number(ledger.remaining)+' 남음</strong></div>'+
       '<progress max="'+Math.max(1,total)+'" value="'+Math.max(0,total-used)+'" aria-label="잔여 연차"></progress>'+
-      '<small class="annual-progress-label">연차 소진율 '+(total?Math.round(used/total*100):0)+'% ('+used+'/'+total+')</small></div>'+
+      '</div>'+
       '<div class="annual-totals">'+tiles.map(([label,value],index)=>'<div><small>'+label+'</small><strong>'+(index===3?value:number(value))+'</strong></div>').join('')+'</div></div>'+
       '<div class="annual-reservations"><span>사용 예정 <strong>'+number(ledger.planned)+'</strong></span><span>예정 반영 잔여 <strong>'+number(ledger.available)+'</strong></span></div>'+
-      '<details class="leave-calculation"><summary>연차 계산 기준</summary>'+
-      '<p>연차 1일, 반차 0.5일. 주말·공휴일은 차감에서 제외됩니다. 사용 예정은 오늘 이후의 휴가입니다. 예정 반영 잔여 '+number(ledger.available)+'.</p>'+
-      (ledger.excluded.length?'<p>공휴일 차감 제외 '+ledger.excluded.map(item=>esc(item.date+' '+item.name)).join(', ')+'</p>':'')+'</details>'+
       (!ledger.calendarSupported?'<p class="error leave-calendar-warning" role="alert">'+leaveYear+'년 공휴일 자료가 없어 주말만 제외한 잠정 일수입니다.</p>':'')+'</section>';
   }
   function leaveTypeCards(){
@@ -911,7 +911,11 @@
       '<div class="sectionhead"><h3>근속연수별 연차</h3>'+button('leavePolicyAdd','＋ 추가')+'</div><div class="leave-policy-grants">'+grants+'</div>'+
       '<h3>적용 멤버와 입사일</h3><div class="leave-policy-members">'+members.map((person,index)=>'<label><span>'+esc(N.teamLabel(person.team))+' · '+esc(person.name)+
         '</span><input type="hidden" name="hireName'+index+'" value="'+esc(person.name)+'"><input type="date" name="hire'+index+'" aria-label="'+esc(person.name)+' 입사일" value="'+esc(policy.hires[person.name]||'')+'"></label>').join('')+'</div>'+
-      '<p class="muted">입사일을 입력한 멤버에게 적용합니다.</p><p class="error" id="leavePolicyError" role="alert"></p></div>'+
+      '<p class="muted">입사일을 입력한 멤버에게 적용합니다.</p>'+
+      '<section class="leave-policy-calculation"><h3>연차 계산 기준</h3><p>휴가 유형에 설정된 일수만큼 차감합니다. 기본값은 연차 1일, 오전·오후반차 0.5일, 특별휴가 0일입니다.</p>'+
+      '<p>주말과 등록된 공휴일은 차감에서 제외합니다. 사용 예정은 오늘 이후의 휴가이며, 예정 반영 잔여는 사용 예정까지 차감한 일수입니다.</p>'+
+      '<p>내년 연차 선사용은 실제 휴가일의 다음 연도 연차에서 차감합니다. 공휴일은 실제 휴가 연도의 달력을 적용합니다.</p></section>'+
+      '<p class="error" id="leavePolicyError" role="alert"></p></div>'+
       '<div class="modal-foot">'+button('close','취소')+'<button type="submit" class="primary">저장</button></div></form>');
   }
   function personalPanel(){

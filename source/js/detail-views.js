@@ -2,6 +2,7 @@
  'use strict';
  const Icons=typeof module!=='undefined'?require('./arrow-icons.js'):root.BoardArrowIcons;
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
+ const LeaveTypes=typeof module!=='undefined'?require('./leave-types.js'):root.BoardLeaveTypes;
  function create({C,P,W,B,N,esc,button,options,member,weekBlocks,samplePostAvatar=()=>undefined}){
   const characters=Avatars.characters;
   const characterKey=value=>characters.some(([key])=>key===value)?value:'yongyong';
@@ -13,7 +14,24 @@
     return person?.privateAvatarSrc?'<img src="'+esc(person.privateAvatarSrc)+'" alt="" aria-hidden="true" width="'+width+'" height="'+height+'">':characterImage(person?.avatar,width,height);
   }
   const team=t=>esc(N.teamLabel(t));
-  function leaves(state,user,rows,mode='person'){const compare=P.nameComparator(state);rows=rows.slice().sort((a,b)=>mode==='date'?b.start.localeCompare(a.start)||compare(a.owner,b.owner):compare(a.owner,b.owner)||b.start.localeCompare(a.start));return '<div class="table-wrap"><table class="leave-table"><caption class="sr-only">휴가 일정</caption><thead><tr>'+['팀','이름','직급','연차구분','연차 기간','편집'].map(t=>'<th scope="col">'+t+'</th>').join('')+'</tr></thead><tbody>'+rows.map(l=>'<tr><td>'+team(member(l.owner)?.team||'—')+'</td><td>'+esc(l.owner)+'</td><td>'+esc(member(l.owner)?.rank||'미지정')+'</td><td><span class="leave-type-badge">'+esc(l.type)+'</span>'+(l.borrowNextYear?'<small class="leave-borrow-label">'+(Number(l.start.slice(0,4))+1)+(l.end.slice(0,4)!==l.start.slice(0,4)?'~'+(Number(l.end.slice(0,4))+1):'')+'년 연차 선사용</small>':'')+'</td><td class="leave-date-cell">'+esc(l.start)+(l.end!==l.start?' ~ '+esc(l.end):'')+'</td><td>'+(P.canEditLeave(state,user.name,l.owner)?button('editLeave','편집','','data-id="'+esc(l.id)+'"'):'—')+'</td></tr>').join('')+(rows.length?'':'<tr><td colspan="6" class="empty">등록된 휴가가 없습니다.</td></tr>')+'</tbody></table></div>';}
+  function leaves(state,user,rows,mode='person'){
+    const compare=P.nameComparator(state);
+    rows=rows.slice().sort((a,b)=>mode==='date'?b.start.localeCompare(a.start)||compare(a.owner,b.owner):compare(a.owner,b.owner)||b.start.localeCompare(a.start));
+    const body=rows.map(leave=>{
+      const person=member(leave.owner),type=LeaveTypes.all(state).find(type=>type.id===leave.typeId||type.name.replace(/\s/g,'')===leave.type.replace(/\s/g,''));
+      const borrowed=leave.borrowNextYear?'<small class="leave-borrow-label">'+(Number(leave.start.slice(0,4))+1)+
+        (leave.end.slice(0,4)!==leave.start.slice(0,4)?'~'+(Number(leave.end.slice(0,4))+1):'')+'년 연차 선사용</small>':'';
+      return '<tr><td>'+team(person?.team||'—')+'</td><td><span class="leave-table-person">'+
+        (person?profileImage(person,28,28):'')+'<span>'+esc(leave.owner)+'</span></span></td><td>'+esc(person?.rank||'미지정')+'</td>'+
+        '<td><span class="leave-type-badge"><span class="tossface" aria-hidden="true">'+esc(type?.icon||'📅')+'</span>'+esc(leave.type)+'</span>'+borrowed+'</td>'+
+        '<td class="leave-date-cell">'+esc(leave.start)+(leave.end!==leave.start?' ~ '+esc(leave.end):'')+'</td><td>'+
+        (P.canEditLeave(state,user.name,leave.owner)?button('editLeave',Icons.arrow('edit'),'leave-row-edit','data-id="'+esc(leave.id)+
+          '" aria-label="'+esc(leave.owner+' '+leave.type)+' 수정" title="수정"'):'—')+'</td></tr>';
+    }).join('');
+    return '<div class="table-wrap"><table class="leave-table"><caption class="sr-only">휴가 일정</caption><thead><tr>'+
+      ['팀','이름','직급','연차구분','연차 기간','편집'].map(title=>'<th scope="col">'+title+'</th>').join('')+'</tr></thead><tbody>'+
+      (body||'<tr><td colspan="6" class="empty">등록된 휴가가 없습니다.</td></tr>')+'</tbody></table></div>';
+  }
   function today(state,user){const date=C.today(),items=P.schedule(state,user.name,{start:date,end:date}),due=state.projects.map(C.effective).filter(p=>p.due===date&&p.status!=='완료'&&p.assignees.includes(user.name));return '<section class="card"><div class="sectionhead"><h2>'+date+' 오늘 일정</h2>'+button('newMemo','＋ 일정 추가','primary')+'</div><div class="agenda-list">'+items.map(i=>'<article class="agenda-item"><div><small>'+esc(i.time||'종일')+' · '+esc(i.owner)+'</small>'+(i.projectId?button('boardDetail',esc(i.title),'project-button','data-id="'+esc(i.projectId)+'"'):'<strong>'+esc(i.title)+'</strong>')+'</div>'+weekBlocks(i.date,i.done)+'</article>').join('')+due.map(p=>'<article class="agenda-item"><div><small>오늘 마감</small>'+button('boardDetail',esc(p.title),'project-button','data-id="'+esc(p.id)+'"')+'</div>'+weekBlocks(p.due)+'</article>').join('')+(!items.length&&!due.length?illustratedHint(user.avatar,'오늘 등록된 일정과 마감 과업이 없어요','필요한 일정은 위의 일정 추가 버튼으로 등록하세요.'):'')+'</div></section>';}
   function postTypeLabel(post){
     const type=B.typeOf(post);

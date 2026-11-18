@@ -7,12 +7,12 @@
    const day=new Date(first);day.setUTCDate(day.getUTCDate()+index);return day.toISOString().slice(0,10);
   });
  }
- function weekOverview({rows,date,selected,esc,button}){
+ function weekOverview({rows,date,selected,today,esc,button}){
   return '<div class="leave-week-scroll"><div class="leave-week-overview" role="group" aria-label="주간 휴가 현황">'+week(date).map((day,index)=>{
    const count=new Set(rows.filter(leave=>leave.start<=day&&leave.end>=day).map(leave=>leave.owner)).size;
    return button('leaveDay','<span class="leave-week-date"><strong>'+Number(day.slice(-2))+'</strong>'+['월','화','수','목','금','토','일'][index]+'</span>'+
-    (count?'<span class="leave-week-count"><span>휴가자</span><strong>'+count+'명</strong></span>':'<span class="leave-week-empty">—</span>'),
-    'leave-week-day'+(selected===day?' selected':'')+(index>4?' weekend':''),
+    (count?'<span class="leave-week-count"><span>휴가자</span><strong>'+count+'명</strong></span>':''),
+    'leave-week-day'+(selected===day?' selected':'')+(index>4?' weekend':'')+(day===today?' today':''),
     'data-date="'+day+'" aria-pressed="'+(selected===day)+'" aria-label="'+esc(day)+' 휴가 '+count+'명"');
   }).join('')+'</div></div>';
  }
