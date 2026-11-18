@@ -838,7 +838,7 @@
     const editable=P.isOverallAdmin(state,user?.name);
     const cards=BoardLeaveTypes.active(state).map(type=>'<article class="leave-type-card">'+
       button('leaveTypeRequest','<strong><span class="tossface" aria-hidden="true">'+esc(type.icon)+'</span>'+esc(type.name)+'</strong>'+
-        '<span>'+esc(type.description)+'</span><small>'+(type.units?'하루당 연차 '+type.units+'일 차감':'연차 차감 없음')+'</small>',
+        '<span>'+esc(type.description)+'</span><small>'+type.units+'일 차감</small>',
         'leave-type-request','data-id="'+esc(type.id)+'"')+'</article>').join('');
     return '<section class="leave-types-section" aria-label="휴가 신청"><h2>휴가 신청</h2><div class="leave-types-row">'+
       '<div class="leave-type-scroll" tabindex="0" role="region" aria-label="휴가 종류 카드">'+(cards||'<p class="muted">등록된 휴가 종류가 없습니다.</p>')+'</div>'+
