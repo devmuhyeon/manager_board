@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- const initial=()=>({polls:[],word:null,ladder:null,wheel:null});
+ const initial=()=>({polls:[],word:null,wheel:null});
  const wordGame=data=>data?.word?.version===2?data.word:{version:2,seed:'워크로그',entries:[],...(data?.word?{legacyGame:data.word}:{})};
  const text=(value,max=100)=>typeof value==='string'&&value.trim().length>0&&value.length<=max;
  function list(value,min=2,max=12){const values=String(value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(values.length<min||values.length>max||values.some(s=>s.length>40))throw Error(min+'~'+max+'개를 한 줄에 하나씩 입력하세요. (각 40자 이내)');return values;}
@@ -17,7 +17,6 @@
  }
  function draw(max,random=Math.random){const value=random();if(!Number.isFinite(value)||value<0||value>=1)throw Error('추첨 값을 만들지 못했습니다. 다시 시도하세요.');return Math.floor(value*max);}
  function starts(last){const cp=last.charCodeAt(0)-0xac00,first=Math.floor(cp/588),vowel=Math.floor(cp%588/28),tail=cp%28,values=[last];const changesToIeung=[2,3,6,7,12,17,20].includes(vowel);if(first===5)values.push(String.fromCharCode(0xac00+(changesToIeung?11:2)*588+vowel*28+tail));else if(first===2&&changesToIeung)values.push(String.fromCharCode(0xac00+11*588+vowel*28+tail));return [...new Set(values)];}
- function path(ladder,start){let x=start;const points=[[x,0]];ladder.rungs.forEach((rungs,row)=>{points.push([x,row+1]);if(rungs.includes(x))x++;else if(rungs.includes(x-1))x--;points.push([x,row+1]);});points.push([x,ladder.rungs.length+1]);return {end:x,points};}
  function apply(data,action,input,{user,id=()=>crypto.randomUUID(),random=Math.random,admin=false,now=()=>new Date().toISOString()}={}){
   const next=structuredClone(data||initial());validate(next);if(!text(user))throw Error('로그인 후 이용하세요.');
   if(action==='pollCreate'){
@@ -38,12 +37,10 @@
    if(!last)throw Error('되돌릴 단어가 없습니다.');
    if(last.author!==user&&!admin)throw Error('마지막 단어를 입력한 본인만 되돌릴 수 있습니다.');
    w.entries.pop();next.word=w;
-  }else if(action==='ladderDraw'){
-   const players=list(input.players),prizes=list(input.prizes);if(players.length!==prizes.length)throw Error('참가자와 결과의 개수를 맞춰주세요.');if(new Set(players).size!==players.length)throw Error('참가자 이름은 서로 다르게 입력하세요.');const rungs=Array.from({length:16},()=>{const row=[];for(let x=0;x<players.length-1;x++)if(draw(2,random)){row.push(x);x++;}return row;});next.ladder={players,prizes,rungs};
   }else if(action==='wheelSpin'){
    const options=list(input.options),index=draw(options.length,random);next.wheel={options,index,history:[options[index],...(next.wheel?.history||[])].slice(0,20)};
   }else throw Error('지원하지 않는 장난감 동작입니다.');
   validate(next);return next;
  }
- const api={initial,wordGame,list,validate,draw,starts,path,apply};if(typeof module!=='undefined')module.exports=api;else root.BoardToys=api;
+ const api={initial,wordGame,list,validate,draw,starts,apply};if(typeof module!=='undefined')module.exports=api;else root.BoardToys=api;
 })(typeof window!=='undefined'?window:globalThis);

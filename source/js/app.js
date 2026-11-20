@@ -34,7 +34,7 @@
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let navFocus=null;
   const toyDrafts={};
-  const toyUi={ladderSelected:0,spin:false};
+  const toyUi={spin:false};
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
   let boardTeam='all',boardPostId='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
@@ -319,7 +319,6 @@
       const action=el.dataset.toyAction;
       if(action==='mealRecommend'){toyUi.mealId=BoardFeaturePages.toys.Meals.pick(toyUi.mealId).id;render();return;}
       if(action==='wordMore'){toyUi.wordLimit=(toyUi.wordLimit||100)+100;render();return;}
-      if(action==='ladderSelect'){toyUi.ladderSelected=Number(el.dataset.index);toyUi.spin=false;render();return;}
       if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;
       state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,el.dataset,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
       toyUi.spin=false;changed();render();return;
@@ -780,11 +779,10 @@
       e.preventDefault();if(!user)return;
       const action=e.target.dataset.toyForm;
       if(action==='mealSearch'){toyUi.mealQuery=String(new FormData(e.target).get('query')||'');render();return;}
-      if(action==='ladderDraw'&&state.toys?.ladder&&!confirm('현재 사다리를 새로 만들까요?'))return;
       try{
         const input=Object.fromEntries(new FormData(e.target));
         state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,input,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
-        toyUi.spin=action==='wheelSpin';if(action==='ladderDraw')toyUi.ladderSelected=0;
+        toyUi.spin=action==='wheelSpin';
         if(action==='wordAdd'){const field=e.target.querySelector?.('[name="word"]');if(field)field.value='';}
         if(action==='pollCreate')e.target.reset?.();
         changed();render();toyUi.spin=false;

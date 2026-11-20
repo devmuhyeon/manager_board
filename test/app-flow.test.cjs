@@ -701,7 +701,7 @@ test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 �
  await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
  let html=h.element('#app').innerHTML;
  const nav=html.slice(html.indexOf('id="nav-toys"'));
- assert.deepEqual([...nav.matchAll(/data-page="([^"]+)"/g)].map(m=>m[1]),['toyWordChain','toyVote','toyLadder','toyWheel','toyMeal']);
+ assert.deepEqual([...nav.matchAll(/data-page="([^"]+)"/g)].map(m=>m[1]),['toyWordChain','toyVote','toyWheel','toyMeal']);
  h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'그림'}});
  assert.equal(h.api.read().state.toys.word.entries[0].word,'그림');
  await h.api.act({dataset:{action:'page',page:'toyVote'}});
@@ -710,9 +710,6 @@ test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 �
  await h.api.act({dataset:{action:'toy',toyAction:'pollVote',id:poll.id,index:'1'}});
  assert.equal(h.api.read().state.toys.polls[0].ballots.김무현,1);
  assert.match(h.element('#app').innerHTML,/1표 · 100%/);
- await h.api.act({dataset:{action:'page',page:'toyLadder'}});
- h.submit({dataset:{toyForm:'ladderDraw'},fields:{players:'가\n나',prizes:'당첨\n통과'}});
- assert.match(h.element('#app').innerHTML,/toy-ladder-path/);
  await h.api.act({dataset:{action:'page',page:'toyWheel'}});
  h.submit({dataset:{toyForm:'wheelSpin'},fields:{options:'한식\n일식'}});
  assert.equal(h.api.read().state.toys.wheel.history.length,1);

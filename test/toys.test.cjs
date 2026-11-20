@@ -33,15 +33,6 @@ test('끝말잇기는 워크로그에서 시작하고 로그인 사용자 이름
  assert.deepEqual(migrated.word.legacyGame,old.word);assert.equal(migrated.word.entries[0].author,'정윤정');
  assert.equal(old.word.words[0],'기차');assert.throws(()=>T.apply(data,'wordStart',{players:'가\n나'},context),/지원/);
 });
-test('사다리는 모든 인원에게 겹치지 않는 도착점을 배정하고 경로가 가로선과 일치한다',()=>{
- let seed=123;const random=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
- for(let n=2;n<=12;n++){
-  const data=T.apply(undefined,'ladderDraw',{players:Array.from({length:n},(_,i)=>'인원'+i).join('\n'),prizes:Array.from({length:n},(_,i)=>'결과'+i).join('\n')},{...options,random});
-  const ends=[];for(let i=0;i<n;i++){const route=T.path(data.ladder,i);ends.push(route.end);assert.equal(route.points.length,34);assert.ok(route.points.every(([x])=>x>=0&&x<n));}
-  assert.equal(new Set(ends).size,n);assert.doesNotThrow(()=>T.validate(data));
- }
- assert.throws(()=>T.apply(undefined,'ladderDraw',{players:'가\n나',prizes:'1\n2\n3'},options),/개수/);
-});
 test('돌림판의 당첨 인덱스·최근 기록과 잘못된 저장 자료를 검증한다',()=>{
  let data=T.apply(undefined,'wheelSpin',{options:'한식\n중식\n일식\n분식'},options);
  assert.equal(data.wheel.index,1);assert.equal(data.wheel.history[0],'중식');
