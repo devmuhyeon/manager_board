@@ -69,7 +69,7 @@
       const marker=parent?'<span class="bulletin-reply-marker" aria-hidden="true">'+Icons.arrow('reply')+'</span>':'';
       const target=parent?'<span class="bulletin-reply-target">'+esc(parent.author)+'<span class="sr-only">에게 답글</span></span>':'';
       list.push('<li class="'+(parent?'bulletin-reply':'bulletin-root-comment')+'" data-comment-id="'+esc(comment.id)+'" tabindex="-1" style="--reply-indent:'+Math.min(depth,7)*16+'px">'+
-        '<div class="bulletin-comment-meta">'+marker+postByline(comment,true)+commentTime(comment)+(comment.author===user.name&&!children.length?button('editComment',Icons.arrow('edit'),'people-icon-button','data-id="'+esc(post.id)+'" data-comment-id="'+esc(comment.id)+'" aria-label="댓글 수정"'):'')+'</div><p>'+target+esc(comment.content)+'</p>'+Attachments.render(comment.attachments,esc)+
+        '<div class="bulletin-comment-meta">'+marker+postByline(comment,true)+commentTime(comment)+(comment.author===user.name&&!children.length?button('editComment',Icons.arrow('edit'),'bulletin-comment-edit','data-id="'+esc(post.id)+'" data-comment-id="'+esc(comment.id)+'" aria-label="댓글 수정" title="댓글 수정"'):'')+'</div><p>'+target+esc(comment.content)+'</p>'+Attachments.render(comment.attachments,esc)+
         '<details class="bulletin-reply-form" name="bulletin-reply"><summary><span class="reply-open-label">답글 달기</span><span class="reply-close-label">답글 닫기</span></summary>'+commentComposer(post.id,comment.id)+'</details></li>');
     }
     return '<section class="bulletin-comments" aria-labelledby="bulletinCommentsTitle"><h3 id="bulletinCommentsTitle">댓글 <span>'+comments.length+'</span></h3>'+(list.length?'<ol>'+list.join('')+'</ol>':'<p class="muted">아직 댓글이 없습니다.</p>')+commentComposer(post.id)+'</section>';
