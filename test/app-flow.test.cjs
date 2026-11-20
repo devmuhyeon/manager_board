@@ -755,3 +755,16 @@ test('식사추천은 버튼을 누를 때만 다시 뽑고 검색과 페이지 
  html=h.element('#app').innerHTML;assert.ok(!html.includes('<h2>'+name+'</h2>'));
  assert.equal(JSON.stringify(h.api.read().state),before);
 });
+
+test('끝말잇기 포기는 확인 후 본인 횟수와 직전 작성자의 kill을 표시한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','toyWordChain');h.api.render();
+ assert.match(h.element('#app').innerHTML,/data-toy-action="wordForfeit" disabled/);
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'그림'}});const word=h.api.read().state.toys.word.entries[0];
+ h.api.session('정윤정','toyWordChain');h.api.render();
+ h.context.confirm=()=>false;await h.api.act({dataset:{action:'toy',toyAction:'wordForfeit',previous:word.id}});
+ assert.equal(h.api.read().state.toys.word.entries.length,1);
+ h.context.confirm=()=>true;await h.api.act({dataset:{action:'toy',toyAction:'wordForfeit',previous:word.id}});
+ assert.equal(h.api.read().state.toys.word.rounds[0].by,'정윤정');assert.equal(h.api.read().state.toys.word.rounds[0].killer,'김무현');
+ const html=h.element('#app').innerHTML;assert.match(html,/인원별 점수/);assert.match(html,/정윤정<\/strong> 포기 · 김무현 kill \+1/);
+ assert.match(html,/지금 이어갈 단어<\/small><strong>워크로그/);assert.doesNotThrow(()=>C.validateState(h.api.read().state));
+});

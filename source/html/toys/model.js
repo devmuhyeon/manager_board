@@ -4,12 +4,28 @@
  const wordGame=data=>data?.word?.version===2?data.word:{version:2,seed:'워크로그',entries:[],...(data?.word?{legacyGame:data.word}:{})};
  const text=(value,max=100)=>typeof value==='string'&&value.trim().length>0&&value.length<=max;
  function list(value,min=2,max=12){const values=String(value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(values.length<min||values.length>max||values.some(s=>s.length>40))throw Error(min+'~'+max+'개를 한 줄에 하나씩 입력하세요. (각 40자 이내)');return values;}
+ function validateEntries(entries){
+  if(!Array.isArray(entries)||entries.some(e=>!e||!text(e.id)||!text(e.author)||!/^[가-힣]{2,10}$/.test(e.word)||typeof e.createdAt!=='string'||!Number.isFinite(Date.parse(e.createdAt)))||new Set(entries.map(e=>e.id)).size!==entries.length)throw Error('끝말잇기 자료를 확인하세요.');
+  let last='워크로그';const used=new Set([last]);for(const e of entries){if(used.has(e.word)||!starts(last.slice(-1)).includes(e.word[0]))throw Error('끝말잇기 연결을 확인하세요.');used.add(e.word);last=e.word;}
+ }
+ function scores(data,names=[]){
+  const people=new Map(names.map(name=>[name,{name,forfeits:0,kills:0}]));
+  const get=name=>{if(!people.has(name))people.set(name,{name,forfeits:0,kills:0});return people.get(name);};
+  for(const round of wordGame(data).rounds||[]){get(round.by).forfeits++;if(round.killer)get(round.killer).kills++;}
+  return [...people.values()];
+ }
  function validate(data){
   if(data===undefined)return;
   if(!data||!Array.isArray(data.polls)||data.polls.length>100)throw Error('장난감 저장 자료를 확인하세요.');
   for(const p of data.polls){if(!p||!text(p.id)||!text(p.title,120)||!text(p.author)||typeof p.closed!=='boolean'||!Array.isArray(p.options)||p.options.length<2||p.options.length>12||p.options.some(s=>!text(s,40))||!p.ballots||typeof p.ballots!=='object'||Array.isArray(p.ballots)||Object.entries(p.ballots).some(([name,index])=>!text(name)||!Number.isInteger(index)||index<0||index>=p.options.length))throw Error('투표 자료를 확인하세요.');}
   const w=data.word;if(w){
-   if(w.version===2){if(w.seed!=='워크로그'||!Array.isArray(w.entries)||w.entries.some(e=>!e||!text(e.id)||!text(e.author)||!/^[가-힣]{2,10}$/.test(e.word)||typeof e.createdAt!=='string'||!Number.isFinite(Date.parse(e.createdAt)))||new Set(w.entries.map(e=>e.id)).size!==w.entries.length)throw Error('끝말잇기 자료를 확인하세요.');let last=w.seed;const used=new Set([last]);for(const e of w.entries){if(used.has(e.word)||!starts(last.slice(-1)).includes(e.word[0]))throw Error('끝말잇기 연결을 확인하세요.');used.add(e.word);last=e.word;}}
+   if(w.version===2){
+    if(w.seed!=='워크로그')throw Error('끝말잇기 시작 단어를 확인하세요.');validateEntries(w.entries);
+    if(w.rounds!==undefined){
+     if(!Array.isArray(w.rounds)||new Set(w.rounds.map(r=>r?.id)).size!==w.rounds.length)throw Error('끝말잇기 포기 기록을 확인하세요.');
+     for(const r of w.rounds){if(!r||!text(r.id)||!text(r.by)||typeof r.createdAt!=='string'||!Number.isFinite(Date.parse(r.createdAt)))throw Error('끝말잇기 포기 기록을 확인하세요.');validateEntries(r.entries);const last=r.entries.at(-1);if(!last||r.killer!==(last.author===r.by?'':last.author))throw Error('끝말잇기 점수 기록을 확인하세요.');}
+    }
+   }
    else if(!Array.isArray(w.players)||w.players.some(s=>!text(s,40))||!Array.isArray(w.words)||w.words.some(s=>!/^[가-힣]{2,10}$/.test(s)))throw Error('끝말잇기 자료를 확인하세요.');
   }
   const l=data.ladder;if(l&&(!Array.isArray(l.players)||l.players.length<2||l.players.length>12||!Array.isArray(l.prizes)||l.prizes.length!==l.players.length||[...l.players,...l.prizes].some(s=>!text(s,40))||!Array.isArray(l.rungs)||l.rungs.length>24||l.rungs.some(row=>!Array.isArray(row)||row.some((x,i)=>!Number.isInteger(x)||x<0||x>=l.players.length-1||i>0&&x<=row[i-1]+1))))throw Error('사다리 자료를 확인하세요.');
@@ -32,6 +48,12 @@
    if(word===w.seed||w.entries.some(e=>e.word===word))throw Error('이미 나온 단어입니다.');
    if(!starts(previous.slice(-1)).includes(word[0]))throw Error(starts(previous.slice(-1)).join(' / ')+'(으)로 시작하세요.');
    w.entries.push({id:id(),word,author:user,createdAt:now()});next.word=w;
+  }else if(action==='wordForfeit'){
+   const w=structuredClone(wordGame(next)),last=w.entries.at(-1);
+   if(!last)throw Error('단어가 나온 뒤에 포기할 수 있습니다.');
+   if(input.previous!==undefined&&input.previous!==last.id)throw Error('마지막 단어가 바뀌었습니다. 확인 후 다시 포기하세요.');
+   (w.rounds??=[]).push({id:id(),by:user,killer:last.author===user?'':last.author,createdAt:now(),entries:w.entries});
+   w.entries=[];next.word=w;
   }else if(action==='wordUndo'){
    const w=structuredClone(wordGame(next)),last=w.entries.at(-1);
    if(!last)throw Error('되돌릴 단어가 없습니다.');
@@ -42,5 +64,5 @@
   }else throw Error('지원하지 않는 장난감 동작입니다.');
   validate(next);return next;
  }
- const api={initial,wordGame,list,validate,draw,starts,apply};if(typeof module!=='undefined')module.exports=api;else root.BoardToys=api;
+ const api={initial,wordGame,scores,list,validate,draw,starts,apply};if(typeof module!=='undefined')module.exports=api;else root.BoardToys=api;
 })(typeof window!=='undefined'?window:globalThis);

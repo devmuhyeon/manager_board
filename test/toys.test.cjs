@@ -55,3 +55,21 @@ test('식사추천은 공식 목록에서 무작위로 고르고 직전 추천�
  assert.throws(()=>M.pick('',()=>1));assert.throws(()=>M.pick('',()=>NaN));
  assert.ok(M.search(rows[0].name).some(r=>r.id===rows[0].id));assert.equal(M.search('없는음식점xyz').length,0);
 });
+
+test('포기 횟수와 kill은 로그인 사용자와 직전 작성자로 계산하고 판 기록을 보존한다',()=>{
+ let seq=0;const context={user:'김무현',id:()=> 'event-'+(++seq),now:()=> '2026-11-20T07:00:00Z'};
+ assert.throws(()=>T.apply(undefined,'wordForfeit',{},context),/단어가 나온 뒤/);
+ const first=T.apply(undefined,'wordAdd',{word:'그림'},context),last=first.word.entries.at(-1);
+ assert.throws(()=>T.apply(first,'wordForfeit',{previous:'old'},{...context,user:'정윤정'}),/바뀌었습니다/);
+ const next=T.apply(first,'wordForfeit',{previous:last.id,by:'김무현',killer:'홍소영'},{...context,user:'정윤정'});
+ assert.equal(next.word.entries.length,0);assert.equal(next.word.seed,'워크로그');
+ assert.equal(next.word.rounds[0].by,'정윤정');assert.equal(next.word.rounds[0].killer,'김무현');
+ assert.deepEqual(next.word.rounds[0].entries,first.word.entries);assert.equal(first.word.entries.length,1);
+ const scores=T.scores(next,['김무현','정윤정','홍소영']);
+ assert.deepEqual(scores,[{name:'김무현',forfeits:0,kills:1},{name:'정윤정',forfeits:1,kills:0},{name:'홍소영',forfeits:0,kills:0}]);
+ assert.throws(()=>T.apply(next,'wordForfeit',{previous:last.id},{...context,user:'정윤정'}),/단어가 나온 뒤/);
+ let again=T.apply(next,'wordAdd',{word:'그림'},context);again=T.apply(again,'wordForfeit',{},context);
+ assert.deepEqual(T.scores(again,['김무현'])[0],{name:'김무현',forfeits:1,kills:1});
+ assert.equal(again.word.rounds.length,2);assert.doesNotThrow(()=>T.validate(JSON.parse(JSON.stringify(again))));
+ const invalid=structuredClone(again);invalid.word.rounds[0].killer='홍소영';assert.throws(()=>T.validate(invalid),/점수/);
+});
