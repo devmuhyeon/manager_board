@@ -52,8 +52,8 @@ test('돌림판의 당첨 인덱스·최근 기록과 잘못된 저장 자료를
 
 test('식사추천은 공식 목록에서 무작위로 고르고 직전 추천은 연속으로 나오지 않는다',()=>{
  const M=require('../source/html/toys/meal.js'),rows=M.catalog.restaurants;
- assert.equal(rows.length,497);assert.equal(rows.filter(r=>r.area==='음성').length,303);assert.equal(rows.filter(r=>r.area==='진천').length,194);
- assert.ok(rows.every(r=>r.name&&r.address&&/맹동면 (두성리|동성리)|덕산읍 두촌리/.test(r.lot)));
+ assert.equal(rows.length,303);assert.ok(rows.every(r=>r.area==='음성'));assert.equal(rows.filter(r=>r.area==='진천').length,0);
+ assert.ok(rows.every(r=>r.name&&r.address&&/음성군 맹동면 (두성리|동성리)/.test(r.lot)));
  assert.equal(new Set(rows.map(r=>r.name+'|'+r.address)).size,rows.length);
  assert.equal(M.today(new Date('2026-11-20T14:59:59Z')),'2026-11-20');assert.equal(M.today(new Date('2026-11-20T15:00:00Z')),'2026-11-21');
  const first=M.pick('',()=>0);assert.equal(first.id,rows[0].id);

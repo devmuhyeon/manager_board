@@ -741,7 +741,7 @@ test('끝말잇기는 참가자 설정 없이 내 캐릭터·이름으로 이어
  h.api.session('정윤정','toyWordChain');h.api.render();h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'임금'}});
  assert.deepEqual(h.api.read().state.toys.word.entries.map(e=>e.author),['김무현','정윤정']);
  html=h.element('#app').innerHTML;assert.match(html,/그림/);assert.match(html,/임금/);assert.match(html,/character-avatar/);
- await h.api.act({dataset:{action:'page',page:'toyMeal'}});assert.match(h.element('#app').innerHTML,/497곳/);assert.match(h.element('#app').innerHTML,/오늘의 식사추천/);
+ await h.api.act({dataset:{action:'page',page:'toyMeal'}});assert.match(h.element('#app').innerHTML,/303곳/);assert.match(h.element('#app').innerHTML,/오늘의 식사추천/);
  h.submit({dataset:{toyForm:'mealSearch'},fields:{query:'없는음식점xyz'}});assert.match(h.element('#app').innerHTML,/검색 결과가 없습니다/);
 });
 
