@@ -151,3 +151,11 @@ test('휴가를 save/휴가의 연도별로 나누고 이전 통합 자료와 �
  assert.deepEqual(JSON.parse(await read(handle)).leaves,[]);
  assert.equal(folder.children.get('2027').children.size,2);
 });
+
+test('장난감 내역은 별도 save/toys 모듈로 저장하고 복원한다',async()=>{
+ const dir=directory(),handle=await M.open(dir),T=require('../source/html/toys/model.js');
+ const toys=T.apply(undefined,'pollCreate',{title:'점심',options:'한식\n일식'},{user:'김무현',id:()=> 'poll-1'});
+ await save(handle,{toys});
+ assert.ok(dir.children.get('save').children.has('toys'));
+ assert.deepEqual(JSON.parse(await read(handle)).toys,toys);
+});

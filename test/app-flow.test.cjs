@@ -695,3 +695,41 @@ test('상단 위젯은 페이지 모달을 열지 않고 별도 창 실행기에
 
 
 test('KPI 샘플 10개를 기본 표시하고 실제 업무로 전환해도 저장 상태를 바꾸지 않는다',async()=>{const h=harness(),s=fixture();h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state);await h.api.act({dataset:{action:'page',page:'kpi'}});assert.equal((h.element('#app').innerHTML.match(/data-kpi-id=/g)||[]).length,10);assert.match(h.element('#app').innerHTML,/최근 30일 예시/);await h.api.act({dataset:{action:'kpiMode',mode:'live'}});assert.match(h.element('#app').innerHTML,/집계 대기/);assert.doesNotMatch(h.element('#app').innerHTML,/최근 30일 예시/);assert.equal(JSON.stringify(h.api.read().state),before);});
+
+test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 옮겨도 보존된다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현');
+ await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
+ let html=h.element('#app').innerHTML;
+ const nav=html.slice(html.indexOf('id="nav-toys"'));
+ assert.deepEqual([...nav.matchAll(/data-page="([^"]+)"/g)].map(m=>m[1]),['toyWordChain','toyVote','toyLadder','toyWheel']);
+ h.submit({dataset:{toyForm:'wordStart'},fields:{players:'김무현\n정윤정'}});
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'기차'}});
+ assert.equal(h.api.read().state.toys.word.words[0],'기차');
+ await h.api.act({dataset:{action:'page',page:'toyVote'}});
+ h.submit({dataset:{toyForm:'pollCreate'},fields:{title:'점심 메뉴',options:'한식\n일식'}});
+ const poll=h.api.read().state.toys.polls[0];
+ await h.api.act({dataset:{action:'toy',toyAction:'pollVote',id:poll.id,index:'1'}});
+ assert.equal(h.api.read().state.toys.polls[0].ballots.김무현,1);
+ assert.match(h.element('#app').innerHTML,/1표 · 100%/);
+ await h.api.act({dataset:{action:'page',page:'toyLadder'}});
+ h.submit({dataset:{toyForm:'ladderDraw'},fields:{players:'가\n나',prizes:'당첨\n통과'}});
+ assert.match(h.element('#app').innerHTML,/toy-ladder-path/);
+ await h.api.act({dataset:{action:'page',page:'toyWheel'}});
+ h.submit({dataset:{toyForm:'wheelSpin'},fields:{options:'한식\n일식'}});
+ assert.equal(h.api.read().state.toys.wheel.history.length,1);
+ assert.match(h.element('#app').innerHTML,/is-spinning/);
+ await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
+ assert.match(h.element('#app').innerHTML,/기차/);
+ assert.doesNotThrow(()=>C.validateState(h.api.read().state));
+});
+
+test('좌측 메뉴 이동 시 스크롤과 선택 버튼의 포커스를 유지한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();
+ h.element('.sidebar').scrollTop=196;h.element('.sidebar .nav').scrollTop=280;
+ const button=h.element('.nav [data-page="toyWordChain"]');let focused;
+ button.focus=opts=>{focused=opts;};
+ await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
+ assert.equal(h.element('.sidebar').scrollTop,196);assert.equal(h.element('.sidebar .nav').scrollTop,280);
+ assert.deepEqual(JSON.parse(JSON.stringify(focused)),{preventScroll:true});
+ assert.match(h.element('#app').innerHTML,/data-page="toyWordChain"[^>]*aria-current="page"/);
+});

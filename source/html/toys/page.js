@@ -1,15 +1,36 @@
 (function(root){
  'use strict';
- const items={
-  toyVote:{title:'투표',description:'팀원들과 의견을 모으는 공간입니다.'},
-  toyWordChain:{title:'끝말잇기',description:'팀원들과 함께 끝말잇기를 즐기는 공간입니다.'},
-  toyLadder:{title:'사다리타기',description:'사다리로 순서와 역할을 정하는 공간입니다.'},
-  toyWheel:{title:'돌림판',description:'돌림판으로 가볍게 추첨하는 공간입니다.'}
- };
- function render({page,esc}){
-  const item=items[page];
-  return '<section class="card" aria-label="'+esc(item.title)+'"><div class="empty"><strong>'+esc(item.title)+' · 준비 중</strong><p>'+esc(item.description)+'</p><p class="muted">기능을 추가할 예정입니다.</p></div></section>';
+ const Model=typeof module!=='undefined'?require('./model.js'):root.BoardToys;
+ const items={toyWordChain:{title:'끝말잇기'},toyVote:{title:'투표'},toyLadder:{title:'사다리타기'},toyWheel:{title:'돌림판'}};
+ const colors=['#cbd5fa','#facdde','#c3e8d7','#fbe0ac','#dcd0f2','#bde4ef'];
+ function render({page,esc,state,user,button,Icons,admin=false,ui={}}){
+  const data=state.toys||Model.initial(),item=items[page];
+  const submit=(title)=>'<button class="primary" type="submit">'+title+'</button>';
+  const form=(kind,content)=>'<form class="toy-form" data-toy-form="'+kind+'">'+content+'</form>';
+  const area=(label,name,value,help)=>'<label class="toy-field"><span>'+label+'</span><textarea name="'+name+'" rows="5" maxlength="500" required>'+esc(value)+'</textarea><small>'+help+'</small></label>';
+  const header=(name,note)=>'<div class="toy-panel-head"><strong>'+name+'</strong><small>'+note+'</small></div>';
+  const btn=(action,title,extra='')=>button('toy',title,'','data-toy-action="'+action+'" '+extra);
+  const roster=(state.members||[]).filter(m=>m.active!==false).slice(0,4).map(m=>m.name).join('\n')||user.name+'\n참가자 2';
+  let body='';
+  if(page==='toyVote'){
+   body='<div class="toy-layout"><section class="toy-panel">'+header('새 투표','선택지 2~12개')+form('pollCreate','<label class="toy-field"><span>무엇을 정할까요?</span><input name="title" maxlength="120" placeholder="오늘 점심 메뉴는?" required></label>'+area('선택지','options','한식\n중식\n일식','한 줄에 하나씩 입력하세요.')+submit('투표 만들기'))+'</section><section class="toy-panel">'+header('진행 중인 투표와 결과',data.polls.length+'개')+'<div class="toy-polls">'+(data.polls.map(p=>{
+    const total=Object.keys(p.ballots).length,mine=Object.hasOwn(p.ballots,user.name)?p.ballots[user.name]:-1,can=p.author===user.name||admin;
+    return '<article class="toy-poll"><div class="toy-poll-head"><strong>'+esc(p.title)+'</strong><span class="toy-badge">'+(p.closed?'마감':'진행 중')+'</span></div><small>'+esc(p.author)+' · '+total+'명 참여 · 한 사람 한 표</small><div class="toy-options">'+p.options.map((label,i)=>{const count=Object.values(p.ballots).filter(v=>v===i).length,pct=total?Math.round(count/total*100):0;return '<button type="button" data-action="toy" data-toy-action="pollVote" data-id="'+esc(p.id)+'" data-index="'+i+'" class="toy-option'+(mine===i?' is-selected':'')+'" aria-pressed="'+(mine===i)+'" '+(p.closed?'disabled':'')+'><span class="toy-option-fill" style="width:'+pct+'%"></span><span>'+esc(label)+(mine===i?' · 내 선택':'')+'</span><small>'+count+'표 · '+pct+'%</small></button>';}).join('')+'</div><div class="toy-poll-foot"><small>'+(p.closed?'투표가 종료되었습니다.':'다른 항목을 누르면 내 투표가 변경됩니다.')+'</small>'+(can?'<div>'+btn('pollClose',p.closed?'다시 열기':'마감','data-id="'+esc(p.id)+'"')+btn('pollDelete',Icons.arrow('trash'),'data-id="'+esc(p.id)+'" aria-label="투표 삭제"')+'</div>':'')+'</div></article>';
+   }).join('')||'<p class="toy-empty">아직 투표가 없습니다. 첫 투표를 만들어보세요.</p>')+'</div></section></div>';
+  }else if(page==='toyWordChain'){
+   const w=data.word,last=w?.words.at(-1),turn=w?w.players[w.words.length%w.players.length]:'';
+   body='<div class="toy-layout"><section class="toy-panel">'+header('참가자 설정','한 화면에서 번갈아 플레이')+form('wordStart',area('참가자','players',w?.players.join('\n')||roster,'이름을 한 줄에 한 명씩 입력하세요. 2~12명')+submit(w?'새 게임 시작':'게임 시작'))+'<div class="toy-rules"><strong>게임 규칙</strong><p>한글 2~10글자 · 같은 단어 중복 금지 · 두음법칙 허용</p><small>외부 사전을 연결하지 않습니다. 실제 단어인지는 참가자끼리 확인하고, 잘못 입력했다면 한 수 되돌리기를 사용하세요.</small></div></section><section class="toy-panel">'+header('단어 이어가기',w?w.words.length+'번째 단어까지 성공':'참가자를 정하고 시작하세요')+(w?'<div class="toy-word-stage"><small>'+esc(turn)+'님 차례</small><strong>'+(last?esc(last):'첫 단어를 입력하세요')+'</strong><span>'+(last?esc(Model.starts(last.slice(-1)).join(' / '))+'(으)로 시작':'아무 단어나 시작할 수 있어요')+'</span></div>'+form('wordAdd','<div class="toy-inline"><input id="toyWordInput" name="word" placeholder="단어 입력" maxlength="10" autocomplete="off" required aria-label="끝말잇기 단어">'+submit('입력')+'</div>')+'<div class="toy-scoreboard">'+w.players.map((name,i)=>'<span class="'+(name===turn?'is-current':'')+'">'+esc(name)+' <b>'+w.words.filter((_,j)=>j%w.players.length===i).length+'</b></span>').join('')+'</div><div class="toy-toolbar">'+btn('wordUndo',Icons.arrow('refresh')+' 한 수 되돌리기',w.words.length?'':'disabled')+'</div><ol class="toy-word-history">'+w.words.map((word,i)=>'<li><small>'+esc(w.players[i%w.players.length])+'</small><strong>'+esc(word)+'</strong></li>').reverse().join('')+'</ol>':'<p class="toy-empty">참가자 이름을 입력하고 게임을 시작하세요.</p>')+'</section></div>';
+  }else if(page==='toyLadder'){
+   const l=data.ladder,selected=Number.isInteger(ui.ladderSelected)&&ui.ladderSelected<(l?.players.length||0)?ui.ladderSelected:0;
+   let graphic='';if(l){const n=l.players.length,width=Math.max(400,n*88),x=i=>(i+.5)*width/n,y=r=>24+r*20,route=Model.path(l,selected);graphic='<div class="toy-ladder-scroll"><div style="min-width:'+width+'px"><div class="toy-ladder-labels" style="--toy-count:'+n+'">'+l.players.map((name,i)=>btn('ladderSelect',esc(name),'data-index="'+i+'" aria-pressed="'+(selected===i)+'"')).join('')+'</div><svg class="toy-ladder" viewBox="0 0 '+width+' 388" role="img" aria-label="'+esc(l.players[selected]+'의 결과: '+l.prizes[route.end])+'">'+l.players.map((_,i)=>'<path d="M'+x(i)+' '+y(0)+'V'+y(17)+'"/>').join('')+l.rungs.map((row,r)=>row.map(i=>'<path d="M'+x(i)+' '+y(r+1)+'H'+x(i+1)+'"/>').join('')).join('')+'<polyline class="toy-ladder-path" points="'+route.points.map(([a,b])=>x(a)+','+y(b)).join(' ')+'"/></svg><div class="toy-ladder-labels toy-ladder-prizes" style="--toy-count:'+n+'">'+l.prizes.map((v,i)=>'<span class="'+(route.end===i?'is-selected':'')+'">'+esc(v)+'</span>').join('')+'</div></div></div><div class="toy-result" role="status">'+esc(l.players[selected])+' <strong>'+esc(l.prizes[route.end])+'</strong></div><details class="toy-details"><summary>전체 결과 보기</summary>'+l.players.map((v,i)=>'<p>'+esc(v)+' : <strong>'+esc(l.prizes[Model.path(l,i).end])+'</strong></p>').join('')+'</details>';}
+   body='<div class="toy-layout"><section class="toy-panel">'+header('사다리 설정','참가자와 결과 수를 같게 입력')+form('ladderDraw',area('참가자','players',l?.players.join('\n')||roster,'2~12명, 한 줄에 한 명')+area('결과','prizes',l?.prizes.join('\n')||(roster.split('\n').map((_,i)=>i===0?'당첨':'통과').join('\n')),'참가자 수만큼 입력하세요. 같은 결과도 가능합니다.')+submit(l?'새 사다리 만들기':'사다리 만들기'))+'</section><section class="toy-panel">'+header('사다리 결과','이름을 누르면 경로를 볼 수 있어요')+(graphic||'<p class="toy-empty">사다리를 만들면 경로와 결과가 나타납니다.</p>')+'</section></div>';
+  }else{
+   const w=data.wheel,options=w?.options||['한식','중식','일식','분식'],n=options.length,segment=360/n,angle=w?360-(w.index+.5)*segment:0;
+   body='<div class="toy-layout"><section class="toy-panel">'+header('돌림판 설정','선택지마다 같은 확률')+form('wheelSpin',area('선택지','options',options.join('\n'),'2~12개, 한 줄에 하나씩. 같은 항목을 추가하면 확률이 높아집니다.')+submit('돌림판 돌리기'))+'<div class="toy-rules"><strong>최근 추첨</strong><ol class="toy-wheel-history">'+(w?.history||[]).map((v,i)=>'<li><small>'+(i===0?'최근':i+1+'회 전')+'</small>'+esc(v)+'</li>').join('')+'</ol></div></section><section class="toy-panel">'+header('돌림판','포인터가 가리키는 항목이 당첨')+'<div class="toy-wheel-stage"><span class="toy-wheel-pointer" aria-hidden="true"></span><div class="toy-wheel'+(ui.spin?' is-spinning':'')+'" style="--toy-angle:'+angle+'deg;background:conic-gradient('+options.map((_,i)=>colors[i%colors.length]+' '+i*segment+'deg '+(i+1)*segment+'deg').join(',')+')">'+options.map((v,i)=>'<span style="transform:rotate('+(i+.5)*segment+'deg) translateY(-108px) rotate('+(-(i+.5)*segment-angle)+'deg)">'+esc(v)+'</span>').join('')+'<span class="toy-wheel-hub" aria-hidden="true"></span></div></div><div class="toy-result" role="status">'+(w?'당첨 <strong>'+esc(options[w.index])+'</strong>':'선택지를 입력하고 돌려보세요')+'</div></section></div>';
+  }
+  return '<section class="toy-page" data-toy-page="'+page+'" aria-label="'+item.title+'"><div class="toy-page-bar"><strong>'+item.title+'</strong><small>참여 내역·게임 결과는 내용 저장 시 공용 저장 폴더에 보관됩니다.</small></div><p id="toyError" class="error" role="alert"></p>'+body+'</section>';
  }
- const api={items,render};
- if(typeof module!=='undefined')module.exports=api;else(root.BoardFeaturePages??={}).toys=api;
+ function rememberDrafts(container){return [...(container?.querySelectorAll?.('[data-toy-form]')||[])].map(form=>({kind:form.dataset.toyForm,fields:[...form.querySelectorAll('input,textarea')].map(el=>({name:el.name,value:el.value}))}));}
+ function restoreDrafts(container,drafts){for(const draft of drafts)for(const el of container?.querySelectorAll?.('[data-toy-form="'+draft.kind+'"] input,[data-toy-form="'+draft.kind+'"] textarea')||[]){const field=draft.fields.find(f=>f.name===el.name);if(field)el.value=field.value;}}
+ const api={Model,items,render,rememberDrafts,restoreDrafts};if(typeof module!=='undefined')module.exports=api;else(root.BoardFeaturePages??={}).toys=api;
 })(typeof window!=='undefined'?window:globalThis);

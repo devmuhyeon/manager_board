@@ -1,5 +1,6 @@
 (function (root) {
   'use strict';
+ const Toys=typeof module!=='undefined'?require('../html/toys/model.js'):root.BoardToys;
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const CardExpenses=typeof module!=='undefined'?require('./card-expenses.js'):root.BoardCardExpenses;
   const Organization=typeof module!=='undefined'?require('./organization-chart.js'):root.BoardOrganization;
@@ -205,6 +206,7 @@
     if(s.homeLayouts!==undefined&&(!s.homeLayouts||typeof s.homeLayouts!=='object'||Array.isArray(s.homeLayouts)||Object.values(s.homeLayouts).some(order=>!Array.isArray(order)||order.some(k=>!['memo','thisWeek','nextWeek','deadlines','leaves','work'].includes(k)))))throw new Error('홈 배치 정보가 올바르지 않습니다.');
     if(s.teamAdmins!==undefined&&(!Array.isArray(s.teamAdmins)||s.teamAdmins.some(n=>typeof n!=='string'||!people.some(m=>m.name===n))))throw new Error('팀관리자 정보가 올바르지 않습니다.');
     if(s.teamLeaders!==undefined){if(!s.teamLeaders||typeof s.teamLeaders!=='object'||Array.isArray(s.teamLeaders)||Object.entries(s.teamLeaders).some(([team,name])=>!TEAMS.includes(team)||!people.some(m=>m.name===name&&m.team===team&&m.active!==false)))throw new Error('팀장 지정 정보가 올바르지 않습니다.');}
+    Toys.validate(s.toys);
     LeaveTypes.validate(s.leaveTypes);
     LeavePolicy.validate(s.leavePolicy);
     if(s.leaves!==undefined&&(!Array.isArray(s.leaves)||s.leaves.some(l=>!l||typeof l.id!=='string'||typeof l.owner!=='string'||!date(l.start)||!date(l.end)||!l.start||!l.end||l.start>l.end||typeof l.type!=='string'||!l.type.trim()||l.type.length>40||

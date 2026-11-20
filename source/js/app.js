@@ -32,6 +32,9 @@
   try{dirty=localStorage.getItem(CACHE+'-dirty')==='true';}catch{}
   let filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};
   let selectedTeam='퍼블',editing=null,taskDraft=[];
+  let navFocus=null;
+  const toyDrafts={};
+  const toyUi={ladderSelected:0,spin:false};
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
   let boardTeam='all',boardPostId='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
@@ -143,6 +146,12 @@
   }
   function featureContext(){return {state,user,C,P,W,B,N,O,D,T,Icons,esc,button,options,member,displayProfile,activeMembers,showDialog,sourceRows,relatedRows,projects,f,filters,scope,customerMode,view,boardLayout,boardAssignee,selectedProject,statsQuery,targetHandle,demoSession,peopleSection,peopleSections,readOrganization,leaveOwner,leaveYear,leaveMonth,leaveWeekDate,leaveSelectedDay,leaveView,leaveSearch,annualLeavePanel,leaveTypeCards,vacationRows,leaveTypeEditor,weekBlocks,leaveItems,deadlineItems,scheduleWeekOffset,scopeTabs,filterBar,categorizedTable,projectTable,reportRows,customerCards,boardLayoutToggle,page,boardName,boardMode,boardIncludesDone,closedWeeks,closedLanes,expandedCards,calendarMonth,calendarDay,calendarFilter,userWork,viewTabs,taskRows,sheetTable,connectionCards,expenseService,expenseCardId,expenseMonth,heroRows,heroDesign,personalPanel,organizationChart,peopleRoles,personnelPanel,BoardBriefingCalendar,BoardBriefingDashboard,BoardBriefingHero,BoardTaskBoard,BoardProjectReport,BoardCardExpenses,BoardLeaveTypes,BoardLeavePolicy,BoardLeaveCalendar,BoardMemoCarousel,BoardPreviewData:typeof BoardPreviewData!=='undefined'?BoardPreviewData:undefined};}
   function render(){
+    const oldToy=$('.toy-page');
+    if(oldToy?.dataset?.toyPage)toyDrafts[oldToy.dataset.toyPage]=BoardFeaturePages.toys.rememberDrafts(oldToy);
+    const navScroll=['.sidebar','.sidebar .nav'].map(selector=>({selector,top:$(selector)?.scrollTop||0,left:$(selector)?.scrollLeft||0}));
+    const focusedNav=document.activeElement?.closest?.('.nav button');
+    const restoreNavFocus=navFocus||(focusedNav?{page:focusedNav.dataset.page,section:focusedNav.dataset.section}:null);
+    navFocus=null;
     if(user?.name!==privateAvatarOwner||demoSession)privateAvatarSession=null;
     if(typeof BoardPreviewData!=='undefined'&&developmentSamples&&!demoSession&&!cacheError){const filled=BoardPreviewData.ensure(state,C,P);if(filled!==state){state=filled;changed();}}
     BoardAvatars.sync(state.customAvatars||[]);
@@ -151,12 +160,15 @@
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
-    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:relatedRows(),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
+    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc,state,user,button,Icons,admin:P.isOverallAdmin(state,user.name),ui:toyUi}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:relatedRows(),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
     $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(displayProfile(user))+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">WorkLog / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+renderOnlineProfiles()+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll',Icons.arrow('refresh')+' 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('widgets',Icons.arrow('widget'),'topbar-widget','aria-label="바탕화면 위젯 열기" title="바탕화면 위젯"')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['revisions'].includes(page)?button('export',Icons.arrow('download')+' 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
     BoardBriefingHero.mount(document);
     liveCursors.paint();
+    BoardFeaturePages.toys.restoreDrafts($('.toy-page'),toyDrafts[page]||[]);
+    for(const saved of navScroll){const node=$(saved.selector);if(node){node.scrollTop=saved.top;node.scrollLeft=saved.left;}}
+    if(restoreNavFocus){const selector=restoreNavFocus.page?'.nav [data-page="'+restoreNavFocus.page+'"]':'.nav [data-section="'+restoreNavFocus.section+'"]';$(selector)?.focus?.({preventScroll:true});}
     const newBoard=document.querySelector('.status-board');if(newBoard&&boardScroll){newBoard.scrollLeft=boardScroll.x;newBoard.scrollTop=boardScroll.y;}
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(P.orderedTeams(state),selectedTeam)}</select>`:''}</div>`;}
@@ -302,6 +314,14 @@
   async function act(el){
     if(el.dataset.action==='memoSlide'){BoardMemoCarousel.move(el);return;}
     const a=el.dataset.action;
+    if(a==='toy'){
+      if(!user)return;
+      const action=el.dataset.toyAction;
+      if(action==='ladderSelect'){toyUi.ladderSelected=Number(el.dataset.index);toyUi.spin=false;render();return;}
+      if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;
+      state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,el.dataset,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
+      toyUi.spin=false;changed();render();return;
+    }
     if(demoSession&&['connect','reload','restore','import','sourceFolder','sourceFile','targetFolder','permitFolders','refreshAll','refreshSource','logout','save'].includes(a)){toast('샘플 검토 모드입니다. 변경은 이 화면에서만 유지되며 새로고침하면 초기화됩니다.');return;}
     if(a==='boardMineFromBriefing'){page='work';view='board';boardName=user.name;render();return;}
     if(a==='navSection'){const key=el.dataset.section;closedNav=closedNav.includes(key)?closedNav.filter(x=>x!==key):[...closedNav,key];const children=$('#nav-'+key),closed=closedNav.includes(key);if(children?.classList&&el.setAttribute){children.classList.toggle('is-collapsed',closed);children.inert=closed;children.setAttribute('aria-hidden',String(closed));el.setAttribute('aria-expanded',String(!closed));Icons.setDirection(el,closed?'down':'up');}else render();return;}
@@ -403,7 +423,7 @@
       $('.people-tabs button.active')?.focus();
       return;
     }
-    if(a==='page'){linkedProject='';selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'requestedDue',from:'',to:''};}render();if(page==='stats'||Object.hasOwn(reportViews,page))await refreshWorkflowSource();}
+    if(a==='page'){navFocus={page:el.dataset.page};toyUi.spin=false;linkedProject='';selectedProject='';if($('#editor').open)$('#editor').close();if(el.dataset.page==='people'&&!W.canPersonnel(state,user.name))throw new Error('인원관리 권한이 없습니다.');page=el.dataset.page;view=page==='work'?'board':'category';if(page==='work')filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'due',from:'',to:''};scope='all';filters.customer='';filters.requester='';if(page==='report'){filters={search:'',status:'',teamFilter:'',customer:'',requester:'',dateField:'requestedDue',from:'',to:''};}render();if(page==='stats'||Object.hasOwn(reportViews,page))await refreshWorkflowSource();}
     else if(a==='resetStats'){statsQuery={};render();}
     else if(a==='scheduleWeek'){
       scheduleWeekOffset=el.dataset.step==='current'?0:scheduleWeekOffset+(el.dataset.step==='previous'?-1:1);
@@ -754,6 +774,21 @@
   document.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
   document.addEventListener('submit',e=>{
     const formId=e.target.getAttribute?.('id')??e.target.id;
+    if(e.target.dataset?.toyForm){
+      e.preventDefault();if(!user)return;
+      const action=e.target.dataset.toyForm;
+      if(['wordStart','ladderDraw'].includes(action)&&state.toys?.[action==='wordStart'?'word':'ladder']&&!confirm(action==='wordStart'?'현재 단어 기록을 지우고 새 게임을 시작할까요?':'현재 사다리를 새로 만들까요?'))return;
+      try{
+        const input=Object.fromEntries(new FormData(e.target));
+        state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,input,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
+        toyUi.spin=action==='wheelSpin';if(action==='ladderDraw')toyUi.ladderSelected=0;
+        if(action==='wordAdd'){const field=e.target.querySelector?.('[name="word"]');if(field)field.value='';}
+        if(action==='pollCreate')e.target.reset?.();
+        changed();render();toyUi.spin=false;
+        if(action==='wordAdd'||action==='wordStart')$('#toyWordInput')?.focus?.({preventScroll:true});
+      }catch(err){$('#toyError').textContent=err.message;}
+      return;
+    }
     if(formId==='privateAvatarForm'){
       e.preventDefault();
       if(!canUsePrivateAvatar())return;
