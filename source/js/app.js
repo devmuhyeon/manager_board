@@ -470,7 +470,7 @@
     else if(a==='connections'){await checkConnections();showDialog('<div class="modal-head"><h2>폴더 연결 확인</h2>'+button('close','닫기')+'</div><div class="modal-body">'+connectionCards()+(sourceDir||targetDir?button('permitFolders','기억된 폴더 접근 허용'):'')+'</div>');}
     else if(a==='refreshAll'||a==='refreshSource')await refreshAll();
 
-    else if(a==='widgets'){el.disabled=true;try{await BoardDesktopWidget.launch({location:window.location,fetch:window.fetch.bind(window)});toast('바탕화면 위젯을 별도 창으로 열었습니다.');}finally{el.disabled=false;}}
+    else if(a==='widgets'){el.disabled=true;try{await BoardDesktopWidget.launch({location:window.location,fetch:window.fetch.bind(window),open:window.open?.bind(window),rootUrl:typeof BoardPaths!=='undefined'?BoardPaths.root:undefined});toast('위젯을 별도 창으로 열었습니다.');}finally{el.disabled=false;}}
     else if(a==='preferences')preferences();
     else if(a==='addAvatar')showDialog('<div class="modal-head"><h2>캐릭터 추가</h2>'+button('close','닫기')+'</div><form id="addAvatarForm"><div class="modal-body"><div class="field"><label for="avatarName">캐릭터 이름</label><input id="avatarName" name="name" maxlength="40" required></div><div class="field"><label for="avatarFile">캐릭터 이미지</label><input id="avatarFile" name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div><p>PNG·JPG·WebP 최대 10MB, 움직이는 GIF 최대 2MB. 추가하면 내 캐릭터로 선택되고 핑크 브리핑이 생성됩니다.</p><div id="avatarError" class="error" role="alert"></div></div><div class="modal-foot"><button class="primary" id="avatarSubmit">추가하고 사용</button></div></form>');
     else if(a==='avatarSettings')openAvatarPicker();

@@ -2,8 +2,26 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 test('위젯 버튼은 페이지 팝업 대신 로컬 독립 실행기로 요청한다',async()=>{
  let received;await Widget.launch({location:new URL('http://127.0.0.1:49271/source/html/index.html'),fetch:async(url,options)=>{received={url,options};return {ok:true};}});
  assert.equal(received.url,'http://127.0.0.1:49271/__worklog/widget');assert.equal(received.options.method,'POST');assert.equal(received.options.headers['X-WorkLog-Widget'],'open');assert.equal(received.options.credentials,'same-origin');
- for(const url of ['https://devmuhyeon.github.io/manager_board/','file:///C:/WorkLog/index.html','http://127.0.0.1:4173/'])await assert.rejects(Widget.launch({location:new URL(url),fetch:()=>{throw Error('Must not request');}}),/Start-Widget.bat/);
- await assert.rejects(Widget.launch({location:new URL('http://localhost:49271/'),fetch:async()=>({ok:false})}),/Start-Widget.bat/);
+});
+test('웹·파일에서도 클릭 즉시 이동 가능한 작은 별도 창을 열고 열린 창을 재사용한다',async()=>{
+ for(const [address,target] of [
+  ['https://devmuhyeon.github.io/manager_board/source/html/index.html?preview=1','https://devmuhyeon.github.io/manager_board/source/html/widgets/index.html'],
+  ['file:///C:/WorkLog/source/html/index.html','file:///C:/WorkLog/source/html/widgets/index.html'],
+  ['http://127.0.0.1:4173/','http://127.0.0.1:4173/source/html/widgets/index.html']
+ ]){
+  let received,focus=0;const handle={closed:false,focus(){focus++;}},args={location:new URL(address),fetch:()=>{throw Error('Must not request');},open:(...values)=>{received=values;return handle;}};
+  const pending=Widget.launch(args);assert.equal(received[0],target);assert.match(received[2],/popup=yes,width=400,height=520/);assert.equal(handle.opener,null);await pending;
+  await Widget.launch({...args,open:()=>{throw Error('Must reuse');}});assert.equal(focus,2);handle.closed=true;
+ }
+});
+test('이전 로컬 실행기·연결 실패·응답 지연도 별도 창으로 열고 차단 시 오류를 표시한다',async()=>{
+ for(const fetch of [async()=>({ok:false,status:404}),async()=>{throw Error('Disconnected');},()=>new Promise(()=>{})]){
+  const handle={closed:false,focus(){}};let opened=0;
+  await Widget.launch({location:new URL('http://localhost:49271/source/html/index.html'),fetch,open:()=>{opened++;return handle;},requestTimeout:10});assert.equal(opened,1);handle.closed=true;
+ }
+ await assert.rejects(Widget.launch({location:new URL('https://example.com/source/html/index.html'),open:()=>null}),/팝업을 허용/);
+ await Widget.launch({location:new URL('http://localhost:49271/'),fetch:async()=>({ok:false,status:429}),open:()=>{throw Error('Must not duplicate');}});
+ assert.equal(Widget.pageUrl(new URL('https://example.com/index.html'),'https://example.com/nested/'),'https://example.com/nested/source/html/widgets/index.html');
 });
 test('바탕화면 실행기는 메인 페이지와 분리된 Edge 앱 창을 실행한다',{skip:process.platform!=='win32'},()=>{
  const folder=path.resolve('test/results'),id=crypto.randomUUID(),script=path.join(folder,'widget-launch-'+id+'.ps1'),output=path.join(folder,'widget-args-'+id+'.json');fs.mkdirSync(folder,{recursive:true});
