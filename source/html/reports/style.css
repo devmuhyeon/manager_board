@@ -22,3 +22,5 @@ html[data-workplace-theme][data-style] .content .kpi-indicator{display:grid;alig
 @media(max-width:1200px){.kpi-common-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi-overview>div{align-items:start;flex-direction:column}}
 @media(max-width:900px){.kpi-role-grid{grid-template-columns:1fr}.kpi-role-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi-toolbar{align-items:start;flex-wrap:wrap}}
 @media(max-width:600px){.kpi-common-grid,.kpi-overview,.kpi-role-metrics{grid-template-columns:1fr}.kpi-overview>div{flex-direction:row}}
+html[data-workplace-theme][data-style] .content .kpi-overview strong{color:#263040}
+html[data-workplace-theme][data-style] .content :is(.kpi-definition,.kpi-references)>summary::after{display:none}
