@@ -13,7 +13,7 @@
     row['작업내용_'+role]='작업시작일자: '+day(-20+index+part)+(open?'':'\n작업종료일자: '+day(-16+index+part+index%4));
    });return row;
   });
-  return {rows:C.importRows(C.emptyState(),raw,today).state.projects,measurements:{requirements:{passed:46,total:50},planningApproval:{passed:17,total:20},designSystem:{passed:96,total:100},designApproval:{passed:25,total:28},accessibility:{passed:116,total:120},compatibility:{passed:71,total:72}}};
+  return {rows:C.importRows(C.emptyState(),raw,today).state.projects};
  }
  const api={create};if(typeof module!=='undefined')module.exports=api;else root.BoardKpiSamples=api;
 })(typeof window!=='undefined'?window:globalThis);

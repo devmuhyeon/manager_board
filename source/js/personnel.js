@@ -83,7 +83,7 @@
       if(involved){Object.assign(p,fields);if(p.overrides)Object.assign(p.overrides,structuredClone(fields));}
       return true;
     });
-    s.leaves=(s.leaves||[]).filter(l=>l.owner!==name);if(s.homeLayouts)delete s.homeLayouts[name];for(const values of Object.values(s.leaveAllowances||{}))delete values[name];delete s.personal[name];delete s.accounts[name];return s;
+    s.leaves=(s.leaves||[]).filter(l=>l.owner!==name);if(s.homeLayouts)delete s.homeLayouts[name];for(const map of [s.leaveAllowances,s.leaveAllowanceModes])for(const values of Object.values(map||{}))delete values[name];delete s.personal[name];delete s.accounts[name];return s;
   }
   function removeMember(state,name,retention){
     if(isOverallAdmin(state,name)&&(state.overallAdmins||[overallAdmin(state)]).filter(n=>n!==name&&state.members.some(m=>m.name===n&&m.active!==false)).length===0)throw new Error('마지막 관리자는 퇴사 처리할 수 없습니다. 다른 관리자를 먼저 지정하세요.');

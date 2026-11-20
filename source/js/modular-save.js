@@ -7,7 +7,7 @@
  async function write(dir,name,text){const file=await dir.getFileHandle(name,{create:true}),stream=await file.createWritable();try{await stream.write(text);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}}
  const BulletinStorage=typeof module!=='undefined'?require('../html/organization/board/storage.js'):root.BoardBulletinStorage;
  const {readPosts,writePosts}=BulletinStorage.create({read,write});
- const leaveKeys=['leaves','leaveAllowances','leaveTypes','leavePolicy'];
+ const leaveKeys=['leaves','leaveAllowances','leaveTypes','leavePolicy','leaveAllowanceModes'];
  const validYear=year=>/^\d{4}$/.test(year);
  async function readLeaves(directory,parts){
   if(!parts||!Array.isArray(parts.fields)||parts.fields.some(key=>!leaveKeys.includes(key))||
@@ -31,14 +31,14 @@
   if(parts.settings){
    if(!ID.test(parts.settings))throw Error('휴가 설정 저장 경로가 올바르지 않습니다.');
    const dir=await folder.getDirectoryHandle('설정'),settings=JSON.parse(await read(await dir.getFileHandle(parts.settings+'.json')));
-   if(!settings||Object.keys(settings).some(key=>!['leaveTypes','leavePolicy'].includes(key)))throw Error('휴가 설정 자료를 확인하세요.');
+   if(!settings||Object.keys(settings).some(key=>!['leaveTypes','leavePolicy','leaveAllowanceModes'].includes(key)))throw Error('휴가 설정 자료를 확인하세요.');
    Object.assign(result,settings);
   }
   return result;
  }
  const leaveYearData=(state,year)=>({leaves:(state.leaves||[]).filter(leave=>leave.start.slice(0,4)===year),
   allowances:state.leaveAllowances?.[year]||{},hasAllowances:Object.hasOwn(state.leaveAllowances||{},year)});
- const leaveSettings=state=>Object.fromEntries(['leaveTypes','leavePolicy'].filter(key=>Object.hasOwn(state,key)).map(key=>[key,state[key]]));
+ const leaveSettings=state=>Object.fromEntries(['leaveTypes','leavePolicy','leaveAllowanceModes'].filter(key=>Object.hasOwn(state,key)).map(key=>[key,state[key]]));
  async function writeLeaves(directory,state,old,previousParts){
   const fields=leaveKeys.filter(key=>Object.hasOwn(state,key));
   if(!fields.length)return undefined;

@@ -10,7 +10,14 @@
  function classificationKey(p){const c=C.classification(p);return [c.level1,c.level2,c.level3].filter(Boolean).join(' > ');}
  function group(rows,key=p=>classificationKey(p)){const groups=new Map();for(const row of rows){const label=key(row)||'미분류';if(!groups.has(label))groups.set(label,[]);groups.get(label).push(row);}return [...groups].sort(([a],[b])=>a.localeCompare(b,'ko'));}
  function revisionDraft(s,parentId,actor){const parent=s.projects.find(p=>p.id===parentId);if(!parent)throw new Error('원본 과업을 찾을 수 없습니다.');const rootId=parent.parentProjectId||parent.id,original=s.projects.find(p=>p.id===rootId);if(!original)throw new Error('원본 과업이 없습니다.');const p=C.effective(original),number=Math.max(0,...s.projects.filter(x=>x.parentProjectId===rootId).map(x=>Number(x.revisionNumber)||0))+1;return {...structuredClone(p),id:C.uid(),source:'manual',parentProjectId:rootId,revisionNumber:number,title:p.title+' · '+number+'차 수정',status:'예정',requested:C.today(),requestedDue:'',started:C.today(),due:'',logs:[],overrides:{},description:'',tasks:(p.tasks||[]).map(t=>({...t,id:C.uid(),status:'예정',started:C.today(),due:'',notes:'',assignees:t.assignees.length?t.assignees:[actor]}))};}
- function setAllowance(s,actor,owner,year,days){if(!(actor===owner&&s.members.some(m=>m.name===actor&&m.active!==false))&&!P.canManage(s,actor))throw new Error('본인 또는 전체관리자만 연차 총수를 설정할 수 있습니다.');days=Number(days);year=String(year);if(!/^\d{4}$/.test(year)||!Number.isFinite(days)||days<0||days>366||days*2%1)throw new Error('연차 총수는 0~366일, 0.5일 단위로 입력하세요.');const next=structuredClone(s);next.leaveAllowances??={};next.leaveAllowances[year]??={};next.leaveAllowances[year][owner]=days;return next;}
+ function setAllowance(s,actor,owner,year,days,mode='manual'){
+  if(!(actor===owner&&s.members.some(m=>m.name===actor&&m.active!==false))&&!P.canManage(s,actor))throw new Error('본인 또는 전체관리자만 연차 총수를 설정할 수 있습니다.');
+  year=String(year);days=Number(days);
+  if(!/^\d{4}$/.test(year)||!['auto','manual'].includes(mode)||mode==='manual'&&(!Number.isFinite(days)||days<0||days>366||days*2%1))throw new Error('연차 총수는 0~366일, 0.5일 단위로 입력하세요.');
+  const next=structuredClone(s);next.leaveAllowanceModes??={};next.leaveAllowanceModes[year]??={};next.leaveAllowanceModes[year][owner]=mode;
+  if(mode==='manual'){next.leaveAllowances??={};next.leaveAllowances[year]??={};next.leaveAllowances[year][owner]=days;}
+  return next;
+ }
  function leaveLedger(s,owner,year,today=C.today()){
   const excluded=new Map(),usedDates=new Map(),period=LeavePolicy.period(s,owner,year,today);
   let calendarSupported=holidayCalendar(period.start.slice(0,4))!==null&&holidayCalendar(period.end.slice(0,4))!==null;
@@ -38,8 +45,10 @@
   const used=entries.filter(entry=>entry.date<=today).reduce((sum,entry)=>sum+entry.days,0);
   const planned=entries.filter(entry=>entry.date>today).reduce((sum,entry)=>sum+entry.days,0);
   const borrowed=entries.filter(entry=>entry.borrowed).reduce((sum,entry)=>sum+entry.days,0);
-  const allowance=s.leaveAllowances?.[year]?.[owner]??LeavePolicy.cycleAllowance(s,owner,year,today);
-  return {period,allowance,used,planned,borrowed,remaining:allowance===null?null:allowance-used,
+  const calculatedAllowance=LeavePolicy.cycleAllowance(s,owner,year,today),fixed=s.leaveAllowances?.[year]?.[owner],mode=s.leaveAllowanceModes?.[year]?.[owner];
+  const allowanceMode=mode==='manual'||mode===undefined&&calculatedAllowance===null&&fixed!==undefined?'manual':'auto';
+  const allowance=allowanceMode==='manual'?(fixed??null):calculatedAllowance;
+  return {period,allowance,calculatedAllowance,allowanceMode,used,planned,borrowed,remaining:allowance===null?null:allowance-used,
    available:allowance===null?null:allowance-used-planned,entries,calendarSupported,
    excluded:[...excluded.values()].sort((a,b)=>a.date.localeCompare(b.date))};
  }

@@ -54,6 +54,7 @@
       '<progress max="'+Math.max(1,total)+'" value="'+Math.max(0,total-used)+'" aria-label="잔여 연차"></progress>'+
       '</div>'+
       '<div class="annual-totals">'+tiles.map(([label,value],index)=>'<div><small>'+label+'</small><strong>'+(index===3?value:number(value))+'</strong></div>').join('')+'</div></div>'+
+      '<p class="leave-allowance-mode">'+(ledger.allowanceMode==='manual'?'수동 총수 적용 중 · 연차 총수 설정에서 자동 계산으로 변경할 수 있습니다.':ledger.allowance===null?'입사일 등록 및 연차 정책의 자동 적용 여부를 확인하세요.':'입사일·근속연수 기준 자동 계산')+'</p>'+
       (!ledger.calendarSupported?'<p class="error leave-calendar-warning" role="alert">'+leaveYear+'년 공휴일 자료가 없어 주말만 제외한 잠정 일수입니다.</p>':'')+'</section>';
   }
   function leaveTypeCards(context){
@@ -112,7 +113,7 @@
       '<div class="leave-policy-grants">'+grants+'</div>'+
       '<div class="leave-policy-cap"><strong>최대 부여 구간</strong><label><input name="capFrom" type="number" min="1" max="80" required value="'+esc(policy.cap.from)+'">년 이상</label>'+
       '<label><input name="capDays" type="number" min="0" max="366" step=".5" required value="'+esc(policy.cap.days)+'">일 부여</label></div>'+
-      '<p class="muted">법정 기본값은 1~2년 15일, 3~4년 16일이며 이후 2년마다 1일씩 가산해 21년 이상 25일입니다. 개인별 연차 총수 설정이 있으면 그 값을 우선합니다.</p>'+
+      '<p class="muted">법정 기본값은 1~2년 15일, 3~4년 16일이며 이후 2년마다 1일씩 가산해 21년 이상 25일입니다. 개인별 계산 방식을 직접 입력으로 선택한 경우에만 수동 총수를 우선합니다.</p>'+
       '<h3>적용 멤버와 입사일</h3><div class="leave-policy-members">'+members.map((person,index)=>'<label><span>'+esc(N.teamLabel(person.team))+' · '+esc(person.name)+
         '</span><input type="hidden" name="hireName'+index+'" value="'+esc(person.name)+'"><input type="date" name="hire'+index+'" aria-label="'+esc(person.name)+' 입사일" value="'+esc(policy.hires[person.name]||'')+'"></label>').join('')+'</div>'+
       '<p class="muted">자동 계산은 출근율 80% 이상·매월 개근을 전제로 합니다. 근태 예외는 개인별 연차 총수로 반영하세요.</p>'+

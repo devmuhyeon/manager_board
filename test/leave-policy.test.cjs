@@ -39,3 +39,14 @@ test('범위 중첩과 법정 미달값을 막고 회사의 추가 부여와 이
  assert.deepEqual(converted.cap,{from:21,days:25});assert.deepEqual(old,snapshot);
  assert.equal(L.allowance({leavePolicy:old},'A','2026','2026-11-18'),15);
 });
+
+test('정책을 저장하지 않아도 멤버 입사일로 월별 발생·근속연수를 자동 계산한다',()=>{
+ const state={members:[{name:'A',hireDate:'2026-06-15'},{name:'B',hireDate:'2018-06-15'}]};
+ const before=JSON.stringify(state);assert.equal(L.read(state).enabled,true);assert.equal(L.read(state).hires.A,'2026-06-15');
+ assert.equal(L.allowance(state,'A','2026','2026-07-14'),0);assert.equal(L.allowance(state,'A','2026','2026-07-15'),1);
+ assert.equal(L.allowance(state,'A','2026','2026-11-20'),5);assert.equal(L.allowance(state,'A','2027','2027-06-15'),15);
+ assert.equal(L.allowance(state,'B','2026','2026-11-20'),18);assert.equal(JSON.stringify(state),before);
+ const configured={...state,leavePolicy:{version:2,enabled:true,...L.statutory(),hires:{B:'2020-06-15'}}};
+ assert.equal(L.read(configured).hires.A,'2026-06-15');assert.equal(L.allowance(configured,'B','2026','2026-11-20'),17);
+ configured.leavePolicy.enabled=false;assert.equal(L.allowance(configured,'A','2026','2026-11-20'),null);
+});

@@ -47,7 +47,7 @@
   let peopleSection='org';
   const expenseService=BoardCardExpenses.create({uid:C.uid,isAdmin:P.isOverallAdmin});
   let expenseCardId='',expenseMonth=BoardCardExpenses.today().slice(0,7);
-  let scheduleWeekOffset=0,statsQuery={},kpiMode='sample';
+  let scheduleWeekOffset=0,statsQuery={},kpiMode='live';
   let linkedProject='',selectedProject='',leaveView='table',leaveMonth=C.today().slice(0,7),leaveSearch='';
   let leaveWeekDate=C.today(),leaveSelectedDay='';
   let leaveYear=C.today().slice(0,4),leaveOwner='';
@@ -160,7 +160,7 @@
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
-    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc,state,user,button,Icons,admin:P.isOverallAdmin(state,user.name),ui:toyUi,D,displayProfile,onlinePeople:presence.snapshot().people,memberOrder:P.orderedMembers(state)}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:relatedRows(),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
+    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc,state,user,button,Icons,admin:P.isOverallAdmin(state,user.name),ui:toyUi,D,displayProfile,onlinePeople:presence.snapshot().people,memberOrder:P.orderedMembers(state)}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:sourceRows({forReports:true}),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
     $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(displayProfile(user))+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">WorkLog / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+renderOnlineProfiles()+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll',Icons.arrow('refresh')+' 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('widgets',Icons.arrow('widget'),'topbar-widget','aria-label="바탕화면 위젯 열기" title="바탕화면 위젯"')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['revisions'].includes(page)?button('export',Icons.arrow('download')+' 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
@@ -384,10 +384,11 @@
     if(a==='leaveBorrow'){openLeave('','annual',true,leaveOwner||user.name);return;}
     if(a==='leaveAllowance'){
       const ledger=W.leaveLedger(state,leaveOwner,leaveYear);
+      const manual=ledger.allowanceMode==='manual';
       showDialog('<div class="modal-head"><h2>연차 총수 설정</h2>'+button('close','닫기')+'</div><form id="allowanceForm"><div class="modal-body">'+
-        '<p>'+esc(leaveOwner)+' · '+esc(leaveYear)+'년</p><label class="field" for="allowanceDays">연차 총수 (일)<input name="days" id="allowanceDays" type="number" min="0" max="366" step="0.5" required value="'+
-        (ledger.allowance??'')+'"></label><p class="error" id="allowanceError" role="alert"></p></div><div class="modal-foot">'+button('close','취소')+
-        '<button class="primary" type="submit">저장</button></div></form>');
+        '<p>'+esc(leaveOwner)+' · '+esc(leaveYear)+'년</p><label class="field">계산 방식<select name="mode" id="allowanceMode"><option value="auto" '+(!manual?'selected':'')+'>입사일·연차 정책으로 자동 계산</option><option value="manual" '+(manual?'selected':'')+'>총수 직접 입력</option></select></label>'+
+        '<p class="muted">자동 계산: '+(ledger.calculatedAllowance===null?'입사일 등록 및 자동 적용 정책을 확인하세요.':ledger.calculatedAllowance+'일')+'</p>'+
+        '<label class="field" for="allowanceDays">수동 총수 (일)<input name="days" id="allowanceDays" type="number" min="0" max="366" step="0.5" '+(manual?'required':'disabled')+' value="'+(ledger.allowance??'')+'"></label><p class="muted">자동 계산에서는 입사 기념일과 근속연수에 따라 총수가 갱신됩니다. 직접 입력을 선택한 경우에만 고정 총수를 적용합니다.</p><p class="error" id="allowanceError" role="alert"></p></div><div class="modal-foot">'+button('close','취소')+'<button class="primary" type="submit">저장</button></div></form>');
       return;
     }
     if(a==='leaveTypeAdd'||a==='leaveTypeEdit'||a==='leaveTypeManage'){
@@ -819,7 +820,7 @@
         if(!P.isOverallAdmin(state,user?.name))throw Error('WorkLog 관리자만 연차 정책을 설정할 수 있습니다.');
         const policy=policyFormData(e.target);
         BoardLeavePolicy.validate(policy);
-        state.leavePolicy=policy;changed();$('#editor').close();render();toast('연차 정책을 저장했습니다.');
+        state.leavePolicy=policy;for(const person of state.members)person.hireDate=policy.hires[person.name]||'';changed();$('#editor').close();render();toast('연차 정책을 저장했습니다.');
       }catch(err){$('#leavePolicyError').textContent=err.message;}
       return;
     }
@@ -831,7 +832,7 @@
       }catch(err){$('#leaveTypeError').textContent=err.message;}
       return;
     }
-    if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'));changed();$('#editor').close();render();toast('연차 총수를 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
+    if(formId==='allowanceForm'){e.preventDefault();try{state=W.setAllowance(state,user.name,leaveOwner,leaveYear,new FormData(e.target).get('days'),new FormData(e.target).get('mode')||'manual');changed();$('#editor').close();render();toast('연차 계산 방식을 저장했습니다. 공용 파일 반영은 내용 저장을 눌러 주세요.');}catch(err){$('#allowanceError').textContent=err.message;}}
     if(formId==='contentOptionForm'){e.preventDefault();try{const data=new FormData(e.target);state=W.editOption(state,user.name,data.get('level'),data.get('value'));changed();contentOptionsDialog();}catch(err){$('#contentOptionError').textContent=err.message;}}
     if(personnelForms.has(formId)&&!P.isOverallAdmin(state,user?.name)){
       e.preventDefault();
@@ -942,6 +943,7 @@
     if(formId==='removeMemberForm'){e.preventDefault();try{const d=new FormData(e.target);if(!d.has('acknowledge'))throw new Error('자료 처리 방식을 확인해 주세요.');if(d.get('name')===user.name)throw new Error('본인의 퇴사 처리는 다른 사용자가 진행해 주세요.');state=P.removeMember(state,d.get('name'),d.get('retention'));syncRoster();changed();$('#editor').close();render();toast('퇴사 처리를 임시 반영했습니다. 내용 저장으로 파일에 반영하세요.');}catch(err){$('#removeError').textContent=err.message;}}
   });
   document.addEventListener('change',async e=>{
+    if(e.target.id==='allowanceMode'){$('#allowanceDays').disabled=e.target.value!=='manual';$('#allowanceDays').required=e.target.value==='manual';return;}
     const el=e.target;
     if(el.type==='file'&&el.name==='attachments'){const output=el.closest('form')?.querySelector('.attachment-selection');if(output)output.textContent=[...el.files].map(file=>file.name).join(' · ');}
     if(el.id==='expenseCard'){

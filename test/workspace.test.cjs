@@ -31,3 +31,14 @@ test('연말을 넘긴 선사용도 날짜별 다음 연도에 배분하고 반�
  assert.throws(()=>P.saveLeave(base(),'김무현',{owner:'김무현',type:'특별휴가',start:'2026-11-18',end:'2026-11-18',borrowNextYear:true}),/차감하는 휴가/);
 });
 test('HTML과 CSS의 로컬 파일 참조가 재배치된 폴더에 존재한다',()=>{const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'source/html/index.html'),'utf8');const resources=JSON.parse(html.match(/<script id="runtimeResources" type="application\/json">(.*?)<\/script>/s)[1]);for(const ref of [...resources.styles.map(s=>s.path),...resources.scripts])assert.ok(fs.existsSync(path.join(root,ref)),ref);const css=fs.readFileSync(path.join(root,'source/css/theme.css'),'utf8');assert.ok(css.includes('../font/PretendardVariable.woff2'));for(const name of ['source/html','source/js','source/images','source/font','source/css','test','prg','process','dist'])assert.ok(fs.statSync(path.join(root,name)).isDirectory());});
+
+test('자동 총연차는 이전 고정값에 막히지 않고 수동 선택과 자동 복귀를 구분한다',()=>{
+ let state=base();state.members.find(m=>m.name==='김무현').hireDate='2026-06-15';state.leaveAllowances={'2026':{'김무현':15}};
+ assert.equal(W.leaveLedger(state,'김무현','2026','2026-11-20').allowance,5);assert.equal(state.leaveAllowances['2026'].김무현,15);
+ state=W.setAllowance(state,'김무현','김무현','2026',20);
+ assert.equal(W.leaveLedger(state,'김무현','2026','2026-11-20').allowance,20);
+ state=W.setAllowance(state,'김무현','김무현','2026',null,'auto');
+ const ledger=W.leaveLedger(state,'김무현','2026','2026-11-20');assert.equal(ledger.allowance,5);assert.equal(ledger.calculatedAllowance,5);assert.equal(ledger.allowanceMode,'auto');assert.equal(state.leaveAllowances['2026'].김무현,20);
+ assert.equal(W.leaveLedger(state,'김무현','2026','2026-12-15').allowance,6);assert.doesNotThrow(()=>C.validateState(state));
+ assert.throws(()=>W.setAllowance(state,'정윤정','김무현','2026',null,'auto'),/본인/);
+});

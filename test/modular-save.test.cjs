@@ -159,3 +159,9 @@ test('장난감 내역은 별도 save/toys 모듈로 저장하고 복원한다',
  assert.ok(dir.children.get('save').children.has('toys'));
  assert.deepEqual(JSON.parse(await read(handle)).toys,toys);
 });
+
+test('연차 자동·수동 계산 방식도 휴가 설정에 분리 저장하고 복원한다',async()=>{
+ const dir=directory(),handle=await M.open(dir),state={leaveAllowanceModes:{'2026':{'김무현':'auto','정윤정':'manual'}},leaveAllowances:{'2026':{'김무현':15,'정윤정':20}}};
+ await save(handle,state);assert.deepEqual(JSON.parse(await read(handle)),state);
+ assert.ok(dir.children.get('save').children.get('휴가').children.has('설정'));
+});

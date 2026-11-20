@@ -694,7 +694,7 @@ test('관리자가 휴가 유형 순서를 바꾸면 카드와 등록창도 같�
 test('상단 위젯은 페이지 모달을 열지 않고 별도 창 실행기에 연결한다',async()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');let request;h.context.window.location=new URL('http://127.0.0.1:49271/source/html/index.html');h.context.window.fetch=async(url,options)=>{request={url,options};return {ok:true};};const button={dataset:{action:'widgets'}};await h.api.act(button);assert.equal(request.options.method,'POST');assert.ok(request.url.endsWith('/__worklog/widget'));assert.equal(h.element('#editor').open,false);assert.equal(button.disabled,false);});
 
 
-test('KPI 샘플 10개를 기본 표시하고 실제 업무로 전환해도 저장 상태를 바꾸지 않는다',async()=>{const h=harness(),s=fixture();h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state);await h.api.act({dataset:{action:'page',page:'kpi'}});assert.equal((h.element('#app').innerHTML.match(/data-kpi-id=/g)||[]).length,10);assert.match(h.element('#app').innerHTML,/최근 30일 예시/);await h.api.act({dataset:{action:'kpiMode',mode:'live'}});assert.match(h.element('#app').innerHTML,/집계 대기/);assert.doesNotMatch(h.element('#app').innerHTML,/최근 30일 예시/);assert.equal(JSON.stringify(h.api.read().state),before);});
+test('KPI 20개는 업무 데이터를 기본 표시하고 샘플 전환은 저장 상태를 바꾸지 않는다',async()=>{const h=harness(),s=fixture();h.api.seed(s);h.api.session('김무현');const before=JSON.stringify(h.api.read().state);await h.api.act({dataset:{action:'page',page:'kpi'}});assert.equal((h.element('#app').innerHTML.match(/data-kpi-id=/g)||[]).length,20);assert.doesNotMatch(h.element('#app').innerHTML,/최근 30일 예시/);await h.api.act({dataset:{action:'kpiMode',mode:'sample'}});assert.match(h.element('#app').innerHTML,/최근 30일 예시/);await h.api.act({dataset:{action:'kpiMode',mode:'live'}});assert.match(h.element('#app').innerHTML,/집계 대기/);assert.doesNotMatch(h.element('#app').innerHTML,/최근 30일 예시/);assert.equal(JSON.stringify(h.api.read().state),before);});
 
 test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 옮겨도 보존된다',async()=>{
  const h=harness();h.api.seed(fixture());h.api.session('김무현');
@@ -767,4 +767,13 @@ test('끝말잇기 포기는 확인 후 본인 횟수와 직전 작성자의 kil
  assert.equal(h.api.read().state.toys.word.rounds[0].by,'정윤정');assert.equal(h.api.read().state.toys.word.rounds[0].killer,'김무현');
  const html=h.element('#app').innerHTML;assert.match(html,/인원별 점수/);assert.match(html,/정윤정<\/strong> 포기 · 김무현 kill \+1/);
  assert.match(html,/지금 이어갈 단어<\/small><strong>워크로그/);assert.doesNotThrow(()=>C.validateState(h.api.read().state));
+});
+
+test('연차 현황과 설정 팝업은 자동 계산 기본값과 수동·자동 전환을 표시한다',async()=>{
+ const h=harness(),state=fixture();state.members.find(m=>m.name==='김무현').hireDate='2020-01-01';state.leaveAllowances={'2026':{'김무현':15}};
+ h.api.seed(state);h.api.session('김무현','leaves');h.api.render();assert.match(h.element('#app').innerHTML,/입사일·근속연수 기준 자동 계산/);
+ await h.api.act({dataset:{action:'leaveAllowance'}});assert.match(h.element('#editor').innerHTML,/value="auto" selected/);assert.match(h.element('#editor').innerHTML,/자동 계산: 17일/);
+ h.submit({id:'allowanceForm',fields:{mode:'manual',days:'22'}});assert.equal(h.api.read().state.leaveAllowanceModes['2026'].김무현,'manual');assert.match(h.element('#app').innerHTML,/수동 총수 적용 중/);
+ await h.api.act({dataset:{action:'leaveAllowance'}});h.submit({id:'allowanceForm',fields:{mode:'auto'}});
+ assert.match(h.element('#app').innerHTML,/입사일·근속연수 기준 자동 계산/);assert.equal(h.api.read().state.leaveAllowances['2026'].김무현,22);assert.doesNotThrow(()=>C.validateState(h.api.read().state));
 });

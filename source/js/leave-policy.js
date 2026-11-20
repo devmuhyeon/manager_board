@@ -5,12 +5,13 @@
  const statutoryDays=tenure=>Math.min(25,15+Math.floor((tenure-1)/2));
  const statutory=()=>({grants:Array.from({length:10},(_,index)=>({from:index*2+1,to:index*2+2,days:15+index})),cap:{from:21,days:25}});
  function read(state){
-  if(!state.leavePolicy)return {version:2,enabled:false,...statutory(),hires:{}};
+  const memberHires=Object.fromEntries((state.members||[]).filter(person=>person.hireDate).map(person=>[person.name,person.hireDate]));
+  if(!state.leavePolicy)return {version:2,enabled:true,firstYear:{mode:'monthly',days:11},...statutory(),hires:memberHires};
   const policy=state.leavePolicy;
-  if(policy.version===2)return {firstYear:{mode:'monthly',days:11},...structuredClone(policy)};
+  if(policy.version===2)return {firstYear:{mode:'monthly',days:11},...structuredClone(policy),hires:{...memberHires,...policy.hires}};
   const thresholds=policy.grants.filter(row=>row.year>=1).slice().sort((a,b)=>a.year-b.year);
   const last=thresholds.at(-1)||{year:1,days:0};
-  return {version:2,enabled:policy.enabled,hires:structuredClone(policy.hires),
+  return {version:2,enabled:policy.enabled,hires:{...memberHires,...policy.hires},
    grants:thresholds.slice(0,-1).map((row,index)=>({from:row.year,to:thresholds[index+1].year-1,days:row.days})),
    cap:{from:last.year,days:last.days}};
  }
@@ -75,6 +76,7 @@
  function cycleAllowance(state,name,year,today){
   const policy=read(state),cycle=period(state,name,year,today);
   if(!policy.enabled||!cycle.hire)return null;
+  if(cycle.hire>today&&String(year)<=today.slice(0,4))return 0;
   const service=tenure(cycle.hire,cycle.start)?.years||0;
   if(service===0){
    const monthly=Math.min(11,Math.max(0,tenure(cycle.hire,today<cycle.end?today:cycle.end)?.totalMonths||0));
