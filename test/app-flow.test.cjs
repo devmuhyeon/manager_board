@@ -92,7 +92,7 @@ test('인원관리는 재직자가 조회하고 수정 버튼과 저장은 관�
   assert.ok(members.includes('개별 비밀번호 초기화'));
   const nav=members.match(/<nav\b[\s\S]*?<\/nav>/)[0];
   assert.match(nav,/data-page="dashboard"[^]*?<\/div><div class="nav-section"><button[^>]*data-page="memo"[^]*?data-section="work"/);
-  const teamNav=nav.slice(nav.indexOf('id="nav-team"'));
+  const teamNav=nav.slice(nav.indexOf('id="nav-team"'),nav.indexOf('data-section="toys"'));
   assert.deepEqual([...teamNav.matchAll(/data-page="([^"]+)"/g)].map(match=>match[1]),['board','leaves','cardHistory','people']);
   assert.doesNotMatch(nav,/개인관리/);
   await h.api.act({dataset:{action:'peopleSection',section:'roles'}});
