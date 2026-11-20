@@ -66,10 +66,10 @@ test('포기 횟수와 kill은 로그인 사용자와 직전 작성자로 계산
  assert.equal(next.word.rounds[0].by,'정윤정');assert.equal(next.word.rounds[0].killer,'김무현');
  assert.deepEqual(next.word.rounds[0].entries,first.word.entries);assert.equal(first.word.entries.length,1);
  const scores=T.scores(next,['김무현','정윤정','홍소영']);
- assert.deepEqual(scores,[{name:'김무현',forfeits:0,kills:1},{name:'정윤정',forfeits:1,kills:0},{name:'홍소영',forfeits:0,kills:0}]);
+ assert.deepEqual(scores,[{name:'김무현',forfeits:0,kills:1,score:1},{name:'정윤정',forfeits:1,kills:0,score:-1},{name:'홍소영',forfeits:0,kills:0,score:0}]);
  assert.throws(()=>T.apply(next,'wordForfeit',{previous:last.id},{...context,user:'정윤정'}),/단어가 나온 뒤/);
  let again=T.apply(next,'wordAdd',{word:'그림'},context);again=T.apply(again,'wordForfeit',{},context);
- assert.deepEqual(T.scores(again,['김무현'])[0],{name:'김무현',forfeits:1,kills:1});
+ assert.deepEqual(T.scores(again,['김무현'])[0],{name:'김무현',forfeits:1,kills:1,score:0});
  assert.equal(again.word.rounds.length,2);assert.doesNotThrow(()=>T.validate(JSON.parse(JSON.stringify(again))));
  const invalid=structuredClone(again);invalid.word.rounds[0].killer='홍소영';assert.throws(()=>T.validate(invalid),/점수/);
 });

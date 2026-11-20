@@ -12,7 +12,7 @@
   const people=new Map(names.map(name=>[name,{name,forfeits:0,kills:0}]));
   const get=name=>{if(!people.has(name))people.set(name,{name,forfeits:0,kills:0});return people.get(name);};
   for(const round of wordGame(data).rounds||[]){get(round.by).forfeits++;if(round.killer)get(round.killer).kills++;}
-  return [...people.values()];
+  return [...people.values()].map(person=>({...person,score:person.kills-person.forfeits}));
  }
  function validate(data){
   if(data===undefined)return;
