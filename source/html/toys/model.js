@@ -29,7 +29,7 @@
   }else if(action==='wordAdd'){
    const w=structuredClone(wordGame(next)),word=String(input.word||'').trim(),last=w.entries.at(-1),previous=last?.word||w.seed;
    if(input.previous!==undefined&&input.previous!==(last?.id||w.seed))throw Error('다른 사용자가 먼저 입력했습니다. 최신 단어를 확인하세요.');
-   if(!/^[가-힣]{2,10}$/.test(word))throw Error('한글 2~10글자의 단어를 입력하세요.');
+   if(!/^[가-힣]{2,6}$/.test(word))throw Error('한글 2~6글자의 단어를 입력하세요.');
    if(word===w.seed||w.entries.some(e=>e.word===word))throw Error('이미 나온 단어입니다.');
    if(!starts(previous.slice(-1)).includes(word[0]))throw Error(starts(previous.slice(-1)).join(' / ')+'(으)로 시작하세요.');
    w.entries.push({id:id(),word,author:user,createdAt:now()});next.word=w;

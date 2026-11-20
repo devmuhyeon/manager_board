@@ -21,6 +21,8 @@ test('끝말잇기는 워크로그에서 시작하고 로그인 사용자 이름
  assert.throws(()=>T.apply(data,'wordAdd',{word:'그림'},context),/이미/);
  assert.throws(()=>T.apply(data,'wordAdd',{word:'사과'},context),/름/);
  assert.throws(()=>T.apply(data,'wordAdd',{word:'abc'},context),/한글/);
+ assert.throws(()=>T.apply(undefined,'wordAdd',{word:'그가나다라마바'},context),/2~6/);
+ assert.equal(T.apply(undefined,'wordAdd',{word:'그가나다라마'},context).word.entries[0].word.length,6);
  assert.throws(()=>T.apply(data,'wordAdd',{word:'름름',previous:'old'},context),/먼저/);
  assert.throws(()=>T.apply(data,'wordUndo',{}, {user:'정윤정'}),/본인/);
  assert.equal(T.apply(data,'wordUndo',{},context).word.entries.length,3);
