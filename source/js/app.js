@@ -34,6 +34,7 @@
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let navFocus=null;
   const toyDrafts={};
+  let mealRefreshTimer;
   const toyUi={ladderSelected:0,spin:false};
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
@@ -160,7 +161,7 @@
     syncRoster();if(!user){login();return;}user=member(user.name)||user;
     if(page==='people'&&!W.canPersonnel(state,user.name))page='dashboard';
     const titles=N.titles;
-    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc,state,user,button,Icons,admin:P.isOverallAdmin(state,user.name),ui:toyUi}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:relatedRows(),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
+    let body=Object.hasOwn(BoardFeaturePages.toys.items,page)?BoardFeaturePages.toys.render({page,esc,state,user,button,Icons,admin:P.isOverallAdmin(state,user.name),ui:toyUi,D,displayProfile,onlinePeople:presence.snapshot().people}):page==='workContent'?'<section class="card"><p class="empty">등록된 '+esc(titles[page])+' 업무가 없습니다.</p></section>':page==='projects'?BoardProjectReport.render({rows:relatedRows(Boolean(selectedProject)),selected:selectedProject,C,N,Board:BoardTaskBoard,members:state.members,esc,button,orderNames:names=>P.orderNames(state,names)}):page==='dashboard'?dashboard():page==='work'||page==='customers'?dashboardContent():page==='users'?userWorkPage():page==='board'?D.board(state,user,boardTeam,boardPostId):page==='cardHistory'?expensePage():page==='today'?D.today(state,user):page==='report'?report():page==='kpi'?BoardKpi.render({rows:relatedRows(),Board:BoardTaskBoard,C,esc,button,mode:kpiMode,samples:typeof BoardKpiSamples!=='undefined'?BoardKpiSamples:undefined}):page==='stats'?statisticsPage():page==='settings'?settings():page==='people'?peoplePage():page==='memo'?personalPanel():page==='schedule'?weeklySchedule():page==='deadlines'?deadlinePage():page==='leaves'?vacationPage():revisionPage();
     $('#app').innerHTML=BoardDisplayStyles.shell('<div class="shell"><aside class="sidebar">'+brand()+'<div class="subbrand">WORK24 × PLACECND</div><nav class="nav" aria-label="주 메뉴">'+N.menu({page,closed:closedNav,canPersonnel:W.canPersonnel(state,user.name),esc,button})+'</nav><div class="sidebar-bottom"><div class="user">'+D.avatar(displayProfile(user))+'<div><strong>'+esc(user.name)+'</strong> <span class="muted">'+esc(user.rank||'직급 미지정')+'</span><div class="muted">'+esc(N.teamLabel(user.team))+' 팀</div></div>'+button('logout','로그아웃')+'</div></div></aside><main class="main"><header class="topbar">'+connectionBar()+'<div class="breadcrumb">WorkLog / <strong>'+titles[page]+'</strong></div><div class="topright">'+(demoSession?'<span class="preview-label">UI/UX 샘플 · 새로고침 시 초기화</span>':'')+'<span id="onlineProfiles">'+renderOnlineProfiles()+'</span><span class="muted topbar-date">'+new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric',weekday:'short'})+'</span>'+button('refreshAll',Icons.arrow('refresh')+' 새로고침')+button('save','내용 저장','primary',saving?'disabled':'')+button('widgets',Icons.arrow('widget'),'topbar-widget','aria-label="바탕화면 위젯 열기" title="바탕화면 위젯"')+button('preferences','⚙ 설정')+'</div></header><div class="content" tabindex="-1"><div class="page-actions">'+(['revisions'].includes(page)?button('export',Icons.arrow('download')+' 엑셀 내보내기'):'' )+'</div>'+linkedProjectBar()+body+'</div></main></div>',styles.current());
     document.documentElement.dataset.boardView=String(page==='work'&&view==='board');
     BoardMemoCarousel.init(document);
@@ -169,6 +170,7 @@
     BoardFeaturePages.toys.restoreDrafts($('.toy-page'),toyDrafts[page]||[]);
     for(const saved of navScroll){const node=$(saved.selector);if(node){node.scrollTop=saved.top;node.scrollLeft=saved.left;}}
     if(restoreNavFocus){const selector=restoreNavFocus.page?'.nav [data-page="'+restoreNavFocus.page+'"]':'.nav [data-section="'+restoreNavFocus.section+'"]';$(selector)?.focus?.({preventScroll:true});}
+    if(page==='toyMeal'&&typeof window.setTimeout==='function'){window.clearTimeout(mealRefreshTimer);const midnight=Date.parse(BoardFeaturePages.toys.Meals.today()+'T15:00:00Z');mealRefreshTimer=window.setTimeout(()=>{if(page==='toyMeal')render();},Math.max(1000,midnight-Date.now()));}
     const newBoard=document.querySelector('.status-board');if(newBoard&&boardScroll){newBoard.scrollLeft=boardScroll.x;newBoard.scrollTop=boardScroll.y;}
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(P.orderedTeams(state),selectedTeam)}</select>`:''}</div>`;}
@@ -317,6 +319,7 @@
     if(a==='toy'){
       if(!user)return;
       const action=el.dataset.toyAction;
+      if(action==='wordMore'){toyUi.wordLimit=(toyUi.wordLimit||100)+100;render();return;}
       if(action==='ladderSelect'){toyUi.ladderSelected=Number(el.dataset.index);toyUi.spin=false;render();return;}
       if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;
       state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,el.dataset,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
@@ -777,7 +780,8 @@
     if(e.target.dataset?.toyForm){
       e.preventDefault();if(!user)return;
       const action=e.target.dataset.toyForm;
-      if(['wordStart','ladderDraw'].includes(action)&&state.toys?.[action==='wordStart'?'word':'ladder']&&!confirm(action==='wordStart'?'현재 단어 기록을 지우고 새 게임을 시작할까요?':'현재 사다리를 새로 만들까요?'))return;
+      if(action==='mealSearch'){toyUi.mealQuery=String(new FormData(e.target).get('query')||'');render();return;}
+      if(action==='ladderDraw'&&state.toys?.ladder&&!confirm('현재 사다리를 새로 만들까요?'))return;
       try{
         const input=Object.fromEntries(new FormData(e.target));
         state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,input,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
@@ -785,7 +789,7 @@
         if(action==='wordAdd'){const field=e.target.querySelector?.('[name="word"]');if(field)field.value='';}
         if(action==='pollCreate')e.target.reset?.();
         changed();render();toyUi.spin=false;
-        if(action==='wordAdd'||action==='wordStart')$('#toyWordInput')?.focus?.({preventScroll:true});
+        if(action==='wordAdd')$('#toyWordInput')?.focus?.({preventScroll:true});
       }catch(err){$('#toyError').textContent=err.message;}
       return;
     }

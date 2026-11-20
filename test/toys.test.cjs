@@ -14,16 +14,22 @@ test('투표는 1인 1표로 변경·집계하며 마감과 삭제 권한을 검
  assert.equal(T.apply(next,'pollDelete',{id:'poll-1'},options).polls.length,0);
  assert.throws(()=>T.apply(undefined,'pollCreate',{title:'중복',options:'하나\n하나'},options));
 });
-test('끝말잇기는 순서·중복·한글·두음법칙을 확인하고 한 수 되돌릴 수 있다',()=>{
- let data=T.apply(undefined,'wordStart',{players:'가\n나'},options);
- for(const word of ['기차','차도','도리','이름'])data=T.apply(data,'wordAdd',{word},options);
- assert.equal(data.word.words.length,4);assert.equal(data.word.players[data.word.words.length%2],'가');
- assert.throws(()=>T.apply(data,'wordAdd',{word:'기차'},options),/이미/);
- assert.throws(()=>T.apply(data,'wordAdd',{word:'사과'},options),/름/);
- assert.throws(()=>T.apply(data,'wordAdd',{word:'abc'},options),/한글/);
- assert.equal(T.apply(data,'wordUndo',{},options).word.words.length,3);
+test('끝말잇기는 워크로그에서 시작하고 로그인 사용자 이름으로 기록하며 계속 이어진다',()=>{
+ let seq=0;const context={...options,id:()=> 'word-'+(++seq)};
+ let data;for(const word of ['그림','임금','금리','이름'])data=T.apply(data,'wordAdd',{word,author:'가짜 작성자'},context);
+ assert.equal(data.word.seed,'워크로그');assert.equal(data.word.entries.length,4);assert.ok(data.word.entries.every(e=>e.author==='김무현'));
+ assert.throws(()=>T.apply(data,'wordAdd',{word:'그림'},context),/이미/);
+ assert.throws(()=>T.apply(data,'wordAdd',{word:'사과'},context),/름/);
+ assert.throws(()=>T.apply(data,'wordAdd',{word:'abc'},context),/한글/);
+ assert.throws(()=>T.apply(data,'wordAdd',{word:'름름',previous:'old'},context),/먼저/);
+ assert.throws(()=>T.apply(data,'wordUndo',{}, {user:'정윤정'}),/본인/);
+ assert.equal(T.apply(data,'wordUndo',{},context).word.entries.length,3);
+ assert.equal(T.wordGame().seed,'워크로그');
  assert.deepEqual(T.starts('락'),['락','낙']);assert.deepEqual(T.starts('녀'),['녀','여']);
- assert.throws(()=>T.apply(data,'wordStart',{players:'가\n가'},options),/서로/);
+ const old={polls:[],word:{players:['가','나'],words:['기차']},ladder:null,wheel:null};
+ const migrated=T.apply(old,'wordAdd',{word:'그림'},{...context,user:'정윤정'});
+ assert.deepEqual(migrated.word.legacyGame,old.word);assert.equal(migrated.word.entries[0].author,'정윤정');
+ assert.equal(old.word.words[0],'기차');assert.throws(()=>T.apply(data,'wordStart',{players:'가\n나'},context),/지원/);
 });
 test('사다리는 모든 인원에게 겹치지 않는 도착점을 배정하고 경로가 가로선과 일치한다',()=>{
  let seed=123;const random=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
@@ -42,4 +48,15 @@ test('돌림판의 당첨 인덱스·최근 기록과 잘못된 저장 자료를
  assert.throws(()=>T.apply(data,'wheelSpin',{options:'가\n나'},{...options,random:()=>1}));
  assert.throws(()=>T.validate({polls:[],wheel:{options:['가','나'],index:9,history:[]}}));
  assert.throws(()=>T.validate({polls:[{id:'bad'}]}));
+});
+
+test('식사추천은 공식 자료의 혁신도시 업소를 포함하고 한국 자정에 바뀌며 한 주기 내 중복되지 않는다',()=>{
+ const M=require('../source/html/toys/meal.js'),rows=M.catalog.restaurants;
+ assert.equal(rows.length,497);assert.equal(rows.filter(r=>r.area==='음성').length,303);assert.equal(rows.filter(r=>r.area==='진천').length,194);
+ assert.ok(rows.every(r=>r.name&&r.address&&/맹동면 (두성리|동성리)|덕산읍 두촌리/.test(r.lot)));
+ assert.equal(new Set(rows.map(r=>r.name+'|'+r.address)).size,rows.length);
+ assert.equal(M.today(new Date('2026-11-20T14:59:59Z')),'2026-11-20');assert.equal(M.today(new Date('2026-11-20T15:00:00Z')),'2026-11-21');
+ const recommendations=Array.from({length:rows.length},(_,i)=>M.daily(new Date(Date.UTC(2026,10,20+i)).toISOString().slice(0,10)).id);
+ assert.equal(new Set(recommendations).size,rows.length);assert.equal(M.daily('2026-11-20').id,M.daily('2026-11-20').id);
+ assert.throws(()=>M.daily('2026-02-30'));assert.ok(M.search(rows[0].name).some(r=>r.id===rows[0].id));assert.equal(M.search('없는음식점xyz').length,0);
 });

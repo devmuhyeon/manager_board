@@ -701,10 +701,9 @@ test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 �
  await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
  let html=h.element('#app').innerHTML;
  const nav=html.slice(html.indexOf('id="nav-toys"'));
- assert.deepEqual([...nav.matchAll(/data-page="([^"]+)"/g)].map(m=>m[1]),['toyWordChain','toyVote','toyLadder','toyWheel']);
- h.submit({dataset:{toyForm:'wordStart'},fields:{players:'김무현\n정윤정'}});
- h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'기차'}});
- assert.equal(h.api.read().state.toys.word.words[0],'기차');
+ assert.deepEqual([...nav.matchAll(/data-page="([^"]+)"/g)].map(m=>m[1]),['toyWordChain','toyVote','toyLadder','toyWheel','toyMeal']);
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'그림'}});
+ assert.equal(h.api.read().state.toys.word.entries[0].word,'그림');
  await h.api.act({dataset:{action:'page',page:'toyVote'}});
  h.submit({dataset:{toyForm:'pollCreate'},fields:{title:'점심 메뉴',options:'한식\n일식'}});
  const poll=h.api.read().state.toys.polls[0];
@@ -719,7 +718,7 @@ test('장난감 네 메뉴는 동작하고 투표·게임 상태는 메뉴를 �
  assert.equal(h.api.read().state.toys.wheel.history.length,1);
  assert.match(h.element('#app').innerHTML,/is-spinning/);
  await h.api.act({dataset:{action:'page',page:'toyWordChain'}});
- assert.match(h.element('#app').innerHTML,/기차/);
+ assert.match(h.element('#app').innerHTML,/그림/);
  assert.doesNotThrow(()=>C.validateState(h.api.read().state));
 });
 
@@ -732,4 +731,16 @@ test('좌측 메뉴 이동 시 스크롤과 선택 버튼의 포커스를 유지
  assert.equal(h.element('.sidebar').scrollTop,196);assert.equal(h.element('.sidebar .nav').scrollTop,280);
  assert.deepEqual(JSON.parse(JSON.stringify(focused)),{preventScroll:true});
  assert.match(h.element('#app').innerHTML,/data-page="toyWordChain"[^>]*aria-current="page"/);
+});
+
+test('끝말잇기는 참가자 설정 없이 내 캐릭터·이름으로 이어가고 프로필 변경을 반영한다',async()=>{
+ const h=harness(),state=fixture();state.members.find(m=>m.name==='김무현').avatar='bbiyak';h.api.seed(state);h.api.session('김무현','toyWordChain');h.api.render();
+ let html=h.element('#app').innerHTML;assert.match(html,/워크로그/);assert.doesNotMatch(html,/data-toy-form="wordStart"|name="players"/);
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'그림',author:'정윤정',previous:'워크로그'}});
+ assert.equal(h.api.read().state.toys.word.entries[0].author,'김무현');assert.match(h.element('#app').innerHTML,/toy-community-history/);
+ h.api.session('정윤정','toyWordChain');h.api.render();h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'임금'}});
+ assert.deepEqual(h.api.read().state.toys.word.entries.map(e=>e.author),['김무현','정윤정']);
+ html=h.element('#app').innerHTML;assert.match(html,/그림/);assert.match(html,/임금/);assert.match(html,/character-avatar/);
+ await h.api.act({dataset:{action:'page',page:'toyMeal'}});assert.match(h.element('#app').innerHTML,/497곳/);assert.match(h.element('#app').innerHTML,/오늘의 식사추천/);
+ h.submit({dataset:{toyForm:'mealSearch'},fields:{query:'없는음식점xyz'}});assert.match(h.element('#app').innerHTML,/검색 결과가 없습니다/);
 });
