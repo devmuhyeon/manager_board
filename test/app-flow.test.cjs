@@ -744,3 +744,17 @@ test('끝말잇기는 참가자 설정 없이 내 캐릭터·이름으로 이어
  await h.api.act({dataset:{action:'page',page:'toyMeal'}});assert.match(h.element('#app').innerHTML,/497곳/);assert.match(h.element('#app').innerHTML,/오늘의 식사추천/);
  h.submit({dataset:{toyForm:'mealSearch'},fields:{query:'없는음식점xyz'}});assert.match(h.element('#app').innerHTML,/검색 결과가 없습니다/);
 });
+
+
+test('식사추천은 버튼을 누를 때만 다시 뽑고 검색과 페이지 전환은 결과를 유지한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','toyMeal');h.api.render();
+ assert.match(h.element('#app').innerHTML,/식사 추천받기/);
+ await h.api.act({dataset:{action:'toy',toyAction:'mealRecommend'}});
+ let html=h.element('#app').innerHTML;const name=html.match(/<h2>([^<]+)<\/h2>/)[1];
+ assert.match(html,/다시 추천/);const before=JSON.stringify(h.api.read().state);
+ await h.api.act({dataset:{action:'page',page:'toyVote'}});await h.api.act({dataset:{action:'page',page:'toyMeal'}});
+ assert.ok(h.element('#app').innerHTML.includes('<h2>'+name+'</h2>'));
+ await h.api.act({dataset:{action:'toy',toyAction:'mealRecommend'}});
+ html=h.element('#app').innerHTML;assert.ok(!html.includes('<h2>'+name+'</h2>'));
+ assert.equal(JSON.stringify(h.api.read().state),before);
+});

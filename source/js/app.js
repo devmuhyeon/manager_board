@@ -34,7 +34,6 @@
   let selectedTeam='퍼블',editing=null,taskDraft=[];
   let navFocus=null;
   const toyDrafts={};
-  let mealRefreshTimer;
   const toyUi={ladderSelected:0,spin:false};
   let closedNav=[],closedWeeks=[],closedLanes=[],expandedCards=[];
   let boardName='',boardMode='workflow',boardLayout='cards';
@@ -170,7 +169,6 @@
     BoardFeaturePages.toys.restoreDrafts($('.toy-page'),toyDrafts[page]||[]);
     for(const saved of navScroll){const node=$(saved.selector);if(node){node.scrollTop=saved.top;node.scrollLeft=saved.left;}}
     if(restoreNavFocus){const selector=restoreNavFocus.page?'.nav [data-page="'+restoreNavFocus.page+'"]':'.nav [data-section="'+restoreNavFocus.section+'"]';$(selector)?.focus?.({preventScroll:true});}
-    if(page==='toyMeal'&&typeof window.setTimeout==='function'){window.clearTimeout(mealRefreshTimer);const midnight=Date.parse(BoardFeaturePages.toys.Meals.today()+'T15:00:00Z');mealRefreshTimer=window.setTimeout(()=>{if(page==='toyMeal')render();},Math.max(1000,midnight-Date.now()));}
     const newBoard=document.querySelector('.status-board');if(newBoard&&boardScroll){newBoard.scrollLeft=boardScroll.x;newBoard.scrollTop=boardScroll.y;}
   }
   function scopeTabs(){const tabs=[['all','전체'],['team','팀'],['personal','개인']];return `<div class="tabs" role="group" aria-label="조회 범위">${tabs.map(([s,n])=>button('scope',n,scope===s?'active':'',`data-scope="${s}" aria-pressed="${scope===s}"`)).join('')}${scope==='team'?`<select aria-label="조회 팀" data-filter="selectedTeam">${options(P.orderedTeams(state),selectedTeam)}</select>`:''}</div>`;}
@@ -319,6 +317,7 @@
     if(a==='toy'){
       if(!user)return;
       const action=el.dataset.toyAction;
+      if(action==='mealRecommend'){toyUi.mealId=BoardFeaturePages.toys.Meals.pick(toyUi.mealId).id;render();return;}
       if(action==='wordMore'){toyUi.wordLimit=(toyUi.wordLimit||100)+100;render();return;}
       if(action==='ladderSelect'){toyUi.ladderSelected=Number(el.dataset.index);toyUi.spin=false;render();return;}
       if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;

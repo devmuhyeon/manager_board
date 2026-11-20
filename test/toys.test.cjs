@@ -50,13 +50,15 @@ test('돌림판의 당첨 인덱스·최근 기록과 잘못된 저장 자료를
  assert.throws(()=>T.validate({polls:[{id:'bad'}]}));
 });
 
-test('식사추천은 공식 자료의 혁신도시 업소를 포함하고 한국 자정에 바뀌며 한 주기 내 중복되지 않는다',()=>{
+test('식사추천은 공식 목록에서 무작위로 고르고 직전 추천은 연속으로 나오지 않는다',()=>{
  const M=require('../source/html/toys/meal.js'),rows=M.catalog.restaurants;
  assert.equal(rows.length,497);assert.equal(rows.filter(r=>r.area==='음성').length,303);assert.equal(rows.filter(r=>r.area==='진천').length,194);
  assert.ok(rows.every(r=>r.name&&r.address&&/맹동면 (두성리|동성리)|덕산읍 두촌리/.test(r.lot)));
  assert.equal(new Set(rows.map(r=>r.name+'|'+r.address)).size,rows.length);
  assert.equal(M.today(new Date('2026-11-20T14:59:59Z')),'2026-11-20');assert.equal(M.today(new Date('2026-11-20T15:00:00Z')),'2026-11-21');
- const recommendations=Array.from({length:rows.length},(_,i)=>M.daily(new Date(Date.UTC(2026,10,20+i)).toISOString().slice(0,10)).id);
- assert.equal(new Set(recommendations).size,rows.length);assert.equal(M.daily('2026-11-20').id,M.daily('2026-11-20').id);
- assert.throws(()=>M.daily('2026-02-30'));assert.ok(M.search(rows[0].name).some(r=>r.id===rows[0].id));assert.equal(M.search('없는음식점xyz').length,0);
+ const first=M.pick('',()=>0);assert.equal(first.id,rows[0].id);
+ assert.equal(M.pick('',()=>.999999).id,rows.at(-1).id);
+ assert.notEqual(M.pick(first.id,()=>0).id,first.id);
+ assert.throws(()=>M.pick('',()=>1));assert.throws(()=>M.pick('',()=>NaN));
+ assert.ok(M.search(rows[0].name).some(r=>r.id===rows[0].id));assert.equal(M.search('없는음식점xyz').length,0);
 });
