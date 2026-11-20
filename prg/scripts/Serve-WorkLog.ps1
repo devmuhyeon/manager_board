@@ -1,4 +1,4 @@
-# Windows PowerShell/.NET only. Loopback static files; no data/write API.
+# Windows PowerShell/.NET only. Loopback resources and a fixed widget launcher; no data/write API.
 param([int]$Port=49271)
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
@@ -11,10 +11,20 @@ try{
   $client=$listener.AcceptTcpClient();$client.ReceiveTimeout=5000;$client.SendTimeout=10000
   try{
    $stream=$client.GetStream();$reader=New-Object IO.StreamReader($stream,[Text.Encoding]::ASCII,$false,1024,$true)
-   $line=$reader.ReadLine();$total=0;$hostHeader=''
-   do{$header=$reader.ReadLine();$total+=$header.Length;if($total -gt 16384){throw 'Headers too large'};if($header -match '^Host:\s*(.+)$'){$hostHeader=$Matches[1]}}while($header)
+   $line=$reader.ReadLine();$total=0;$hostHeader='';$originHeader='';$widgetHeader='';$bodyLength=0;$transferHeader=''
+   do{$header=$reader.ReadLine();$total+=$header.Length;if($total -gt 16384){throw 'Headers too large'};if($header -match '^Host:\s*(.+)$'){$hostHeader=$Matches[1]};if($header -match '^Origin:\s*(.+)$'){$originHeader=$Matches[1]};if($header -match '^X-WorkLog-Widget:\s*(.+)$'){$widgetHeader=$Matches[1]};if($header -match '^Content-Length:\s*(.+)$'){$bodyLength=[int]$Matches[1]};if($header -match '^Transfer-Encoding:\s*(.+)$'){$transferHeader=$Matches[1]}}while($header)
    $status='404 Not Found';$type='text/plain';$bytes=[Text.Encoding]::UTF8.GetBytes('Not found')
-   if($line -match '^GET (/\S*) HTTP/1\.[01]$' -and $hostHeader -in @("127.0.0.1:$Port","localhost:$Port")){
+   if($line -match '^POST /__worklog/widget HTTP/1\.[01]$'){
+    $status='403 Forbidden';$bytes=[Text.Encoding]::UTF8.GetBytes('Forbidden')
+    if($hostHeader -in @("127.0.0.1:$Port","localhost:$Port") -and $originHeader -ceq "http://$hostHeader" -and $widgetHeader -ceq 'open' -and $bodyLength -eq 0 -and !$transferHeader -and $Port -eq 49271){
+     if($lastWidgetLaunch -and ([DateTime]::UtcNow-$lastWidgetLaunch).TotalSeconds -lt 2){$status='429 Too Many Requests'}
+     else{
+      Start-Process (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -WindowStyle Hidden -ArgumentList @('-NoLogo','-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+(Join-Path $PSScriptRoot 'Start-WorkLog.ps1')+'"'),'-Widget') | Out-Null
+      $lastWidgetLaunch=[DateTime]::UtcNow;$status='200 OK';$type='application/json';$bytes=[Text.Encoding]::UTF8.GetBytes('{"ok":true}')
+     }
+    }
+   }
+   elseif($line -match '^GET (/\S*) HTTP/1\.[01]$' -and $hostHeader -in @("127.0.0.1:$Port","localhost:$Port")){
     $name=[Uri]::UnescapeDataString(($Matches[1] -split '\?')[0])
     if($name -eq '/__workplace'){$status='200 OK';$bytes=[Text.Encoding]::UTF8.GetBytes($identity)}
     else{

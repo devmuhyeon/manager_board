@@ -1,4 +1,4 @@
-param([ValidateSet('Local','File')][string]$Mode='Local',[string]$ServerUrl)
+param([ValidateSet('Local','File')][string]$Mode='Local',[string]$ServerUrl,[switch]$Widget)
 $ErrorActionPreference='Stop'
 try{
  $projectRoot=(Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
@@ -18,7 +18,15 @@ try{
    if((Read-Identity) -ne $identity){throw 'The local server could not start. Check company policy or port 49271. File mode is also available.'}
   }
  }
- Start-Process -FilePath $edge -ArgumentList @('--app="'+$url+'"')
+ if($Widget){
+  if($ServerUrl){
+   $base=[Uri]$url
+   $relative=if($base.AbsolutePath -match '/source/html/[^/]*$'){'widgets/index.html'}else{'source/html/widgets/index.html'}
+   $url=([Uri]::new($base,$relative)).AbsoluteUri
+  }elseif($Mode -eq 'File'){$url=([Uri](Join-Path $projectRoot 'source\html\widgets\index.html')).AbsoluteUri}
+  else{$url='http://127.0.0.1:49271/source/html/widgets/index.html'}
+  Start-Process -FilePath $edge -ArgumentList @(('--app="'+$url+'"'),'--new-window','--window-size=400,520')
+ }else{Start-Process -FilePath $edge -ArgumentList @('--app="'+$url+'"')}
 }catch{
  Add-Type -AssemblyName System.Windows.Forms
  [Windows.Forms.MessageBox]::Show($_.Exception.Message,'WorkLog startup') | Out-Null

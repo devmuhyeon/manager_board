@@ -5,7 +5,7 @@ New-Item -ItemType Directory -Path $outputFolder -Force | Out-Null
 $stage=Join-Path $outputFolder ('package-'+[Guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Path $stage | Out-Null
 try {
- $names=@('index.html','source','docs/README.md','prg/scripts','prg/Start-WorkLog.bat','prg/Create-Desktop-Shortcut.bat','test/legacy-samples.js','test/preview-data.js','test/request-samples.js')
+ $names=@('index.html','source','docs/README.md','prg/scripts','prg/Start-WorkLog.bat','prg/Start-Widget.bat','prg/Create-Desktop-Shortcut.bat','test/legacy-samples.js','test/preview-data.js','test/request-samples.js')
  foreach($name in $names){$destination=Join-Path $stage $name;New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null;Copy-Item -LiteralPath (Join-Path $projectRoot $name) -Destination $destination -Recurse}
  foreach($folder in @('process','dist')){New-Item -ItemType Directory -Path (Join-Path $stage $folder) | Out-Null}
  $archive=Join-Path $outputFolder 'WorkLog-offline.zip'

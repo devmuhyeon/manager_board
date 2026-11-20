@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WorkLog · 바탕화면 위젯</title>
+<script>
+const widgetRoot=new URL('../../../',location.href);
+for(const [rel,path] of [['icon','source/images/ico/WorkLog.ico'],['stylesheet','source/html/widgets/style.css']]){const link=document.createElement('link');link.rel=rel;link.href=new URL(path,widgetRoot).href;document.head.append(link);}
+</script></head><body><main class="desktop-widget"><header><img id="widgetLogo" width="28" height="28" alt=""><h1>WorkLog 위젯</h1></header><section class="widget-empty" aria-label="위젯 내용"><span aria-hidden="true">＋</span><strong>아직 등록된 위젯이 없습니다.</strong><p>추가할 위젯을 준비 중입니다.</p></section></main><script>document.getElementById('widgetLogo').src=new URL('source/images/logo.svg',widgetRoot).href;</script></body></html>
