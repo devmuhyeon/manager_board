@@ -12,13 +12,13 @@
  function revisionDraft(s,parentId,actor){const parent=s.projects.find(p=>p.id===parentId);if(!parent)throw new Error('원본 과업을 찾을 수 없습니다.');const rootId=parent.parentProjectId||parent.id,original=s.projects.find(p=>p.id===rootId);if(!original)throw new Error('원본 과업이 없습니다.');const p=C.effective(original),number=Math.max(0,...s.projects.filter(x=>x.parentProjectId===rootId).map(x=>Number(x.revisionNumber)||0))+1;return {...structuredClone(p),id:C.uid(),source:'manual',parentProjectId:rootId,revisionNumber:number,title:p.title+' · '+number+'차 수정',status:'예정',requested:C.today(),requestedDue:'',started:C.today(),due:'',logs:[],overrides:{},description:'',tasks:(p.tasks||[]).map(t=>({...t,id:C.uid(),status:'예정',started:C.today(),due:'',notes:'',assignees:t.assignees.length?t.assignees:[actor]}))};}
  function setAllowance(s,actor,owner,year,days){if(!(actor===owner&&s.members.some(m=>m.name===actor&&m.active!==false))&&!P.canManage(s,actor))throw new Error('본인 또는 전체관리자만 연차 총수를 설정할 수 있습니다.');days=Number(days);year=String(year);if(!/^\d{4}$/.test(year)||!Number.isFinite(days)||days<0||days>366||days*2%1)throw new Error('연차 총수는 0~366일, 0.5일 단위로 입력하세요.');const next=structuredClone(s);next.leaveAllowances??={};next.leaveAllowances[year]??={};next.leaveAllowances[year][owner]=days;return next;}
  function leaveLedger(s,owner,year,today=C.today()){
-  const excluded=new Map(),usedDates=new Map();
-  let calendarSupported=holidayCalendar(year)!==null;
+  const excluded=new Map(),usedDates=new Map(),period=LeavePolicy.period(s,owner,year,today);
+  let calendarSupported=holidayCalendar(period.start.slice(0,4))!==null&&holidayCalendar(period.end.slice(0,4))!==null;
   for(const leave of s.leaves||[]){
    if(leave.owner!==owner||(leave.typeId?leave.dailyUnits===0:leave.type==='기타 휴가'))continue;
-   const sourceYear=String(Number(year)-(leave.borrowNextYear?1:0)),yearStart=sourceYear+'-01-01',yearEnd=sourceYear+'-12-31';
+   const shift=leave.borrowNextYear?-12:0,yearStart=LeavePolicy.anniversary(period.start,shift),yearEnd=LeavePolicy.anniversary(period.end,shift);
    if(leave.end<yearStart||leave.start>yearEnd)continue;
-   const holidays=holidayCalendar(sourceYear);
+   const holidays={...holidayCalendar(yearStart.slice(0,4)),...holidayCalendar(yearEnd.slice(0,4))};
    if(holidays===null)calendarSupported=false;
    const start=leave.start>yearStart?leave.start:yearStart,end=leave.end<yearEnd?leave.end:yearEnd;
    const day=new Date(start+'T00:00:00Z');
@@ -38,16 +38,12 @@
   const used=entries.filter(entry=>entry.date<=today).reduce((sum,entry)=>sum+entry.days,0);
   const planned=entries.filter(entry=>entry.date>today).reduce((sum,entry)=>sum+entry.days,0);
   const borrowed=entries.filter(entry=>entry.borrowed).reduce((sum,entry)=>sum+entry.days,0);
-  const allowance=s.leaveAllowances?.[year]?.[owner]??LeavePolicy.allowance(s,owner,year);
-  return {allowance,used,planned,borrowed,remaining:allowance===null?null:allowance-used,
+  const allowance=s.leaveAllowances?.[year]?.[owner]??LeavePolicy.cycleAllowance(s,owner,year,today);
+  return {period,allowance,used,planned,borrowed,remaining:allowance===null?null:allowance-used,
    available:allowance===null?null:allowance-used-planned,entries,calendarSupported,
    excluded:[...excluded.values()].sort((a,b)=>a.date.localeCompare(b.date))};
  }
- // Offline snapshot, checked 2026-10-26. Sources and update policy: docs/공휴일.md.
- const holidayData={
-   2026:{'01-01':'신정','02-16':'설 연휴','02-17':'설날','02-18':'설 연휴','03-01':'삼일절','03-02':'대체공휴일(삼일절)','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일(부처님오신날)','06-03':'전국동시지방선거','06-06':'현충일','07-17':'제헌절','08-15':'광복절','08-17':'대체공휴일(광복절)','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일(개천절)','10-09':'한글날','12-25':'성탄절'},
-   2027:{'01-01':'신정','02-06':'설 연휴','02-07':'설날','02-08':'설 연휴','02-09':'대체공휴일(설날)','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일(노동절)','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일(제헌절)','08-15':'광복절','08-16':'대체공휴일(광복절)','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일(개천절)','10-09':'한글날','10-11':'대체공휴일(한글날)','12-25':'성탄절','12-27':'대체공휴일(성탄절)'}
- };
- function holidayCalendar(year){return holidayData[year]?Object.fromEntries(Object.entries(holidayData[year]).map(([day,name])=>[year+'-'+day,name])):null;}
+ const CalendarData=typeof module!=='undefined'?require('./calendar-data.js'):root.BoardCalendarData;
+ const holidayCalendar=year=>CalendarData.holidays(year);
  const api={canPersonnel,canContent,contentOptions,editOption,classificationKey,group,revisionDraft,setAllowance,leaveLedger,holidayCalendar};if(typeof module!=='undefined')module.exports=api;else root.BoardWorkspace=api;
 })(typeof window!=='undefined'?window:globalThis);

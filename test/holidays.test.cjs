@@ -21,5 +21,5 @@ test('공식 월력요항의 연간 주5일제 휴일 총수와 일치한다',()
  for(const [year,total] of [[2026,120],[2027,119]]){const holidays=W.holidayCalendar(year);let count=0;for(let d=new Date(year+'-01-01T00:00:00Z');d.getUTCFullYear()===year;d.setUTCDate(d.getUTCDate()+1)){if([0,6].includes(d.getUTCDay())||holidays[d.toISOString().slice(0,10)])count++;}assert.equal(count,total);}
 });
 test('미지원 연도는 공휴일 적용 완료로 표시하지 않고 원본 기록을 보존한다',()=>{
- const s={leaves:[{owner:'가',start:'2028-01-03',end:'2028-01-03',type:'연차'}]},before=JSON.stringify(s);const l=W.leaveLedger(s,'가','2028');assert.equal(l.calendarSupported,false);assert.equal(JSON.stringify(s),before);assert.equal(W.holidayCalendar(2028),null);
+ const s={leaves:[{owner:'가',start:'2031-01-03',end:'2031-01-03',type:'연차'}]},before=JSON.stringify(s);const l=W.leaveLedger(s,'가','2031');assert.equal(l.calendarSupported,false);assert.equal(JSON.stringify(s),before);assert.equal(W.holidayCalendar(2031),null);
 });

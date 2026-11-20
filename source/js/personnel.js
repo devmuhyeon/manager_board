@@ -55,6 +55,18 @@
     if(old){old.active=true;old.team=team;delete old.retiredAt;delete old.retention;}else next.members.push({name,team,active:true});
     next.removedMembers=next.removedMembers.filter(n=>n!==name);return next;
   }
+  function editMember(state,actor,input){
+    if(!isOverallAdmin(state,actor))throw Error('WorkLog 관리자만 멤버를 수정할 수 있습니다.');
+    const person=state.members.find(member=>member.name===input.name);if(!person)throw Error('멤버를 찾을 수 없습니다.');
+    const rank=String(input.rank??person.rank??'').trim(),team=input.team||person.team;
+    if(rank.length>30||!C.TEAMS.includes(team))throw Error('팀과 직급을 확인하세요.');
+    for(const key of ['birthday','hireDate'])if(input[key]&&!validDate(input[key]))throw Error('날짜를 확인하세요.');
+    const next=structuredClone(state),member=next.members.find(member=>member.name===input.name);
+    Object.assign(member,{rank,team});
+    for(const key of ['birthday','hireDate'])if(input[key]!==undefined)member[key]=String(input[key]);
+    if(input.hireDate!==undefined&&next.leavePolicy){next.leavePolicy.hires??={};if(input.hireDate)next.leavePolicy.hires[member.name]=input.hireDate;else delete next.leavePolicy.hires[member.name];}
+    return next;
+  }
   function removalImpact(state,name){
     const ps=state.projects.map(C.effective);
     return {projects:ps.filter(p=>p.assignees.includes(name)).length,tasks:ps.reduce((n,p)=>n+(p.tasks||[]).filter(t=>t.assignees.includes(name)).length,0),logs:ps.reduce((n,p)=>n+p.logs.filter(l=>l.author===name).length,0),personal:(state.personal?.[name]||[]).length};
@@ -74,11 +86,12 @@
     s.leaves=(s.leaves||[]).filter(l=>l.owner!==name);if(s.homeLayouts)delete s.homeLayouts[name];for(const values of Object.values(s.leaveAllowances||{}))delete values[name];delete s.personal[name];delete s.accounts[name];return s;
   }
   function removeMember(state,name,retention){
-    if(isOverallAdmin(state,name))throw new Error('전체관리자는 먼저 권한을 이전한 후 퇴사 처리할 수 있습니다.');
+    if(isOverallAdmin(state,name)&&(state.overallAdmins||[overallAdmin(state)]).filter(n=>n!==name&&state.members.some(m=>m.name===n&&m.active!==false)).length===0)throw new Error('마지막 관리자는 퇴사 처리할 수 없습니다. 다른 관리자를 먼저 지정하세요.');
     if(!['keep','purge'].includes(retention))throw new Error('자료 보관 방식을 선택해 주세요.');
     const next=upgrade(structuredClone(state)),m=next.members.find(m=>m.name===name&&m.active!==false);
     if(!m)throw new Error('재직 중인 인원을 선택해 주세요.');
     if(next.members.filter(m=>m.active!==false).length<=1)throw new Error('최소 한 명의 재직 인원이 필요합니다.');
+    if(next.overallAdmins)next.overallAdmins=next.overallAdmins.filter(n=>n!==name);if(next.overallAdmin===name)next.overallAdmin=next.overallAdmins?.[0]||'';
     m.active=false;m.retiredAt=new Date().toISOString();m.retention=retention;delete next.accounts[name];
     next.teamAdmins=(next.teamAdmins||[]).filter(n=>n!==name);
     for(const team of Object.keys(next.teamLeaders))if(next.teamLeaders[team]===name)delete next.teamLeaders[team];
@@ -185,5 +198,5 @@
     s.teamAdmins=[];s.teamLeaders={};
     s.rolePolicyVersion=2;return s;
   }
-  const api={ranks,setRanks,migrateRoles,compareNames,nameComparator,organization,orderNames,orderedMembers,orderedTeams,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,setAdministrators,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
+  const api={editMember,ranks,setRanks,migrateRoles,compareNames,nameComparator,organization,orderNames,orderedMembers,orderedTeams,setAvatar,overallAdmin,isOverallAdmin,transferAdmin,upgrade,addMember,removeMember,removalImpact,enforceRemovals,savePersonal,isLeader,setLeaders,saveLeave,deleteLeave,weekRanges,schedule,dday,canManage,setTeamAdmins,setAdministrators,resetPassword,canEditLeave,homeOrder,saveHomeOrder,weekRemaining};if(typeof module!=='undefined')module.exports=api;else root.BoardPeople=api;
 })(typeof window!=='undefined'?window:globalThis);

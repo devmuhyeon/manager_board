@@ -1,0 +1,11 @@
+html[data-workplace-theme][data-style] .weekly-schedule-panels{display:flex;flex-direction:column;gap:16px;min-width:0}
+html[data-workplace-theme][data-style] .content .weekly-schedule-panels>.schedule-week-row{display:grid;grid-template-columns:200px minmax(0,1fr);margin:0;min-height:180px;overflow:visible}
+.schedule-week-row>.sectionhead{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;border-bottom:0;border-right:1px solid var(--border);padding:20px;gap:12px}
+.schedule-week-row .sectionhead h2{font-size:16px;font-weight:700}
+.schedule-week-row .sectionhead h2 small{display:block;white-space:nowrap;margin:8px 0 0}
+html[data-workplace-theme][data-style] .content .schedule-week-row>.agenda-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(264px,1fr));gap:12px;padding:16px;align-content:start;min-width:0;max-height:none;overflow:visible}
+html[data-workplace-theme][data-style] .content .schedule-week-row .agenda-item{margin:0;padding:12px;border:1px solid var(--border);border-radius:8px;min-width:0;align-items:flex-start}
+.schedule-task>div:first-child{display:grid;gap:8px;min-width:0}
+.schedule-task .project-button{white-space:normal;text-align:left;overflow-wrap:anywhere}
+
+@media(max-width:900px){html[data-workplace-theme][data-style] .content .weekly-schedule-panels>.schedule-week-row{grid-template-columns:160px minmax(0,1fr)}}

@@ -5,38 +5,8 @@
  async function optional(dir,name,kind='file'){try{return await dir[kind==='file'?'getFileHandle':'getDirectoryHandle'](name);}catch(e){if(e.name==='NotFoundError')return null;throw e;}}
  async function read(file){return (await file.getFile()).text();}
  async function write(dir,name,text){const file=await dir.getFileHandle(name,{create:true}),stream=await file.createWritable();try{await stream.write(text);await stream.close();}catch(e){try{await stream.abort();}catch{}throw e;}}
- async function postsDirectory(directory,create=false){
-  const save=await directory.getDirectoryHandle('save',{create});
-  return save.getDirectoryHandle(POSTS_FOLDER,{create});
- }
- async function readPosts(directory,parts){
-  if(!Array.isArray(parts))throw Error('게시판 저장 목록이 올바르지 않습니다.');
-  if(!parts.length)return [];
-  const dir=await postsDirectory(directory),ids=new Set(),posts=[];
-  for(const part of parts){
-   if(!part||typeof part.id!=='string'||!part.id||ids.has(part.id)||!ID.test(part.revision))throw Error('게시글 저장 경로가 올바르지 않습니다.');
-   const post=JSON.parse(await read(await dir.getFileHandle(part.revision+'.json')));
-   if(post?.id!==part.id)throw Error('게시글 ID가 저장 목록과 다릅니다.');
-   ids.add(part.id);posts.push(post);
-  }
-  return posts;
- }
- async function writePosts(directory,posts,oldPosts,previousParts){
-  if(!Array.isArray(posts)||posts.some(post=>typeof post?.id!=='string'||!post.id)||new Set(posts.map(post=>post.id)).size!==posts.length)throw Error('게시글 저장 목록이 올바르지 않습니다.');
-  const previous=new Map((previousParts||[]).map(part=>[part.id,part.revision]));
-  const old=new Map((oldPosts||[]).map(post=>[post.id,post]));
-  const dir=await postsDirectory(directory,true),parts=[];
-  for(const post of posts){
-   const savedRevision=previous.get(post.id);
-   if(savedRevision&&JSON.stringify(old.get(post.id))===JSON.stringify(post))parts.push({id:post.id,revision:savedRevision});
-   else{
-    const revision=crypto.randomUUID();
-    await write(dir,revision+'.json',JSON.stringify(post,null,2));
-    parts.push({id:post.id,revision});
-   }
-  }
-  return parts;
- }
+ const BulletinStorage=typeof module!=='undefined'?require('../html/organization/board/storage.js'):root.BoardBulletinStorage;
+ const {readPosts,writePosts}=BulletinStorage.create({read,write});
  const leaveKeys=['leaves','leaveAllowances','leaveTypes','leavePolicy'];
  const validYear=year=>/^\d{4}$/.test(year);
  async function readLeaves(directory,parts){
@@ -110,7 +80,8 @@
    const manifest=heads[0],state={};
    for(const [folder,id] of Object.entries(manifest.parts)){
     if(!['work','memo','leave','board','people','settings','assets','cards'].includes(folder)||!ID.test(id))throw Error('잘못된 저장 경로입니다.');
-    const dir=await save.getDirectoryHandle(folder),part=JSON.parse(await read(await dir.getFileHandle(id+'.json')));
+    const store=manifest.dataStore==='save'?await directory.getDirectoryHandle('save'):save;
+    const dir=await store.getDirectoryHandle(folder),part=JSON.parse(await read(await dir.getFileHandle(id+'.json')));
     for(const key of Object.keys(part))if(group(key)!==folder||['__proto__','constructor','prototype'].includes(key))throw Error('잘못된 저장 항목입니다.');
     Object.assign(state,part);
    }
@@ -132,14 +103,14 @@
       const previous=Object.fromEntries(Object.entries(old).filter(([key])=>group(key)===folder&&key!=='teamPosts'&&!leaveKeys.includes(key)));
       const oldBoardIncludesPosts=folder==='board'&&base.manifest?.postParts===undefined&&old.teamPosts!==undefined;
       const oldLeaveIncludesRecords=folder==='leave'&&base.manifest?.leaveParts===undefined&&leaveKeys.some(key=>Object.hasOwn(old,key));
-      if(!oldBoardIncludesPosts&&!oldLeaveIncludesRecords&&base.manifest?.parts[folder]&&JSON.stringify(previous)===JSON.stringify(data))parts[folder]=base.manifest.parts[folder];
-      else{const dir=await save.getDirectoryHandle(folder,{create:true});await write(dir,id+'.json',JSON.stringify(data,null,2));parts[folder]=id;}
+      if(base.manifest?.dataStore==='save'&&!oldBoardIncludesPosts&&!oldLeaveIncludesRecords&&base.manifest?.parts[folder]&&JSON.stringify(previous)===JSON.stringify(data))parts[folder]=base.manifest.parts[folder];
+      else{const store=await directory.getDirectoryHandle('save',{create:true}),dir=await store.getDirectoryHandle(folder,{create:true});await write(dir,id+'.json',JSON.stringify(data,null,2));parts[folder]=id;}
      }
      const postParts=state.teamPosts===undefined?undefined:await writePosts(directory,state.teamPosts,old.teamPosts,base.manifest?.postParts);
      const leaveParts=await writeLeaves(directory,state,old,base.manifest?.leaveParts);
      if((await snapshot()).text!==base.text)throw Error('다른 사용자가 먼저 저장했습니다. 변경사항을 백업한 뒤 새로 읽어 주세요.');
      // Publish last: incomplete module writes never become visible; concurrent commits never overwrite each other.
-     await write(commits,id+'.json',JSON.stringify({version:1,id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts,personalStore:'save'}:{}),postParts,leaveParts,savedAt:state.savedAt,savedBy:state.savedBy},null,2));
+     await write(commits,id+'.json',JSON.stringify({version:1,dataStore:'save',id,parents:base.manifest?[base.manifest.id]:[],parts,...(state.personal?{personalParts,personalStore:'save'}:{}),postParts,leaveParts,savedAt:state.savedAt,savedBy:state.savedBy},null,2));
      await snapshot();
     }
    };}

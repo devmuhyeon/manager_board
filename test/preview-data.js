@@ -70,7 +70,7 @@
   });
   state.projects.push(...workflowSamples(C,day));
   state.personal={};state.leaves=[];state.leaveAllowances={[today.slice(0,4)]:{}};
-  state.members.forEach((m,i)=>{m.avatar=sampleAvatar(m.name)||Avatars.keys[i%Avatars.keys.length];state.leaveAllowances[today.slice(0,4)][m.name]=15;
+  state.members.forEach((m,i)=>{m.hireDate=(2018+i%7)+'-06-16';m.birthday='1990-'+today.slice(5,7)+'-'+String(12+i).padStart(2,'0');m.avatar=sampleAvatar(m.name)||Avatars.keys[i%Avatars.keys.length];state.leaveAllowances[today.slice(0,4)][m.name]=15;
    state.personal[m.name]=Array.from({length:12},(_,j)=>['검토할 화면','UI 피드백 회의','체크리스트','다음 주 할 일','버튼 정렬 확인','모바일 화면 점검'][j%6]+' '+(j+1)).map((title,j)=>({id:'ux-memo:'+i+':'+j,title:'[샘플] '+title,content:'화면 검토 의견을 여기에 기록해 주세요.\n간격, 글자 크기, 이동 흐름을 확인합니다.',date:j<10?day((j-3)*3):'',endDate:j<10&&j%2?day((j-3)*3+2+j%3):'',time:j===1?'14:00':'',done:j===2}));
    for(const offset of [-7,i+2])state.leaves.push({id:'ux-leave:'+i+':'+offset,owner:m.name,start:day(offset),end:day(offset),type:i%2?'오후 반차':'연차',note:'[샘플] 일정 표시 확인',dailyUnits:i%2?.5:1});
   });

@@ -4,7 +4,7 @@ function harness(){
  const events={};
  const nodes=new Map(),element=selector=>{if(!nodes.has(selector))nodes.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},hidden:false,disabled:false,open:false,addEventListener(){},focus(){},insertAdjacentHTML(_,html){this.innerHTML+=html;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(selector);};
  const store=new Map(),vault={rememberConnections:async v=>{vault.connections=v;},recallConnections:async()=>vault.connections,recall:async()=>null,forget:async()=>{}};
- const context={BoardLeavePolicy:require('../source/js/leave-policy.js'),BoardLeaveTypes:require('../source/js/leave-types.js'),BoardLeaveCalendar:require('../source/js/leave-calendar.js'),BoardOrganization:require('../source/js/organization-chart.js'),BoardCardExpenses:require('../source/js/card-expenses.js'),BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}getAll(key){const value=this.get(key);return Array.isArray(value)?value:value===undefined?[]:[value];}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
+ const context={BoardFeaturePages:require('../source/html/pages.js'),BoardKpi:require('../source/html/reports/kpi.js'),BoardLeavePolicy:require('../source/js/leave-policy.js'),BoardLeaveTypes:require('../source/js/leave-types.js'),BoardLeaveCalendar:require('../source/js/leave-calendar.js'),BoardOrganization:require('../source/js/organization-chart.js'),BoardCardExpenses:require('../source/js/card-expenses.js'),BoardArrowIcons:require('../source/js/arrow-icons.js'),BoardWorkRequests:{ui:()=>({sync(){},paint(){},service:{snapshot:()=>({rows:[]}),refresh:async()=>{}}})},BoardLiveCursors:{create:()=>({paint(){}})},BoardFold:require('../source/js/board-fold.js'),BoardAvatars:require('../source/js/avatar-catalog.js'),BoardBriefingDashboard:require('../source/js/briefing-dashboard.js'),BoardBriefingHero:require('../source/js/briefing-hero.js'),BoardPresence:require('../source/js/presence.js'),BoardProjectReport:require('../source/js/project-report.js'),BoardSimpleEditor:require('../source/js/simple-editor.js'),BoardBriefingCalendar:require('../source/js/briefing-calendar.js'),BoardAccountReset:require('../source/js/account-reset.js'),BoardTaskBoard:require('../source/js/task-board.js'),BoardMemoCarousel:require('../source/js/memo-carousel.js'),BoardDisplayStyles:require('../source/js/display-styles.js'),BoardXlsx:{workbook:sheets=>{context.exportedSheets=sheets;return {};}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},FormData:class extends Map{constructor(form){super(Object.entries(form.fields||form));}getAll(key){const value=this.get(key);return Array.isArray(value)?value:value===undefined?[]:[value];}},BoardWorkTables:require('../source/js/work-tables.js'),BoardNavigation:require('../source/js/navigation.js'),BoardTeamPosts:require('../source/js/team-board.js'),BoardDetailViews:require('../source/js/detail-views.js'),BoardCore:C,BoardPeople:P,BoardWorkspace:require('../source/js/workspace.js'),BoardVault:vault,document:{createElement:()=>({click(){}}),querySelectorAll:()=>[],querySelector:element,documentElement:{dataset:{}},addEventListener:(type,fn)=>{(events[type]??=[]).push(fn);},activeElement:null},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},window:{addEventListener:(type,fn)=>{(events['window:'+type]??=[]).push(fn);}},jQuery:()=>{},structuredClone,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,setTimeout:()=>0,clearTimeout(){},console,confirm:()=>true};
  vm.createContext(context);
  const source=fs.readFileSync(require.resolve('../source/js/app.js'),'utf8');
  // Expose the closure only in this isolated in-memory test; no production login bypass.
@@ -14,7 +14,7 @@ function harness(){
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
 test('내 아바타 선택은 다른 사용자를 바꾸지 않고 공용 저장 후에도 유지된다',async()=>{const h=harness(),s=fixture(),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(handle('[]'),out,out.text);await h.api.act({dataset:{action:'avatarSettings'}});assert.match(h.element('#editor').innerHTML,/용용이/);assert.match(h.element('#editor').innerHTML,/삐약이/);await h.api.act({dataset:{action:'setAvatar',avatar:'bbiyak'}});assert.equal(h.api.read().state.members.find(m=>m.name==='김무현').avatar,'bbiyak');assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').avatar,undefined);assert.match(h.element('#app').innerHTML,/내 캐릭터 변경: 삐약이/);await h.api.act({dataset:{action:'save'}});assert.equal(C.validateState(JSON.parse(out.text)).members.find(m=>m.name==='김무현').avatar,'bbiyak');await assert.rejects(h.api.act({dataset:{action:'setAvatar',avatar:'unknown'}}));});
 test('상단 한 줄에 원본·저장 연결 상태와 재연결을 두고 바로가기·사이드바 중복을 제거한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML,header=html.match(/<header class="topbar">[\s\S]*?<\/header>/)[0];assert.equal((html.match(/class="topbar"/g)||[]).length,1);assert.match(header,/원본 연결안됨/);assert.match(header,/저장 연결안됨/);assert.match(header,/data-action="connections"/);assert.match(header,/data-connection="source"/);assert.match(header,/data-connection="target"/);assert.ok(!header.includes('folder-icon'));assert.ok(!header.includes('pending-dot'));assert.ok(!html.includes('W24DG'));assert.equal((html.match(/data-action="connections"/g)||[]).length,2);assert.ok(!html.split('</aside>')[0].includes('workspace-tools'));});
-test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day가 없다',async()=>{const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현');for(const page of ['board','today','users','leaves']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'));assert.match(html,/202\d년/);assert.match(html,/퍼블리싱 팀/);if(page==='leaves'){await h.api.act({dataset:{action:'leaveView',view:'table'}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('week-countdown'));for(const label of ['팀','이름','직급','연차구분','연차 기간','편집'])assert.ok(html.includes('>'+label+'</th>'));}}});
+test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day가 없다',async()=>{const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현');for(const page of ['board','today','users','leaves']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'));assert.match(html,/202\d년/);assert.match(html,/퍼블리싱 팀/);if(page==='leaves'){await h.api.act({dataset:{action:'leaveView',view:'table'}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('week-countdown'));for(const label of ['날짜','팀','이름','직급','연차구분','비고','편집'])assert.ok(html.includes('>'+label+'</th>'));}}});
 test('팀 게시글 UI 저장 후 공용 파일 저장·다시 읽기에 보존된다',async()=>{const h=harness(),s=fixture(),src=handle('[]'),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(src,out,out.text);await h.api.act({dataset:{action:'page',page:'board'}});await h.api.act({dataset:{action:'newPost'}});assert.match(h.element('#editor').innerHTML,/postForm/);h.submit({id:'postForm',fields:{id:'',team:'퍼블',title:'안내 <script>',content:'공유 내용',pinned:'on'}});assert.equal(h.api.read().state.teamPosts.length,1);assert.match(h.element('#app').innerHTML,/안내 &lt;script&gt;/);await h.api.act({dataset:{action:'save'}});const loaded=C.validateState(JSON.parse(out.text));assert.equal(loaded.teamPosts[0].content,'공유 내용');assert.equal(src.writes,0);});
 test('WorkLog 관리자 등록과 해제를 직책 관리에서 적용하고 공용으로 저장한다',async()=>{
  const h=harness(),s=P.migrateRoles(fixture()),src=handle('[]'),out=handle(JSON.stringify(s),true);
@@ -355,8 +355,8 @@ test('업무조회 메뉴는 고객별 다음에 과업별을 표시하고 클�
  await h.api.act({dataset:{action:'editBoardTask',id:projects[0].id,taskId:projects[0].tasks[0].id}});assert.match(h.element('#editor').innerHTML,/projectForm/);
 });
 test('휴가 개인별 보기는 기존 조회 권한 안에서 이름으로 분리하고 인원 추가는 팀 이름 직급을 받는다',async()=>{
- const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','leaves');h.api.render();await h.api.act({dataset:{action:'leaveView',view:'table'}});let html=h.element('#app').innerHTML;assert.match(html,/id="leavePerson"/);assert.match(html,/leave-table/);
- await h.change({id:'leavePerson',value:'김무현',dataset:{}});const table=h.element('#app').innerHTML.match(/<table class="leave-table">[\s\S]*?<\/table>/)[0];assert.ok(!table.includes('정윤정'));
+ const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','leaves');h.api.render();await h.api.act({dataset:{action:'leaveView',view:'table'}});let html=h.element('#app').innerHTML;assert.match(html,/id="leaveSearchForm"/);assert.match(html,/leave-table/);
+ h.submit({id:'leaveSearchForm',fields:{query:'김무현'}});const table=h.element('#app').innerHTML.match(/<table class="leave-table">[\s\S]*?<\/table>/)[0];assert.ok(!table.includes('정윤정'));
  await h.api.act({dataset:{action:'page',page:'people'}});await h.api.act({dataset:{action:'peopleSection',section:'members'}});html=h.element('#app').innerHTML;assert.match(html,/입사·퇴사 인원 관리/);assert.match(html,/<th scope="col">직급<\/th>/);
  await h.api.act({dataset:{action:'addMember'}});for(const field of ['memberTeam','memberName','memberRank'])assert.ok(h.element('#editor').innerHTML.includes('id="'+field+'"'));
 });
@@ -445,7 +445,7 @@ test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 �
  h.submit({id:'postCommentForm',fields:{id:post.id,content:'확인했습니다.'}});assert.match(h.element('#app').innerHTML,/확인했습니다\./);
  const comment=h.api.read().state.teamPosts[0].comments[0];
  assert.match(h.element('#app').innerHTML,/김무현<span class="bulletin-author-team"> · 퍼블리싱/);
- assert.match(h.element('#app').innerHTML,/\d{4}-\d{2}-\d{2}, \d{2}:\d{2}<\/time>/);
+ assert.match(h.element('#app').innerHTML,/\d{4}-\d{2}-\d{2} \d{2}:\d{2}<\/time>/);
  h.submit({id:'postReplyForm-'+comment.id,fields:{id:post.id,parentId:comment.id,content:'답글도 확인했습니다.'}});
  const reply=h.api.read().state.teamPosts[0].comments[1];
  assert.match(h.element('#app').innerHTML,/class="bulletin-reply"[\s\S]*답글도 확인했습니다\./);
@@ -595,7 +595,7 @@ test('관리자 휴가 카드 편집과 삭제는 기존 휴가의 이름과 차
  await h.api.act({dataset:{action:'leaveTypeAdd'}});
  h.submit({id:'leaveTypeForm',fields:{name:'리프레시',icon:'🌿',description:'충전 시간',units:'0.5'}});
  const type=Types.active(h.api.read().state).find(item=>item.name==='리프레시');
- const date=month+'-02';
+ const date=C.today();
  await h.api.act({dataset:{action:'leaveTypeRequest',id:type.id}});
  assert.match(h.element('#editor').innerHTML,/<option value="리프레시" selected/);
  h.submit({id:'leaveForm',fields:{owner:'김무현',type:'리프레시',start:date,end:date,note:''}});
@@ -625,8 +625,8 @@ test('오전·오후 반차는 같은 날 등록하며 근속연수 정책은 �
  assert.equal(W.leaveLedger(s,'김무현','2026','2026-11-03').used,1);
  h.api.seed(s);h.api.session('김무현','leaves');
  await h.api.act({dataset:{action:'leavePolicy'}});
- h.submit({id:'leavePolicyForm',fields:{enabled:'on',count:'2',members:'1',
-   year0:'0',days0:'5',year1:'1',days1:'15',hireName0:'김무현',hire0:'2024-01-01'}});
+ h.submit({id:'leavePolicyForm',fields:{enabled:'on',count:'1',members:'1',
+   from0:'1',to0:'2',days0:'15',capFrom:'21',capDays:'25',hireName0:'김무현',hire0:'2024-01-01'}});
  assert.equal(W.leaveLedger(h.api.read().state,'김무현','2026').allowance,15);
  const personal=W.setAllowance(h.api.read().state,'김무현','김무현','2026',20);
  assert.equal(W.leaveLedger(personal,'김무현','2026').allowance,20);
@@ -652,4 +652,40 @@ test('주간 휴가 현황에서 날짜를 선택하고 내년 연차 선사용�
  assert.doesNotMatch(h.element('#app').innerHTML,/leave-week-day selected/);
  await h.api.act({dataset:{action:'leaveWeek',step:'today'}});
  assert.match(h.element('#app').innerHTML,/미리 사용|년 연차 선사용/);
+});
+test('휴가 월별 요약은 같은 날 사람 수를 묶고 상세에서 모두 표시한다',async()=>{
+ const h=harness(),today=C.today();
+ let s=P.migrateRoles(fixture());
+ for(const owner of ['김무현','홍소영'])s=P.saveLeave(s,'김무현',{owner,type:'연차',start:today,end:today,note:owner+' 비고'});
+ h.api.seed(s);h.api.session('김무현','leaves');h.api.render();
+ const weekly=h.element('#app').innerHTML;
+ assert.match(weekly,/data-view="table"[^]*?주차별[^]*?data-view="calendar"[^]*?월별/);
+ assert.doesNotMatch(weekly,/id="leavePerson"|id="leaveTypeFilter"|id="leaveSort"/);
+ assert.match(weekly,/<th scope="col">날짜<\/th><th scope="col">팀<\/th><th scope="col">이름<\/th><th scope="col">직급<\/th><th scope="col">연차구분<\/th><th scope="col">비고<\/th><th scope="col">편집<\/th>/);
+ await h.api.act({dataset:{action:'leaveView',view:'calendar'}});
+ const html=h.element('#app').innerHTML;
+ const summaries=[...html.matchAll(/data-action="leaveMonthDay"[^>]*data-date="([^"]+)"[^>]*>([^<]+)<\/button>/g)];
+ assert.equal(summaries.filter(match=>match[1]===today).length,1);
+ assert.match(summaries.find(match=>match[1]===today)[2],/외 1명/);
+ await h.api.act({dataset:{action:'leaveMonthDay',date:today}});
+ assert.match(h.element('#editor').innerHTML,/김무현 비고/);
+ assert.match(h.element('#editor').innerHTML,/홍소영 비고/);
+});
+test('관리자가 휴가 유형 순서를 바꾸면 카드와 등록창도 같은 순서로 표시한다',async()=>{
+ const h=harness(),Types=require('../source/js/leave-types.js');
+ h.api.seed(P.migrateRoles(fixture()));h.api.session('김무현','leaves');
+ await h.api.act({dataset:{action:'leavePolicy'}});
+ await h.api.act({dataset:{action:'leaveTypeManage'}});
+ assert.match(h.element('#editor').innerHTML,/목록 순서<select name="position"/);
+ h.submit({id:'leaveTypeForm',fields:{id:'special',name:'특별휴가',icon:'🌿',description:'경조사',units:'0',position:'2',active:'on',paid:'on'}});
+ const names=Types.active(h.api.read().state).map(type=>type.name);
+ assert.deepEqual(names,['연차','오전반차','특별휴가','오후반차']);
+ const cards=[...h.element('#app').innerHTML.matchAll(/data-action="leaveTypeRequest"[^>]*data-id="([^"]+)"/g)].map(match=>match[1]);
+ assert.deepEqual(cards,['annual','morning','special','afternoon']);
+ await h.api.act({dataset:{action:'newLeave'}});
+ const typeSelect=h.element('#editor').innerHTML.match(/id="leaveType">([\s\S]*?)<\/select>/)[1];
+ assert.ok(typeSelect.indexOf('특별휴가')<typeSelect.indexOf('오후반차'));
+ C.validateState(h.api.read().state);
+ h.api.session('정윤정','leaves');
+ await assert.rejects(h.api.act({dataset:{action:'leaveTypeMove',id:'special',step:'1'}}),/관리자/);
 });

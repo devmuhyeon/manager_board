@@ -179,8 +179,10 @@
     if(s.overallAdmin!==undefined&&(typeof s.overallAdmin!=='string'||!people.some(m=>m.name===s.overallAdmin&&m.active!==false)))throw new Error('전체관리자는 재직자 한 명이어야 합니다.');
     if(s.teamPosts!==undefined){if(!Array.isArray(s.teamPosts)||new Set(s.teamPosts.map(p=>p.id)).size!==s.teamPosts.length||s.teamPosts.some(p=>!p||typeof p.id!=='string'||!TEAMS.includes(p.team)||(p.type!==undefined&&!['전체공지','팀별공지','일반글'].includes(p.type))||typeof p.author!=='string'||typeof p.title!=='string'||typeof p.content!=='string'||typeof p.createdAt!=='string'||typeof p.updatedAt!=='string'))throw new Error('팀 게시판 자료 형식을 확인하세요.');}
     for(const post of s.teamPosts||[]){
+      const Attachments=typeof module!=='undefined'?require('../html/organization/board/attachments.js'):window.BoardAttachments;
+      Attachments.validate(post.attachments);for(const comment of post.comments||[])Attachments.validate(comment.attachments,true);
       if(post.comments===undefined)continue;
-      const valid=Array.isArray(post.comments)&&post.comments.every(comment=>comment&&typeof comment.id==='string'&&typeof comment.author==='string'&&typeof comment.content==='string'&&comment.content.trim()&&comment.content.length<=2000&&typeof comment.createdAt==='string'&&(comment.team===undefined||TEAMS.includes(comment.team))&&(comment.parentId===undefined||typeof comment.parentId==='string'));
+      const valid=Array.isArray(post.comments)&&post.comments.every(comment=>comment&&typeof comment.id==='string'&&typeof comment.author==='string'&&typeof comment.content==='string'&&(comment.content.trim()||comment.attachments?.length)&&comment.content.length<=2000&&typeof comment.createdAt==='string'&&(comment.team===undefined||TEAMS.includes(comment.team))&&(comment.parentId===undefined||typeof comment.parentId==='string'));
       if(!valid)throw new Error('게시글 댓글 형식을 확인하세요.');
       const byId=new Map(post.comments.map(comment=>[comment.id,comment]));
       if(byId.size!==post.comments.length)throw new Error('중복된 댓글이 있습니다.');

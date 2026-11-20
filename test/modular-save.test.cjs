@@ -6,6 +6,32 @@ function directory(name='root'){
 }
 const read=async h=>(await h.getFile()).text();
 const save=async(h,state)=>{const w=await h.createWritable();await w.write(JSON.stringify(state));await w.close();};
+
+test('게시글·댓글 첨부를 별도 에셋으로 저장하고 다시 열어 복원한다',async()=>{
+ const image={id:'img',name:'test.png',type:'image/png',size:1,data:'data:image/png;base64,YQ=='};
+ const dir=directory(),h=await M.open(dir),state={teamPosts:[{id:'post',attachments:[image],comments:[{id:'comment',attachments:[image]}]}]};
+ await save(h,state);assert.deepEqual(JSON.parse(await read(h)),state);
+ const folder=dir.children.get('save').children.get('게시판'),assets=folder.children.get('첨부');assert.equal(assets.children.size,2);
+ const post=[...folder.children.values()].find(file=>file.kind==='file');assert.equal(post.value.includes('base64'),false);
+ const manifest=JSON.parse([...dir.children.get('process').children.get('commits').children.values()][0].value);assert.equal(manifest.dataStore,'save');
+ await save(h,state);assert.equal(assets.children.size,2);
+ state.teamPosts[0].comments[0].content='본문만 수정';await save(h,state);assert.equal(assets.children.size,2);assert.deepEqual(JSON.parse(await read(h)),state);
+});
+
+test('복구 도구는 현재 저장 모듈과 휴가·첨부를 내보내고 참조를 보존한다',async()=>{
+ const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
+ const dir=directory(),h=await M.open(dir),image={id:'image',name:'test.png',type:'image/png',size:1,data:'data:image/png;base64,YQ=='};
+ const state={projects:[{id:'work'}],teamPosts:[{id:'post',attachments:[image],comments:[]}],leaves:[{id:'leave',owner:'A',start:'2026-11-20',end:'2026-11-20'}],leaveAllowances:{2026:{A:15}},leavePolicy:{enabled:false,grants:[],hires:{}}};
+ await save(h,state);
+ const base=path.resolve('test/results/recovery-'+crypto.randomUUID());fs.mkdirSync(base,{recursive:true});
+ function materialize(folder,where){for(const [name,item] of folder.children){const filename=path.join(where,name);if(item.kind==='directory'){fs.mkdirSync(filename,{recursive:true});materialize(item,filename);}else fs.writeFileSync(filename,item.value);}}
+ materialize(dir,base);const processFolder=path.join(base,'process'),commit=JSON.parse([...dir.children.get('process').children.get('commits').children.values()][0].value);
+ const result=spawnSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.resolve('prg/scripts/Recover-Save.ps1'),'-SaveFolder',processFolder,'-Commit',commit.id],{encoding:'utf8',windowsHide:true});
+ assert.equal(result.status,0,result.stderr);
+ const restored=JSON.parse(fs.readFileSync(path.join(processFolder,'recovery',commit.id+'.json'),'utf8'));assert.deepEqual(restored,state);
+ const recovery=fs.readdirSync(path.join(processFolder,'commits')).find(name=>name!==commit.id+'.json');const published=JSON.parse(fs.readFileSync(path.join(processFolder,'commits',recovery),'utf8'));
+ assert.equal(published.dataStore,'save');assert.deepEqual(published.leaveParts,commit.leaveParts);assert.deepEqual(published.postParts,commit.postParts);
+});
 test('legacy migration preserves original, splits modules and reuses unchanged data',async()=>{
  const dir=directory(),legacy=await dir.getFileHandle('통합관리 대시보드.json',{create:true});legacy.value=JSON.stringify({revision:0,projects:[{id:'a'}],personal:{A:[]},members:[]});
  const original=legacy.value,h=await M.open(dir);assert.equal(await read(h),original);
@@ -13,7 +39,7 @@ test('legacy migration preserves original, splits modules and reuses unchanged d
  const first=JSON.parse(await read(h));assert.equal(first.projects[0].id,'a');
  const organizationChart={levels:['조직'],nodes:[{id:'root',name:'WorkLog',parent:null}],hiddenMembers:[]};
  await save(h,{...first,revision:2,personal:{A:[{id:'memo'}]},organizationChart});
- const folder=dir.children.get('process');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);
+ const folder=dir.children.get('save');assert.equal(folder.children.get('work').children.size,1);assert.equal(dir.children.get('save').children.get('users').children.get('A').children.size,2);assert.equal(legacy.value,original);
  const latest=JSON.parse(await read(h));assert.equal(latest.revision,2);assert.deepEqual(latest.organizationChart,organizationChart);assert.equal(M.group('organizationChart'),'people');
 });
 test('stale writer is rejected and interrupted module save never publishes',async()=>{
@@ -39,7 +65,7 @@ test('two truly overlapping publications retain both snapshots',async()=>{
  commits.getFileHandle=async(...args)=>{const file=await original(...args);if(args[1]?.create){const create=file.createWritable;file.createWritable=async()=>{const stream=await create();return {...stream,close:async()=>{await stream.close();if(++arrived===2)release();await gate;}};};}return file;};
  const results=await Promise.allSettled([save(a,{revision:1,projects:[{id:'A'}]}),save(b,{revision:1,projects:[{id:'B'}]})]);
  assert.ok(results.some(r=>r.status==='rejected'));assert.equal(commits.children.size,2);
- const work=dir.children.get('process').children.get('work');assert.deepEqual([...work.children.values()].map(f=>JSON.parse(f.value).projects[0].id).sort(),['A','B']);
+ const work=dir.children.get('save').children.get('work');assert.deepEqual([...work.children.values()].map(f=>JSON.parse(f.value).projects[0].id).sort(),['A','B']);
  await assert.rejects(a.getFile(),/동시 저장 충돌/);
 });
 test('complete existing application state survives split save and validation',async()=>{
@@ -99,7 +125,7 @@ test('기존 게시판 묶음에서 글과 댓글을 개별 저장하고 수정�
 test('법인카드 내역은 공용 업무의 카드 모듈로 저장하고 복원한다',async()=>{
  const state={cardExpenses:{cards:[{id:'sample',name:'샘플',limits:[],extra:{}}],entries:[]}},dir=directory(),h=await M.open(dir);
  await save(h,state);
- assert.ok(dir.children.get('process').children.get('cards'));
+ assert.ok(dir.children.get('save').children.get('cards'));
  assert.deepEqual(JSON.parse(await read(h)),state);
 });
 test('휴가를 save/휴가의 연도별로 나누고 이전 통합 자료와 저장 이력을 보존한다',async()=>{

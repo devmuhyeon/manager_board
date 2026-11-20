@@ -11,14 +11,15 @@ html[data-workplace-theme][data-style] .leave-workspace .card{margin:0;border:1p
 html[data-workplace-theme][data-style] .annual-panel .sectionhead .actions button{min-height:36px;padding:8px 12px;font-size:12px}
 .annual-person{min-width:0;display:grid;gap:12px;padding:4px 8px 4px 0}
 .annual-person-line{display:flex;align-items:center;gap:16px}
-html[data-workplace-theme][data-style] .annual-person-line .avatar{width:64px;height:64px;flex:none;background:transparent;border:0;box-shadow:none;border-radius:0}
+html[data-workplace-theme][data-style] .annual-person-line .avatar{display:flex;align-items:center;justify-content:center;width:64px;height:64px;min-width:64px;max-width:64px;min-height:64px;max-height:64px;flex:0 0 64px;overflow:hidden;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
+html[data-workplace-theme][data-style] .annual-person-line .avatar img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;margin:0}
 .annual-identity{display:grid;gap:4px;min-width:0}
 .annual-identity>strong{font-size:18px;font-weight:700;line-height:24px}
 .annual-identity>span{font-size:12px;color:var(--muted);line-height:20px}
 .annual-identity>small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .annual-progress-caption{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
 .annual-progress-caption strong{color:#287bd3;font-size:12px;font-weight:600}
-.annual-person progress{display:block;width:100%;height:4px;accent-color:#4b9cf3;border:0;border-radius:4px;overflow:hidden}
+.annual-person progress{display:block;width:100%;height:4px;direction:rtl;accent-color:#4b9cf3;border:0;border-radius:4px;overflow:hidden}
 .annual-person progress::-webkit-progress-bar{background:#edf3fa}
 .annual-person progress::-webkit-progress-value{background:#4b9cf3}
 .annual-person progress::-moz-progress-bar{background:#4b9cf3}
@@ -27,30 +28,29 @@ html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{displ
 .annual-totals small{color:var(--muted);font-size:12px;white-space:nowrap}
 .annual-totals strong{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .annual-totals>div:first-child strong{color:#287bd3}
-.annual-reservations{display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;padding:0 20px 16px;color:var(--muted);font-size:12px}
-.annual-reservations span{display:flex;gap:8px;align-items:center}
-.annual-reservations strong{font-weight:600;color:var(--text)}
 .leave-policy-calculation{margin-top:24px;padding:16px;background:var(--surface-soft);border-radius:8px}
 .leave-policy-calculation p{font-size:12px;line-height:20px;color:var(--muted);margin:12px 0 0}
 .leave-calendar-warning{padding:0 24px}
-.leave-search-form{display:flex;align-items:center;gap:8px;padding:0;margin-left:auto;flex:none}
-.leave-search-input{display:flex;align-items:center;gap:8px;width:160px;padding:0 8px;border:1px solid var(--border);border-radius:8px;color:var(--muted);flex:none}
-html[data-workplace-theme][data-style] .leave-search-input input{width:100%;min-width:0;min-height:32px;padding:4px 0;border:0;background:transparent;box-shadow:none;font-size:12px}
-.leave-search-input:focus-within{outline:2px solid var(--accent);outline-offset:2px}
-.leave-search-input input:focus-visible{outline:0}
-.leave-list-filters{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
-.leave-week-scroll{padding:0 20px 24px;overflow-x:auto}
-.leave-week-overview{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:560px;border:1px solid var(--border);border-radius:12px}
-.leave-week-overview::before{content:"";position:absolute;top:36px;left:0;right:0;border-top:1px solid var(--border);pointer-events:none}
-html[data-workplace-theme][data-style] .leave-week-day{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:20px;padding:8px;min-height:132px;border:0;border-radius:8px;background:transparent;box-shadow:none;font-size:12px}
-html[data-workplace-theme][data-style] .leave-week-day.weekend{background:transparent}
-html[data-workplace-theme][data-style] .leave-week-day.selected{background:#f5f8fb;box-shadow:inset 0 0 0 1px #a8cce7}
-.leave-week-day.selected::after{content:"";position:absolute;width:8px;height:8px;bottom:-4px;left:calc(50% - 4px);background:#f5f8fb;border-right:1px solid #a8cce7;border-bottom:1px solid #a8cce7;transform:rotate(45deg)}
-.leave-week-date{display:flex;align-items:center;gap:4px;padding:0;color:var(--muted);height:20px;font-size:12px}
+.leave-toolbar-right{display:flex;align-items:center;justify-self:end;gap:8px;white-space:nowrap}
+.leave-search-form{display:flex;padding:0;margin:0}
+.leave-search-input{display:flex;align-items:center;width:180px;padding:0 4px 0 8px;border:1px solid var(--border);border-radius:8px;color:var(--muted)}
+html[data-workplace-theme][data-style] .leave-schedule-panel .leave-search-input input[type=search]{width:100%;min-width:0;min-height:32px;padding:4px 0;border:0;border-radius:0;outline:none;background:transparent;box-shadow:none;font-size:12px}
+.leave-search-input:focus-within{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);outline:none}
+html[data-workplace-theme][data-style] .leave-search-input button{display:grid;place-items:center;flex:none;width:28px;min-height:28px;padding:0;border:0;box-shadow:none;background:transparent;color:var(--muted)}
+.leave-week-scroll{padding:0 20px 16px;overflow-x:auto}
+.leave-week-overview{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:560px;border:1px solid #b6cadf;border-radius:12px;background:#f9fbfe}
+html[data-workplace-theme][data-style] .leave-week-day{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:8px;min-height:132px;border:0;border-radius:0;background:transparent;box-shadow:none;font-size:12px}
+html[data-workplace-theme][data-style] .leave-week-day:first-child{border-radius:12px 0 0 12px;overflow:hidden}
+html[data-workplace-theme][data-style] .leave-week-day:last-child{border-radius:0 12px 12px 0;overflow:hidden}
+html[data-workplace-theme][data-style] .leave-week-day.weekend{background:#edf3f9}
+html[data-workplace-theme][data-style] .leave-week-day.selected{background:#e4effb;box-shadow:inset 0 0 0 1px #a8cce7}
+.leave-week-day.selected::after{content:"";position:absolute;width:8px;height:8px;bottom:-4px;left:calc(50% - 4px);background:#e4effb;border-right:1px solid #a8cce7;border-bottom:1px solid #a8cce7;transform:rotate(45deg)}
+.leave-week-date{display:flex;align-items:center;flex:none;gap:4px;padding:8px;margin:-8px -8px 0;background:#c7d8eb;color:#233c58;height:36px;border-bottom:1px solid #b6cadf;font-size:12px;font-weight:600}
+.leave-week-day.weekend .leave-week-date{background:#bfcee0}
+.leave-week-day.selected .leave-week-date{background:#9fbdda;color:#193754}
 .leave-week-date strong{display:inline-grid;place-items:center;min-width:20px;height:20px;color:var(--text);font-weight:600}
 .leave-week-day.today .leave-week-date strong{border-radius:12px;background:#38424b;color:#fff}
 .leave-week-count{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#e1eefb;color:#32638e;border-radius:4px;gap:4px;font-size:12px;font-weight:500}
-.leave-week-empty{text-align:center;color:var(--muted)}
 .leave-month-nav.weekly strong{min-width:180px;font-size:13px;letter-spacing:-.02em}
 dialog:has(#leaveTypeForm){width:920px}
 .leave-type-editor{display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:min(720px,calc(90dvh - 96px));min-height:0;overflow:hidden}
@@ -59,6 +59,11 @@ dialog:has(#leaveTypeForm){width:920px}
 .leave-type-list>.people-cell-actions>strong{font-size:13px}
 .leave-type-list .leave-type-list-item{display:grid;width:100%;gap:8px;margin-bottom:8px;padding:12px;border:0;background:transparent;box-shadow:none;text-align:left}
 .leave-type-list .leave-type-list-item.active{background:var(--surface);color:var(--accent-text)}
+.leave-type-list-row{display:flex;align-items:center;gap:4px}
+.leave-type-list-row>.leave-type-list-item{flex:1;min-width:0}
+.leave-type-order{display:grid;gap:4px;flex:none}
+html[data-workplace-theme][data-style] .leave-type-order button{display:grid;place-items:center;width:16px;min-height:16px;height:16px;padding:0;border:0;box-shadow:none;background:transparent;color:var(--muted)}
+.leave-type-order button:disabled{opacity:.3;cursor:default}
 .leave-type-list-item strong{font-size:13px}
 .leave-type-list-item small{font-size:12px;line-height:20px;color:var(--muted)}
 #leaveTypeForm{min-width:0;min-height:0;display:flex;flex-direction:column}
@@ -68,11 +73,14 @@ dialog:has(#leaveTypeForm){width:920px}
 #leaveTypeForm h4{margin:24px 0 16px;font-size:14px}
 .leave-type-basic{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 #leaveTypeForm .field input,#leaveTypeForm .field select{width:100%;min-width:0}
-.leave-policy-grants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.leave-policy-grants{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:16px 0 24px}
 .leave-policy-grant{display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px}
 .leave-policy-grant label{display:flex;align-items:center;gap:4px;font-size:12px}
 .leave-policy-grant input{width:64px;min-width:0;padding:8px}
 .leave-policy-grant button{margin-left:auto;padding:4px;border:0;background:transparent}
+.leave-policy-cap{display:flex;align-items:center;gap:12px;padding:16px;background:var(--surface-soft);border-radius:8px;flex-wrap:wrap;margin-bottom:16px}
+.leave-policy-cap label{display:flex;align-items:center;gap:8px;font-size:12px}
+.leave-policy-cap input{width:72px;min-width:0;padding:8px}
 .leave-policy-members{display:grid;gap:8px}
 .leave-policy-members>label{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 #leavePolicyForm .sectionhead{padding:16px 0}
@@ -89,8 +97,9 @@ html[data-workplace-theme][data-style] .leave-type-request{display:flex;flex-dir
 .leave-type-request small{margin-top:auto;font-size:12px;color:var(--accent-text)}
 html[data-workplace-theme][data-style] .leave-type-add{display:grid;place-items:center;align-self:flex-start;flex:0 0 var(--leave-card-width);height:128px;padding:0;border:1px dashed var(--border);background:#fff;box-shadow:none;border-radius:12px;font-size:24px;color:var(--muted)}
 .leave-policy-types{display:flex;justify-content:flex-end;margin-bottom:16px}
-.leave-schedule-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;padding:20px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#b7c0cd transparent}
-.leave-schedule-toolbar>.leave-month-nav,.leave-schedule-toolbar>.leave-view-controls{flex:none;white-space:nowrap}
+.leave-schedule-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) auto minmax(280px,1fr);align-items:center;gap:16px;padding:20px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#b7c0cd transparent}
+.leave-schedule-toolbar>.leave-month-nav{justify-self:center;white-space:nowrap}
+.leave-schedule-toolbar>.leave-view-controls{justify-self:start;white-space:nowrap}
 .leave-month-nav,.leave-view-controls{display:flex;align-items:center;gap:8px}
 .leave-workspace .leave-view-controls{padding:0;flex-wrap:nowrap}
 .leave-workspace .leave-schedule-panel .leave-view-controls{width:auto}
@@ -99,8 +108,7 @@ html[data-workplace-theme][data-style] .leave-type-add{display:grid;place-items:
 html[data-workplace-theme][data-style] .leave-month-nav button{min-width:28px;min-height:28px;height:28px;border:0;border-radius:16px;padding:4px;background:transparent;box-shadow:none;font-size:12px;color:var(--muted)}
 .leave-month-nav button svg{width:16px;height:16px}
 html[data-workplace-theme][data-style] .leave-schedule-panel .leave-view-controls button{min-height:28px;padding:4px 8px;font-size:12px}
-html[data-workplace-theme][data-style] .leave-schedule-panel .leave-search-form>button{min-height:32px;padding:4px 12px;font-size:12px}
-html[data-workplace-theme][data-style] .leave-schedule-panel .leave-list-filters select{min-height:32px;padding-block:4px;font-size:12px}
+html[data-workplace-theme][data-style] .leave-schedule-panel .leave-toolbar-right>button{min-height:32px;padding:4px 12px;font-size:12px}
 .leave-calendar-scroll{overflow:auto}
 .leave-calendar{min-width:640px}
 .leave-calendar-weekdays,.leave-calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
@@ -113,13 +121,8 @@ html[data-workplace-theme][data-style] .leave-schedule-panel .leave-list-filters
 .leave-calendar-date time{display:grid;place-items:center;min-width:24px;height:24px;border-radius:8px}
 .leave-calendar-date.outside{color:var(--muted);opacity:.5}
 .leave-calendar-date.today time{background:var(--accent);color:#fff;font-weight:700}
-.leave-calendar-event.annual,.leave-calendar-legend .annual{--leave-bg:#edf3ff;--leave-ink:#2854a6}
-.leave-calendar-event.half,.leave-calendar-legend .half{--leave-bg:#fff4e5;--leave-ink:#8b5a14}
-.leave-calendar-event.other,.leave-calendar-legend .other{--leave-bg:#ecf5ef;--leave-ink:#286342}
-html[data-workplace-theme][data-style] .leave-calendar-event{position:relative;display:block;min-width:0;min-height:28px;height:28px;padding:4px 8px;margin:0 4px;border:0;border-radius:4px;background:var(--leave-bg);color:var(--leave-ink);box-shadow:none;line-height:20px;font-size:12px;font-weight:500;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.leave-calendar-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
-.leave-calendar-legend span{display:flex;align-items:center;gap:8px}
-.leave-calendar-legend i{display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--leave-ink)}
+html[data-workplace-theme][data-style] .leave-calendar-summary{position:relative;min-width:0;min-height:28px;height:28px;padding:4px 8px;margin:0 4px;border:0;border-radius:4px;background:#e1eefb;color:#32638e;box-shadow:none;line-height:20px;font-size:12px;font-weight:600;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.leave-day-detail{overflow:auto}
 .leave-workspace .table-wrap{padding:0}
 html[data-workplace-theme][data-style] .leave-workspace .leave-table th{background:#fff;color:var(--muted);padding:12px 16px;border:0;border-block:1px solid var(--border);font-size:12px;font-weight:600}
 html[data-workplace-theme][data-style] .leave-workspace .leave-table td{padding:12px 16px;border:0;font-size:12px;vertical-align:middle}
@@ -130,6 +133,7 @@ html[data-workplace-theme][data-style] .leave-schedule-panel>.table-wrap{border:
 .leave-table-person img{width:28px;height:28px;object-fit:contain}
 html[data-workplace-theme][data-style] .leave-row-edit{display:inline-grid;place-items:center;width:28px;min-height:28px;padding:0;border:0;box-shadow:none;background:transparent;color:var(--muted)}
 .leave-date-cell{font-variant-numeric:tabular-nums;white-space:nowrap}
+.leave-note-cell{min-width:120px;max-width:240px;white-space:normal;overflow-wrap:anywhere;line-height:20px}
 .leave-borrow-label{display:block;margin-top:4px;font-size:12px;color:#287bd3}
 #leaveForm .modal-body{display:grid;gap:16px}
 #leaveForm .field{margin:0}
@@ -138,3 +142,17 @@ html[data-workplace-theme][data-style] .leave-row-edit{display:inline-grid;place
 @media(max-width:640px){.annual-overview{padding:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:16px}html[data-workplace-theme][data-style] .leave-workspace .annual-totals>div{padding:4px 8px}.annual-totals strong{font-size:20px}.leave-workspace .sectionhead,.leave-schedule-toolbar,.leave-types-section{padding:16px}.leave-types-row{--leave-card-width:180px}.leave-view-controls{width:100%}}
 @media(max-width:640px){.leave-type-editor{grid-template-columns:minmax(0,1fr)}.leave-type-list{display:none}}
 @media(max-width:640px){.leave-policy-grants{grid-template-columns:minmax(0,1fr)}}
+
+.annual-progress-caption{margin-top:12px}
+.leave-month-nav.weekly strong{font-size:16px;min-width:224px}
+html[data-workplace-theme][data-style] .leave-month-nav button{width:32px;height:32px;min-width:32px;min-height:32px}
+.leave-month-nav button svg{width:20px;height:20px}
+.leave-month-nav .leave-period-reset svg{width:16px;height:16px}
+.leave-type-request .tossface{display:inline-block;transform-origin:center bottom}
+.leave-type-request:hover .tossface{animation:leave-icon-wiggle .7s ease-in-out infinite}
+@keyframes leave-icon-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+@media(prefers-reduced-motion:reduce){.leave-type-request:hover .tossface{animation:none}}
+.leave-type-list-row{display:block}
+html[data-workplace-theme][data-style] .leave-type-list-add{width:100%;height:96px;min-height:96px;margin-top:8px;background:#fff;border:1px dashed var(--border);border-radius:8px;font-size:28px;color:var(--muted)}
+.leave-first-year{margin:20px 0;padding:16px;border:1px solid var(--border);border-radius:8px}
+.leave-first-year h3{margin:0 0 12px}

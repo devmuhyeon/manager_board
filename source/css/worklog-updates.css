@@ -1,0 +1,16 @@
+html[data-workplace-theme][data-style] :is(.calendar-date,.leave-calendar-date,.leave-week-date).date-weekday,
+:is(.calendar-weekdays,.leave-calendar-weekdays) .date-weekday{color:#222}
+html[data-workplace-theme][data-style] :is(.calendar-date,.leave-calendar-date,.leave-week-date).date-saturday,
+:is(.calendar-weekdays,.leave-calendar-weekdays) .date-saturday{color:#2763b8}
+html[data-workplace-theme][data-style] :is(.calendar-date,.leave-calendar-date,.leave-week-date).date-holiday,
+:is(.calendar-weekdays,.leave-calendar-weekdays) .date-holiday{color:#cc4141}
+.calendar-date :is(span,strong),.leave-calendar-date time,.leave-week-date strong{color:inherit}
+html[data-workplace-theme][data-style] .content .date-weekday{--date-text:#222}
+html[data-workplace-theme][data-style] .content .date-saturday{--date-text:#2763b8}
+html[data-workplace-theme][data-style] .content .date-holiday{--date-text:#cc4141}
+html[data-workplace-theme][data-style] .content :is(.calendar-date,.leave-calendar-date,.leave-week-date):is(.date-weekday,.date-saturday,.date-holiday) :is(.calendar-date-number,time,strong){color:var(--date-text);background:transparent}
+.calendar-span.birthday{background:#fff0d5;color:#79521a}
+html[data-workplace-theme][data-style] :is(.board-post-footer,.expense-form) input[type=checkbox][role=switch]{appearance:none;display:inline-block;position:relative;width:36px;min-width:36px;height:20px;min-height:20px;margin:0;padding:0;border:0;border-radius:12px;background:#bcc4ce;vertical-align:middle;cursor:pointer;flex:none}
+html[data-workplace-theme][data-style] :is(.board-post-footer,.expense-form) input[type=checkbox][role=switch]::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0002;transition:transform .15s ease}
+html[data-workplace-theme][data-style] :is(.board-post-footer,.expense-form) input[type=checkbox][role=switch]:checked{background:#5f8fc4}
+html[data-workplace-theme][data-style] :is(.board-post-footer,.expense-form) input[type=checkbox][role=switch]:checked::after{transform:translateX(16px)}

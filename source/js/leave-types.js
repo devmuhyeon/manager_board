@@ -30,6 +30,10 @@
   if(String(input.minDays??'').trim())item.minDays=Number(input.minDays);
   if(String(input.maxDays??'').trim())item.maxDays=Number(input.maxDays);
   if(old)types[types.indexOf(old)]=item;else types.push(item);
+  if(input.position!==undefined){
+   const position=Number(input.position);if(!Number.isInteger(position)||position<0||position>=types.length)throw Error('목록 순서를 확인하세요.');
+   types.splice(types.indexOf(item),1);types.splice(position,0,item);
+  }
   validate(types);
   return {...state,leaveTypes:types};
  }
@@ -38,6 +42,13 @@
   if(!all(state).some(type=>type.id===id))throw Error('휴가 종류를 찾을 수 없습니다.');
   return {...state,leaveTypes:all(state).map(type=>type.id===id?{...type,active:false}:{...type})};
  }
- const api={all,active,validate,save,remove};
+ function move(state,actor,id,step,isAdmin){
+  if(!isAdmin(state,actor))throw Error('WorkLog 관리자만 휴가 종류 순서를 변경할 수 있습니다.');
+  const types=structuredClone(all(state)),index=types.findIndex(type=>type.id===id),next=index+step;
+  if(index<0||![1,-1].includes(step)||next<0||next>=types.length)return state;
+  [types[index],types[next]]=[types[next],types[index]];
+  return {...state,leaveTypes:types};
+ }
+ const api={all,active,validate,save,remove,move};
  if(typeof module!=='undefined')module.exports=api;else root.BoardLeaveTypes=api;
 })(typeof window!=='undefined'?window:globalThis);

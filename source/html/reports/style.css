@@ -1,0 +1,8 @@
+.customer-report-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.weekly-report-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.kpi-dashboard{display:grid;gap:20px}.kpi-intro{display:flex;justify-content:space-between;gap:16px;color:#fff}.kpi-intro>span{color:#ccc;font-size:12px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.kpi-card{padding:24px;margin:0}.kpi-card h2{font-size:16px;font-weight:700;margin:0 0 24px}.kpi-rate{display:flex;align-items:baseline;gap:12px}.kpi-rate>strong{font-size:40px}.kpi-rate small{font-size:20px}.kpi-rate>span{color:var(--muted)}.kpi-card progress{width:100%;height:8px;margin:16px 0;accent-color:#7595cf}.kpi-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0}.kpi-card dl>div{display:flex;justify-content:space-between;gap:8px}.kpi-card dt{color:var(--muted)}.kpi-card dd{margin:0;font-weight:700}.kpi-note{color:#ddd;padding:0 4px}
+
+html[data-workplace-theme][data-style] .content .kpi-note{color:#ddd}
+.kpi-card progress{appearance:none;border:0;border-radius:4px;overflow:hidden;background:#edf2f7}.kpi-card progress::-webkit-progress-bar{background:#edf2f7}.kpi-card progress::-webkit-progress-value{background:#7595cf}.kpi-card progress::-moz-progress-bar{background:#7595cf}
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr}}

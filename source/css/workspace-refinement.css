@@ -62,13 +62,8 @@ html[data-workplace-theme][data-style] .briefing-panels>[data-home-section="team
 .briefing-panels .sectionhead{display:flex;justify-content:space-between;align-items:center;gap:16px}
 .briefing-panels .sectionhead h2{margin:0}
 
-html[data-workplace-theme][data-style] .weekly-schedule-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;width:100%;align-items:stretch;min-height:calc(100dvh - 232px)}
-html[data-workplace-theme][data-style] .weekly-schedule-panels>.card{min-width:0;display:flex;flex-direction:column;margin:0;grid-column:auto}
-.weekly-schedule-panels .agenda-list{flex:1;min-width:0}.weekly-schedule-panels .agenda-item>div{min-width:0;overflow-wrap:anywhere}
-.weekly-schedule-panels .empty{display:grid;place-items:center;min-height:240px}
 html[data-workplace-theme][data-style] .simple-project-form .task-delete{margin-right:auto;background:transparent;color:#b42318;border-color:var(--border)}
 .status-board .task-board-lane{transition:width .24s ease,min-width .24s ease}
-@media(max-width:760px){html[data-workplace-theme][data-style] .weekly-schedule-panels{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.status-board .task-board-lane{transition:none}}
 
 .briefing-panels .briefing-progress-scroll{max-height:240px;overflow:auto}
@@ -83,40 +78,12 @@ html[data-workplace-theme][data-style] .simple-project-form .task-delete{margin-
 .briefing-panels .briefing-posts article{height:auto;min-height:0;overflow:visible;padding:12px 0}
 .briefing-panels .briefing-posts article p{white-space:normal;overflow:visible;display:block;-webkit-line-clamp:unset}
 
-html[data-workplace-theme][data-style] .weekly-schedule-panels>.card{height:auto;max-height:none;overflow:visible;align-self:stretch}
-html[data-workplace-theme][data-style] .weekly-schedule-panels .agenda-list{max-height:none;overflow:visible;height:auto;flex:1}
-.weekly-schedule-panels .agenda-item{flex-wrap:wrap;min-width:0}.weekly-schedule-panels .agenda-item .week-countdown{margin-left:auto}
 html[data-workplace-theme][data-style] .briefing-panels [data-home-section="progress"] .briefing-progress-scroll{height:240px;max-height:240px;overflow:visible;min-height:0}
 html[data-workplace-theme][data-style] .briefing-progress-scroll>.table-wrap{height:240px;max-height:240px;overflow:auto}
 html[data-workplace-theme][data-style] .briefing-panels > [data-home-section="progress"]{align-self:start;min-height:0;height:auto}
 
 html[data-workplace-theme][data-style] .sidebar .nav button{width:100%;box-sizing:border-box}
 html[data-workplace-theme][data-style] .table-toolbar{background:transparent}
-.content .people-management{padding:0;--people-accent:#08795f}
-:root[data-style] .people-tabs{gap:8px;padding:0 16px;flex-wrap:wrap;border-radius:0;border-bottom:1px solid var(--border);background:transparent}
-:root[data-style] .people-tabs button{min-height:44px;padding:12px;border-radius:0;box-shadow:inset 0 -2px transparent}
-:root[data-style] .people-tabs button.active{color:var(--people-accent);box-shadow:inset 0 -2px var(--people-accent)}
-.people-section{display:grid;gap:16px;padding:16px;grid-template-columns:minmax(0,1fr)}
-.content .people-section .people-sheet{border-radius:4px}
-.people-sheet th,.people-sheet td{padding:8px 12px;height:44px}
-.people-org-sheet :is(th,td):not(:last-child){border-inline-end:1px solid var(--border)}
-.people-org-group{vertical-align:top;min-width:144px}
-.people-cell-actions,.people-row-actions{display:flex;gap:4px;align-items:center}
-.people-cell-actions{justify-content:space-between}
-.people-org-member{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
-.people-org-sheet .people-row-actions{flex:none}
-.people-row-actions{justify-content:flex-end}
-.content .people-management .people-icon-button{display:inline-grid;place-items:center;padding:0;width:28px;min-height:28px;border:0;box-shadow:none;color:var(--muted);background:transparent}
-.content .people-management .people-icon-button:hover:not(:disabled){color:var(--people-accent);background:var(--surface-soft)}
-.content .people-management .people-icon-button.danger:hover:not(:disabled){color:#b42318}
-.content .people-management .people-icon-button:disabled{opacity:.35}
-.people-sheet-foot{padding:4px 8px;border-top:1px solid var(--border)}
-.content .people-management .people-text-button{border:0;box-shadow:none;color:var(--people-accent);background:transparent}
-.people-admin-panel .sectionhead{padding:16px;gap:12px;flex-wrap:wrap}
-.people-role-list{margin:0;padding:4px 16px}
-.people-role-list>div{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 0}
-.people-role-list>div+div{border-top:1px solid var(--border)}
-.people-role-list dd{margin:0;font-weight:600}
 .page-actions:empty{display:none}.page-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px}.content:focus{outline:none}
 /* The calendar sets the height of the shared desktop row. */
 html[data-workplace-theme][data-style] .briefing-panels {
