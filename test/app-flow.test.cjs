@@ -393,7 +393,7 @@ test('브리핑에서 메모 목록과 배치 도구는 숨기고 달력의 개�
 test('브리핑은 달력과 일정·전체 휴가 다음에 진행과 팀브리핑을 제공한다',async()=>{const h=harness();h.api.seed(require('./preview-data.js').create(C,P));h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML;const markers=['briefing-hero-frame','briefing-calendar','data-home-section="schedule"','data-home-section="leaves"','data-home-section="progress"','data-home-section="team"'];let previous=-1;for(const marker of markers){const at=html.indexOf(marker);assert.ok(at>previous,marker);previous=at;}assert.ok(!html.includes('이번 주 나의 일정'));assert.ok(!html.includes('나의 프로젝트 마감'));await h.api.act({dataset:{action:'avatarSettings'}});assert.match(h.element('#editor').innerHTML,/data-action="addAvatar"/);await h.api.act({dataset:{action:'addAvatar'}});assert.match(h.element('#editor').innerHTML,/id="addAvatarForm"/);});
 
 test('다른 사람의 담당 업무와 전체 과업도 재직 사용자가 삭제할 수 있다',async()=>{const h=harness(),s=P.upgrade(C.sampleState());const project=s.projects[0];project.tasks=[{id:'other-a',role:'디자인',assignees:['김민재'],status:'진행중',progress:40,due:''},{id:'other-b',role:'퍼블',assignees:['김무현'],status:'접수',progress:0,due:''}];project.assignees=['김민재','김무현'];h.api.seed(s);h.api.session('김다솔');await h.api.act({dataset:{action:'edit',id:project.id}});assert.match(h.element('#editor').innerHTML,/data-action="deleteProject"/);assert.match(h.element('#editor').innerHTML,/data-action="removeTask"/);await h.api.act({dataset:{action:'removeTask',index:'0'}});h.api.saveProject({title:project.title,description:project.description,logContent:'',logDate:C.today()});assert.equal(C.effective(h.api.read().state.projects.find(p=>p.id===project.id)).tasks.length,1);await h.api.act({dataset:{action:'deleteProject',id:project.id}});assert.ok(!h.api.read().state.projects.some(p=>p.id===project.id));assert.ok(h.api.read().state.hiddenProjects.includes(project.id));});
-test('홈 메뉴가 먼저이고 업무관리는 4열이며 주간 일정은 전용 2열이다',async()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;const nav=html.match(/<nav[\s\S]*?<\/nav>/)[0];assert.ok(nav.indexOf('data-page="dashboard"')<nav.indexOf('data-page="work"'));for(const title of ['홈','업무관리','일정관리','조회·보고','조직관리'])assert.ok(nav.includes(title));assert.match(html,/class="workflow-board"/);assert.doesNotMatch(html,/data-action="boardMode"/);await h.api.act({dataset:{action:'page',page:'schedule'}});assert.match(h.element('#app').innerHTML,/weekly-schedule-panels/);});
+test('홈 메뉴가 먼저이고 업무관리는 4열이며 주간 일정은 전용 2열이다',async()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현','work');h.api.render();let html=h.element('#app').innerHTML;const nav=html.match(/<nav[\s\S]*?<\/nav>/)[0];assert.ok(nav.indexOf('data-page="dashboard"')<nav.indexOf('data-page="work"'));for(const title of ['홈','업무관리','일정관리','조회·보고','조직관리'])assert.ok(nav.includes(title));assert.match(html,/class="workflow-board(?: ux-board)?"/);assert.doesNotMatch(html,/data-action="boardMode"/);await h.api.act({dataset:{action:'page',page:'schedule'}});assert.match(h.element('#app').innerHTML,/weekly-schedule-panels/);});
 
 test('the normal work page opens the customer workflow and its read-only detail popup',async()=>{
  const h=harness(),source={id:'workflow-source',프로젝트명:'고객 원문 과업',고객명:'요청 고객',완료요청일:'2026.11.20',진행상태:'진행 중',담당자_퍼블:'김무현',작업내용_퍼블:'고객이 작성한 원문'};
@@ -401,10 +401,10 @@ test('the normal work page opens the customer workflow and its read-only detail 
  h.api.session('김무현','work');
  h.api.render();
  const html=h.element('#app').innerHTML;
- assert.match(html,/class="workflow-board"/);
+ assert.match(html,/class="workflow-board(?: ux-board)?"/);
  assert.doesNotMatch(html,/data-action="boardMode"/);
  assert.match(html,/고객 원문 과업/);
- assert.match(html,/요청 고객 \| 완료요청일: 2026\.11\.20/);
+ assert.match(html,/완료요청: <time[^>]*>2026-11-20/);
  await h.api.act({dataset:{action:'workflowDetail',id:'source:workflow-source',role:'퍼블'}});
  assert.equal(h.element('#editor').open,true);
  assert.match(h.element('#editor').innerHTML,/고객이 작성한 원문/);
@@ -471,7 +471,7 @@ test('게시판 공통 공지에는 작성자 아바타가 표시되고 공지 �
 test('일반 주소에서 원본 연결 전에는 UI·UX 샘플을 보여주고 실제 과업 저장에는 포함하지 않는다',async()=>{
  const h=harness();h.context.BoardPreviewData=require('./preview-data.js');h.api.seed(fixture());h.api.session('김무현');
  await h.api.act({dataset:{action:'page',page:'work'}});
- assert.equal((h.element('#app').innerHTML.match(/class="workflow-dashboard-row"/g)||[]).length,12);
+ assert.equal((h.element('#app').innerHTML.match(/class="workflow-dashboard-row"/g)||[]).length,10);
  const id='source:uiux-history';await h.api.act({dataset:{action:'workflowDetail',id}});
  assert.match(h.element('#editor').innerHTML,/신청서 접근성 점검/);assert.doesNotMatch(h.element('#editor').innerHTML,/data-action="edit"/);
  for(const page of ['report','customers','projects']){

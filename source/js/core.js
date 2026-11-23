@@ -1,6 +1,7 @@
 (function (root) {
   'use strict';
  const Toys=typeof module!=='undefined'?require('../html/toys/model.js'):root.BoardToys;
+ const UIUX=typeof module!=='undefined'?require('../html/work/uiux/model.js'):root.BoardUIUXModel;
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const CardExpenses=typeof module!=='undefined'?require('./card-expenses.js'):root.BoardCardExpenses;
   const Organization=typeof module!=='undefined'?require('./organization-chart.js'):root.BoardOrganization;
@@ -15,7 +16,7 @@
   const setMembers=members=>{roster=members||MEMBERS;};
   const TEAMS = ['기획','퍼블','디자인','콘텐츠'];
   const CUSTOMERS = ['고용24대민포털','고용24행정포털','취업지원서비스1','취업지원서비스2','고용보험서비스','능력개발서비스','외국인고용서비스','AI고용서비스','시스템운영','데이터지원'];
-  const STATUSES = ['접수','진행중','완료','완료 후 수정','운영반영완료','보류','예정','대기','검토중'];
+  const STATUSES = ['접수','진행중','완료','완료 후 수정','운영반영완료','보류','예정','대기','검토중','반려'];
   const isComplete=status=>status==='완료'||status==='운영반영완료';
   const text = v => v == null ? '' : Array.isArray(v) ? v.map(text).join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v);
   const pick = (o, keys) => { for (const k of keys) if(o[k] != null && o[k] !== '') return o[k]; return ''; };
@@ -169,6 +170,8 @@
       const e=effective(p);
       if(typeof p.id!=='string'||ids.has(p.id)||typeof e.title!=='string'||!Array.isArray(e.assignees)||!Array.isArray(e.logs)||!STATUSES.includes(e.status)||!['sample','import','manual'].includes(p.source))throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.');
       ids.add(p.id);
+      UIUX.validate(e.workflow);
+      if(e.workflow?.attachments){const Attachments=typeof module!=='undefined'?require('../html/organization/board/attachments.js'):root.BoardAttachments;Attachments.validate(e.workflow.attachments);}
       if(e.tasks && (!Array.isArray(e.tasks)||e.tasks.some(t=>typeof t.id!=='string'||!Array.isArray(t.assignees)||!STATUSES.includes(t.status))))throw new Error('담당 업무 형식이 올바르지 않습니다.');
       for(const task of [e,...(e.tasks||[])])if(['progress','revisionProgress'].some(key=>task[key]!==undefined&&(!Number.isInteger(task[key])||task[key]<0||task[key]>100)))throw new Error('진행률은 0~100 사이의 정수여야 합니다.');
       for(const l of e.logs)if(typeof l.id!=='string'||!date(l.date)||typeof l.author!=='string'||typeof l.content!=='string')throw new Error('작업 내역 형식이 올바르지 않습니다.');

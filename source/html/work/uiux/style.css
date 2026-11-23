@@ -1,0 +1,86 @@
+/* UI·UX request board. All spacing follows the 4px grid. */
+html[data-workplace-theme][data-style] .workflow-board.ux-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch;min-width:960px;padding:0;margin:0}
+.board-surface:has(.ux-board){overflow-x:auto}
+.ux-schedule-tabs{display:flex;gap:8px;padding:0 0 12px}
+html[data-workplace-theme][data-style] .ux-board .ux-column{display:flex;flex-direction:column;min-width:0;background:#f7f8fa;border:1px solid #dce1e7;border-radius:8px;padding:0;overflow:hidden}
+.ux-column-head{padding:12px;background:#fff;border-bottom:1px solid #e0e4ea;display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:80px}
+.ux-column-head h3{display:block!important;margin:0!important;font-size:14px!important;font-weight:700;line-height:20px;color:#202735}
+.ux-column-head h3 small{font-size:11px;color:#7b8495;padding-left:4px}
+.ux-column-head>div{display:flex;gap:4px;margin-left:auto;min-width:0}
+html[data-workplace-theme][data-style] .ux-column-head select{width:auto;min-width:0;max-width:112px;min-height:28px;height:28px;font-size:11px;padding:4px 24px 4px 8px;border:1px solid #dbe1e8;border-radius:4px;background-color:#fff}
+html[data-workplace-theme][data-style] .ux-board .ux-scroll{display:flex;flex-direction:column;gap:8px;padding:8px;min-height:240px;height:calc(100dvh - 300px);max-height:none;overflow-y:auto;scrollbar-gutter:stable;align-content:start}
+html[data-workplace-theme][data-style] .ux-card{flex:none;min-width:0;padding:12px 12px 0;background:#fff;border:1px solid #dce2ea;border-radius:4px;overflow:hidden;color:#252b36;box-shadow:none}
+.ux-badges{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;font-size:10px;line-height:16px}
+.ux-badges>span{padding:0 4px;background:#eef0f4;color:#606976;border-radius:3px;white-space:nowrap}
+.ux-badges>.ux-status{background:#e9f1ff;color:#315e9d;font-weight:700}
+.ux-badges>.ux-self{background:#e7f4f2;color:#32736c}
+html[data-workplace-theme][data-style] .ux-board :is(.ux-title,.workflow-dashboard-row){display:block;width:100%;min-height:0;padding:0;margin:0 0 8px;background:transparent;border:0;box-shadow:none;border-radius:0;text-align:left;color:inherit;text-decoration:underline;text-underline-offset:3px;line-height:1.55;font-size:13px;white-space:normal}
+html[data-workplace-theme][data-style] .ux-board :is(.ux-title,.workflow-dashboard-row):hover{background:transparent;color:#38609b}
+.ux-card :is(.ux-customer,.ux-dates){margin:0 0 4px;font-size:11px;line-height:1.6;overflow-wrap:anywhere;color:#647083}
+.ux-card .ux-overdue{color:#c14444}
+.ux-card .ux-dates{margin-bottom:12px}
+.ux-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 8px}
+html[data-workplace-theme][data-style] .ux-card .ux-complete{min-width:48px;min-height:28px;padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid #d4dce8;background:#fff;color:#37465b}
+.ux-workers{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px}
+.ux-worker{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap}
+.ux-worker :is(.avatar,img){width:24px!important;height:24px!important;min-width:24px!important;object-fit:contain;border-radius:50%}
+.ux-worker .avatar{display:inline-flex;align-items:center;justify-content:center;overflow:hidden}
+.ux-links{display:flex;gap:12px;overflow-x:auto;white-space:nowrap;font-size:11px;padding:0 0 8px;min-width:0}
+.ux-links a{color:#3d6296;text-decoration:underline}
+.ux-release-actions{display:flex;margin:0 -12px;border-top:1px solid #e0e5ed}
+html[data-workplace-theme][data-style] .ux-release-actions>button{flex:1;min-width:0;min-height:28px;border:0;border-radius:0;padding:4px;background:#344154;color:#fff;font-size:11px;box-shadow:none}
+.ux-release-actions>button+button{border-left:1px solid #657084!important}
+.ux-release-actions>button:disabled{background:#e8ecf1!important;color:#8d97a7!important;opacity:1}
+.ux-release-link{display:block;margin:0 -12px;padding:4px 8px;min-height:28px;text-align:center;background:#344154;color:#fff;font-size:11px;text-decoration:none}
+html[data-workplace-theme][data-style] .ux-card.ux-completed{background:#e9ecf0;border-color:#d7dce3}
+html[data-workplace-theme][data-style] .ux-card.ux-released{background:#354154;color:#fff}
+.ux-released :is(.ux-customer,.ux-dates){color:#d8e0ec!important}
+.ux-empty{padding:24px 8px;margin:0;text-align:center;color:#8993a3;font-size:12px}
+html[data-workplace-theme][data-style] .ux-new{margin:8px;min-height:32px;border:1px dashed #b8c3d1;background:#fff;border-radius:4px;font-size:12px}
+dialog#editor:has(.ux-dialog){width:min(1120px,calc(100vw - 48px));max-width:1120px;padding:0}
+.ux-dialog{min-width:0;color:#263244;background:#fff}
+.ux-dialog .modal-head{padding:20px 24px;border-bottom:1px solid #e5e9ee}
+.ux-dialog .modal-head h2{display:block!important;max-width:90%;font-size:18px!important;margin:0!important;line-height:1.5;overflow-wrap:anywhere}
+.ux-dialog .modal-body{padding:24px;max-height:calc(100dvh - 208px);overflow:auto}
+.ux-dialog .modal-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid #e5e9ee;background:#fff}
+.ux-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px}
+.ux-full{grid-column:1/-1}
+.ux-choice{display:flex;flex-wrap:wrap;align-content:start;gap:8px;padding:0;margin:0;border:0}
+.ux-choice legend{font-size:12px;font-weight:600;margin:0 0 8px}
+.ux-choice>label{display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;background:#f3f5f8;border-radius:4px;padding:8px 12px}
+.ux-choice input{width:16px!important;height:16px!important;margin:0;min-height:0!important;accent-color:#456b9f}
+.ux-choice label:has(:checked){background:#e7effb;color:#28579a}
+.ux-field{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:600;min-width:0}
+.ux-field :is(input,textarea,select){width:100%;min-width:0;font-weight:400}
+.ux-dialog textarea{resize:vertical;min-height:80px}
+.ux-assignments{border-top:1px solid #e5e9ee;padding-top:16px}
+.ux-dialog h3{display:block!important;margin:0 0 12px!important;font-size:13px!important}
+.ux-assignments details{padding:12px 0;border-bottom:1px solid #edf0f4}
+.ux-assignments summary{cursor:pointer;font-size:13px;font-weight:700;padding:0 0 12px}
+.ux-assignments .ux-choice{margin-bottom:12px}
+.ux-link-row{display:flex;gap:8px;margin-bottom:8px}
+.ux-link-row input:first-child{width:28%}.ux-link-row input:nth-child(2){flex:1;min-width:0}
+.ux-upload{display:flex;flex-direction:column;gap:12px;padding:20px;border:1px dashed #b6c4d5;border-radius:8px;background:#f8fafc;font-size:12px}
+.ux-upload span{color:#778397}
+.ux-error{color:#bb3544;font-size:12px;margin:12px 0 0}
+.ux-detail-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);gap:32px}
+.ux-detail-layout>main{min-width:0}
+.ux-detail-dates{display:flex;flex-direction:column;gap:8px}
+.ux-detail-dates form{display:flex;gap:8px;align-items:center;font-size:12px;flex-wrap:wrap}
+.ux-detail-dates label{display:flex;align-items:center;gap:8px}.ux-detail-dates input{width:144px}
+.ux-request-meta{font-size:12px;line-height:2;margin:20px 0}
+.ux-work-notes{border:1px solid #dfe5ed;border-radius:4px;max-height:320px;overflow:auto;padding:16px}
+.ux-work-notes section+section{border-top:1px solid #e4e8ee;padding-top:12px}
+.ux-work-notes h4{font-size:12px;margin:0 0 8px}.ux-work-notes h4 small{color:#7a8494;font-weight:400}
+.ux-work-notes pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:12px;line-height:1.8;margin:0 0 16px}
+.ux-description{padding:24px 0}.ux-description p{font-size:12px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 20px}
+.ux-timeline{border-left:1px solid #e5e9ee;padding-left:20px;font-size:12px;min-width:0}
+.ux-timeline>article{border-bottom:1px solid #edf0f4;padding:12px 0}.ux-timeline header{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ux-timeline time{font-size:10px;color:#7b8797;margin-left:auto}.ux-timeline p{margin:8px 0 0;overflow-wrap:anywhere}
+.ux-timeline :is(.avatar,img){width:24px!important;height:24px!important;object-fit:contain}
+.ux-comments{border-top:1px solid #dfe5ed;padding-top:20px}.ux-comments form{display:flex;align-items:center;gap:8px;font-size:12px}.ux-comments input{flex:1;min-width:0}
+.ux-comments article{border-bottom:1px solid #edf0f4;padding:16px 0;font-size:12px}.ux-comments header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ux-comments time{font-size:11px;color:#8290a2}
+.ux-comments header button{border:0!important;min-width:32px;min-height:20px;padding:0 4px!important;font-size:11px!important;background:transparent!important}
+.ux-comments article p{margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:800px){.ux-detail-layout{grid-template-columns:1fr}.ux-timeline{border-left:0;border-top:1px solid #e5e9ee;padding:20px 0 0}.ux-form-grid{grid-template-columns:1fr}.ux-full{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.ux-board *{transition:none!important}}
