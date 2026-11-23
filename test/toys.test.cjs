@@ -18,8 +18,8 @@ test('끝말잇기는 워크로그에서 시작하고 로그인 사용자 이름
  let seq=0;const context={...options,id:()=> 'word-'+(++seq)};
  let data;for(const word of ['그림','임금','금리','이름'])data=T.apply(data,'wordAdd',{word,author:'가짜 작성자'},context);
  assert.equal(data.word.seed,'워크로그');assert.equal(data.word.entries.length,4);assert.ok(data.word.entries.every(e=>e.author==='김무현'));
- assert.throws(()=>T.apply(data,'wordAdd',{word:'그림'},context),/이미/);
- assert.throws(()=>T.apply(data,'wordAdd',{word:'사과'},context),/름/);
+ assert.match(T.apply(data,'wordAdd',{word:'그림'},context).word.mistakes.at(-1).reason,/이미/);
+ assert.match(T.apply(data,'wordAdd',{word:'사과'},context).word.mistakes.at(-1).reason,/름/);
  assert.throws(()=>T.apply(data,'wordAdd',{word:'abc'},context),/한글/);
  assert.throws(()=>T.apply(undefined,'wordAdd',{word:'그가나다라마바'},context),/2~6/);
  assert.equal(T.apply(undefined,'wordAdd',{word:'그가나다라마'},context).word.entries[0].word.length,6);
@@ -66,10 +66,48 @@ test('포기 횟수와 kill은 로그인 사용자와 직전 작성자로 계산
  assert.equal(next.word.rounds[0].by,'정윤정');assert.equal(next.word.rounds[0].killer,'김무현');
  assert.deepEqual(next.word.rounds[0].entries,first.word.entries);assert.equal(first.word.entries.length,1);
  const scores=T.scores(next,['김무현','정윤정','홍소영']);
- assert.deepEqual(scores,[{name:'김무현',forfeits:0,kills:1,score:1},{name:'정윤정',forfeits:1,kills:0,score:-1},{name:'홍소영',forfeits:0,kills:0,score:0}]);
+ assert.deepEqual(scores,[{name:'김무현',successes:1,wrongs:0,forfeits:0,kills:1,score:0},{name:'정윤정',successes:0,wrongs:0,forfeits:1,kills:0,score:-1},{name:'홍소영',successes:0,wrongs:0,forfeits:0,kills:0,score:0}]);
  assert.throws(()=>T.apply(next,'wordForfeit',{previous:last.id},{...context,user:'정윤정'}),/단어가 나온 뒤/);
  let again=T.apply(next,'wordAdd',{word:'그림'},context);again=T.apply(again,'wordForfeit',{},context);
- assert.deepEqual(T.scores(again,['김무현'])[0],{name:'김무현',forfeits:1,kills:1,score:0});
+ assert.deepEqual(T.scores(again,['김무현'])[0],{name:'김무현',successes:2,wrongs:0,forfeits:1,kills:1,score:-1});
  assert.equal(again.word.rounds.length,2);assert.doesNotThrow(()=>T.validate(JSON.parse(JSON.stringify(again))));
  const invalid=structuredClone(again);invalid.word.rounds[0].killer='홍소영';assert.throws(()=>T.validate(invalid),/점수/);
+});
+
+test('현재 판 제출 인원 n으로 성공 n-1점과 오답·포기 -n점을 당시 값으로 저장한다',()=>{
+ let seq=0;const ctx={id:()=> 'score-'+(++seq),now:()=> '2026-11-23T06:00:00Z'};
+ let data=T.apply(undefined,'wordAdd',{word:'그림',participants:99,points:999},{...ctx,user:'A'});
+ assert.deepEqual([data.word.entries[0].participants,data.word.entries[0].points],[1,0]);
+ data=T.apply(data,'wordAdd',{word:'임금'},{...ctx,user:'B'});
+ assert.deepEqual([data.word.entries[1].participants,data.word.entries[1].points],[2,1]);
+ data=T.apply(data,'wordAdd',{word:'사과'},{...ctx,user:'C'});
+ assert.equal(data.word.entries.length,2);assert.deepEqual([data.word.mistakes[0].participants,data.word.mistakes[0].points],[3,-3]);
+ assert.deepEqual(T.participants(data.word),['A','B','C']);
+ data=T.apply(data,'wordAdd',{word:'금리'},{...ctx,user:'A'});
+ assert.equal(data.word.entries[2].points,2);assert.equal(data.word.entries[1].points,1);
+ data=T.apply(data,'wordAdd',{word:'이름'},{...ctx,user:'D'});
+ assert.equal(data.word.entries[3].points,3);
+ const tip=data.word.entries.at(-1).id;
+ assert.throws(()=>T.apply(data,'wordAdd',{word:'름름',previous:'old'},{...ctx,user:'A'}),/먼저/);
+ assert.throws(()=>T.apply(data,'wordAdd',{word:''},{...ctx,user:'A'}),/한글/);
+ assert.equal(data.word.mistakes.length,1);
+ data=T.apply(data,'wordForfeit',{previous:tip},{...ctx,user:'B'});
+ assert.equal(data.word.rounds[0].points,-4);assert.equal(data.word.rounds[0].mistakes.length,1);assert.equal(T.participants(data.word).length,0);
+ const scores=Object.fromEntries(T.scores(data).map(row=>[row.name,row]));
+ assert.equal(scores.A.score,2);assert.equal(scores.B.score,-3);assert.equal(scores.C.score,-3);assert.equal(scores.C.wrongs,1);assert.equal(scores.D.score,3);
+ data=T.apply(data,'wordAdd',{word:'그림'},{...ctx,user:'A'});assert.equal(data.word.entries[0].points,0);
+ assert.doesNotThrow(()=>T.validate(JSON.parse(JSON.stringify(data))));
+ const bad=structuredClone(data);bad.word.entries[0].points=20;assert.throws(()=>T.validate(bad));
+});
+
+test('되돌리기는 성공 가점을 취소하지만 판에 참여한 이력은 유지한다',()=>{
+ let seq=0;const ctx={id:()=> 'undo-score-'+(++seq)};
+ let data=T.apply(undefined,'wordAdd',{word:'그림'},{...ctx,user:'A'});
+ data=T.apply(data,'wordAdd',{word:'임금'},{...ctx,user:'B'});
+ assert.equal(T.scores(data).find(p=>p.name==='B').score,1);
+ data=T.apply(data,'wordUndo',{}, {...ctx,user:'B'});
+ assert.deepEqual(T.participants(data.word),['A','B']);
+ assert.equal(T.scores(data,['B']).find(p=>p.name==='B').score,0);
+ data=T.apply(data,'wordAdd',{word:'임금'}, {...ctx,user:'A'});
+ assert.equal(data.word.entries.at(-1).participants,2);assert.equal(data.word.entries.at(-1).points,1);
 });

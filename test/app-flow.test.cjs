@@ -782,3 +782,15 @@ test('연차 현황과 설정 팝업은 자동 계산 기본값과 수동·자�
  await h.api.act({dataset:{action:'leaveAllowance'}});h.submit({id:'allowanceForm',fields:{mode:'auto'}});
  assert.match(h.element('#app').innerHTML,/입사일·근속연수 기준 자동 계산/);assert.equal(h.api.read().state.leaveAllowances['2026'].김무현,22);assert.doesNotThrow(()=>C.validateState(h.api.read().state));
 });
+
+test('끝말잇기 오답도 감점 상태를 보관하고 참여 인원·성공·오답·총점을 갱신한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','toyWordChain');h.api.render();
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'그림'}});
+ h.api.session('정윤정','toyWordChain');h.api.render();h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'임금'}});
+ assert.equal(h.api.read().state.toys.word.entries[1].points,1);
+ h.submit({dataset:{toyForm:'wordAdd'},fields:{word:'사과'}});
+ assert.equal(h.api.read().state.toys.word.entries.length,2);assert.equal(h.api.read().state.toys.word.mistakes[0].points,-2);
+ assert.match(h.element('#toyError').textContent,/오답 −2점/);
+ const html=h.element('#app').innerHTML;assert.match(html,/현재 판 참여 · 2명/);assert.match(html,/성공<\/th><th scope="col">오답/);assert.doesNotMatch(html,/kill/i);
+ assert.doesNotThrow(()=>C.validateState(h.api.read().state));
+});

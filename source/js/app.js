@@ -322,7 +322,7 @@
       if(action==='wordForfeit'){
         const last=BoardFeaturePages.toys.Model.wordGame(state.toys).entries.at(-1);
         if(!last)throw Error('단어가 나온 뒤에 포기할 수 있습니다.');
-        if(!confirm('포기 횟수가 1회 추가되고 총점이 갱신됩니다. 기록을 보관하고 워크로그에서 새 판을 시작할까요?'))return;
+        if(!confirm('현재 판 참여 '+BoardFeaturePages.toys.Model.scoreSize(BoardFeaturePages.toys.Model.wordGame(state.toys))+'명 기준으로 감점됩니다. 기록을 보관하고 워크로그에서 새 판을 시작할까요?'))return;
       }
       if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;
       state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,el.dataset,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
@@ -788,11 +788,15 @@
       if(action==='mealSearch'){toyUi.mealQuery=String(new FormData(e.target).get('query')||'');render();return;}
       try{
         const input=Object.fromEntries(new FormData(e.target));
+        const previousMistakes=BoardFeaturePages.toys.Model.wordGame(state.toys).mistakes?.length||0;
         state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,input,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
         toyUi.spin=action==='wheelSpin';
-        if(action==='wordAdd'){const field=e.target.querySelector?.('[name="word"]');if(field)field.value='';}
+        const mistake=action==='wordAdd'&&(state.toys.word.mistakes?.length||0)>previousMistakes?state.toys.word.mistakes.at(-1):null;
+        if(action==='wordAdd'&&!mistake){const field=e.target.querySelector?.('[name="word"]');if(field)field.value='';}
         if(action==='pollCreate')e.target.reset?.();
         changed();render();toyUi.spin=false;
+        if(mistake)$('#toyError').textContent=mistake.reason+' 오답 −'+mistake.participants+'점 (참여 '+mistake.participants+'명)';
+        else if(action==='wordAdd'){const entry=state.toys.word.entries.at(-1);toast('성공 +'+entry.points+'점 · 참여 '+entry.participants+'명');}
         if(action==='wordAdd')$('#toyWordInput')?.focus?.({preventScroll:true});
       }catch(err){$('#toyError').textContent=err.message;}
       return;
