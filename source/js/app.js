@@ -336,7 +336,7 @@
       toyUi.spin=false;changed();render();return;
     }
     if(demoSession&&['connect','reload','restore','import','sourceFolder','sourceFile','targetFolder','permitFolders','refreshAll','refreshSource','logout','save'].includes(a)){toast('샘플 검토 모드입니다. 변경은 이 화면에서만 유지되며 새로고침하면 초기화됩니다.');return;}
-    if(a==='uiuxSchedule'){page=el.dataset.page;render();return;}
+    if(a==='uiuxSchedule'){uiuxUi.period=el.dataset.period;Object.assign(filters,UIUX.M.period(uiuxUi.period,C.today()));render();return;}
     if(a==='uiuxEdit'){showDialog(UIUX.editor(uiuxOriginal(el.dataset.id),featureContext()));return;}
     if(a==='uiuxAddLink'){$('#uiuxLinks').insertAdjacentHTML('beforeend',UIUX.linkRow({},esc,button));return;}
     if(a==='uiuxRemoveLink'){el.closest('.ux-link-row').remove();return;}

@@ -84,3 +84,11 @@ dialog#editor:has(.ux-dialog){width:min(1120px,calc(100vw - 48px));max-width:112
 .ux-comments article p{margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:800px){.ux-detail-layout{grid-template-columns:1fr}.ux-timeline{border-left:0;border-top:1px solid #e5e9ee;padding:20px 0 0}.ux-form-grid{grid-template-columns:1fr}.ux-full{grid-column:auto}}
 @media(prefers-reduced-motion:reduce){.ux-board *{transition:none!important}}
+/* One scrolling body per dialog; header and actions stay in place. */
+dialog#editor:has(.ux-dialog){max-height:calc(100dvh - 48px);overflow:hidden}
+.ux-dialog{display:flex;flex-direction:column;max-height:calc(100dvh - 48px)}
+.ux-dialog>.modal-body{flex:1;min-height:0;max-height:none}
+.ux-dialog>:is(.modal-head,.modal-foot){flex:none}
+.ux-form-grid>.ux-choice:nth-of-type(3){grid-column:1/-1}
+.ux-detail-dialog>#uiuxError{margin:0 24px}
+html[data-workplace-theme][data-style] .ux-board .ux-scroll{height:calc(100dvh - 380px)}

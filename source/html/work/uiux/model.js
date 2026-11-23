@@ -9,12 +9,12 @@
   const current=p.raw&&w.taskStates&&!w.localTasks?C.normalize(p.raw).tasks:p.tasks;
   const tasks=roles.flatMap(role=>{
    const list=(current||[]).filter(t=>t.role===role||t.id==='source-task:'+role);
-   return list.map(t=>{const d=Board.sourceDetails(p,role),local=w.taskStates?w.taskStates[t.id]:original.overrides?.tasks?.find(x=>x.id===t.id);return {...t,...local,role,status:local?.status||(raw['상태_'+role]||raw['진행상태_'+role]||t.status||'진행중').replace(/\s/g,''),started:w.starts?.[t.id]||t.started||d.start||(p.sourceAssignments?.[role]||[]).map(x=>x.started).filter(Boolean).sort()[0]||'',notes:local?.notes??t.notes??d.notes??''};});
+   return list.map(t=>{const d=Board.sourceDetails(p,role),local=w.taskStates?w.taskStates[t.id]:original.overrides?.tasks?.find(x=>x.id===t.id);return {...t,...local,role,status:local?.status||C.STATUSES.find(s=>s.replace(/\s/g,'')===String(raw['상태_'+role]||raw['진행상태_'+role]||t.status||'진행중').replace(/\s/g,''))||t.status||'진행중',started:w.starts?.[t.id]||t.started||d.start||(p.sourceAssignments?.[role]||[]).map(x=>x.started).filter(Boolean).sort()[0]||'',notes:local?.notes??t.notes??d.notes??''};});
   });
   const requestedRoles=[...new Set([...(w.roles||String(raw.요청구분||'').split(/[,/·\s]+/).filter(r=>roles.includes(r))),...tasks.map(t=>t.role)])];
   const release=w.release||{};
-  const complete=requestedRoles.length>0&&requestedRoles.every(role=>tasks.some(t=>t.role===role)&&tasks.filter(t=>t.role===role).every(done));
-  const status=release.production||p.status==='운영반영완료'?'운영반영완료':release.development?'개발반영':complete?'완료':tasks.some(t=>t.status==='반려')?'반려':tasks.some(t=>t.status==='보류')?'보류':p.status==='운영반영완료'?'운영반영완료':'진행중';
+  const complete=requestedRoles.length?requestedRoles.every(role=>tasks.some(t=>t.role===role)&&tasks.filter(t=>t.role===role).every(done)):done(p);
+  const status=release.production||p.status==='운영반영완료'?'운영반영완료':release.development?'개발반영':complete?'완료':tasks.some(t=>t.status==='반려')||!tasks.length&&p.status==='반려'?'반려':tasks.some(t=>t.status==='보류')||!tasks.length&&p.status==='보류'?'보류':'진행중';
   return {...p,workflow:w,tasks,requestedRoles,release,complete,status,title:p.title||detail.title,requester:p.requester||raw.요청자||detail.customer,customer:p.customer||raw.요청팀||detail.customer,requested:p.requested||raw.요청일자||raw.요청일||'',requestedDue:p.requestedDue||detail.requestedDue||'',background:w.background??raw.요청배경??'',requirements:w.requirements??raw.요청사항??raw.요청내용??p.description??'',folder:w.folder??raw.산출물결과폴더??raw.산출물폴더??'',handoff:w.handoff??raw.작성기연동링크??'',links:w.links||[p.link,raw.퍼블링크,raw.작업링크].filter(Boolean).map(url=>({name:'작업 링크',url})),readOnlySample:original.readOnlySample};
  }
  function write(original,values,event,C,actor){
@@ -71,13 +71,16 @@
   return write(original,{workflow:{...p.workflow,comments}},input.remove?'댓글 삭제':input.commentId?'댓글 수정':'댓글 등록',C,actor);
  }
  function match(status,filter){return filter==='all'||filter==='진행중'&&!['운영반영완료','보류','반려'].includes(status)||status===filter;}
+ function period(mode,today){const start=new Date(today+'T00:00:00Z'),end=new Date(start);if(mode==='month'){start.setUTCDate(1);end.setUTCMonth(end.getUTCMonth()+1,0);}else{start.setUTCDate(start.getUTCDate()-((start.getUTCDay()+6)%7));end.setTime(start.getTime());end.setUTCDate(end.getUTCDate()+6);}return {from:start.toISOString().slice(0,10),to:end.toISOString().slice(0,10)};}
  function validate(w){
   if(w===undefined)return;
   if(!w||typeof w!=='object'||Array.isArray(w))throw Error('UI·UX 저장 자료를 확인해 주세요.');
   for(const key of ['roles','platforms','services','links','comments','attachments'])if(w[key]!==undefined&&!Array.isArray(w[key]))throw Error('UI·UX 목록 형식이 올바르지 않습니다.');
+  for(const key of ['starts','release','taskStates'])if(w[key]!==undefined&&(!w[key]||typeof w[key]!=='object'||Array.isArray(w[key])))throw Error('UI·UX 상태 형식이 올바르지 않습니다.');
+  if(Object.values(w.starts||{}).some(v=>!date(v))||Object.values(w.taskStates||{}).some(t=>!t||!['접수','진행중','완료','완료 후 수정','운영반영완료','보류','예정','대기','검토중','반려'].includes(t.status)))throw Error('작업 시작일 또는 상태가 올바르지 않습니다.');
   if(w.roles?.some(r=>!roles.includes(r))||w.links?.some(l=>typeof l.name!=='string'||!safeUrl(l.url))||w.comments?.some(c=>typeof c.id!=='string'||typeof c.author!=='string'||typeof c.content!=='string'||!c.content.trim()||!Number.isFinite(Date.parse(c.at))))throw Error('UI·UX 과업 자료가 올바르지 않습니다.');
   for(const stage of ['development','production'])if(w.release?.[stage]&&(!safeUrl(w.release[stage].url)||typeof w.release[stage].by!=='string'||!Number.isFinite(Date.parse(w.release[stage].at))))throw Error('반영 이력이 올바르지 않습니다.');
  }
- const api={roles,date,done,safeUrl,read,write,toggle,release,save,comment,match,validate};
+ const api={roles,date,done,safeUrl,read,write,toggle,release,save,comment,match,period,validate};
  if(typeof module!=='undefined')module.exports=api;else root.BoardUIUXModel=api;
 })(typeof window!=='undefined'?window:globalThis);

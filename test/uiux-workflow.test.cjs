@@ -47,3 +47,11 @@ test('본인 완료 기록은 보존하면서 새 고객 JSON의 다른 작업�
  const current=M.read(p,C,B);assert.equal(current.tasks.find(t=>t.role==='디자인').status,'완료');
  const pub=current.tasks.find(t=>t.role==='퍼블');assert.deepEqual(pub.assignees,['임정규']);assert.equal(pub.notes,'고객이 갱신한 내용');assert.equal(pub.status,'보류');
 });
+test('완료 후 수정의 공백을 보존해 다른 업무 완료 저장도 검증을 통과한다',()=>{
+ const p=source();p.raw.상태_디자인='완료 후 수정';
+ const updated=M.toggle(p,'source-task:퍼블',C,B,'김무현');
+ assert.equal(M.read(updated,C,B).tasks.find(t=>t.role==='디자인').status,'완료 후 수정');
+ C.validateState({...C.emptyState(),projects:[updated]});
+ assert.deepEqual(M.period('week','2026-11-23'),{from:'2026-11-23',to:'2026-11-29'});
+ assert.deepEqual(M.period('month','2026-11-23'),{from:'2026-11-01',to:'2026-11-30'});
+});

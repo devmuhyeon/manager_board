@@ -3,7 +3,7 @@
  const M=typeof module!=='undefined'?require('./model.js'):root.BoardUIUXModel;
  function rows(c){
   const visible=c.relatedRows(),ids=new Set(visible.map(p=>p.id));
-  return [...visible.map(p=>c.state.projects.find(x=>x.id===p.id)||p),...c.state.projects.filter(p=>p.source==='manual'&&!ids.has(p.id)&&!c.state.hiddenProjects?.includes(p.id))].map(p=>M.read(p,c.C,c.BoardTaskBoard));
+  return [...visible.map(p=>c.state.projects.find(x=>x.id===p.id)||p),...c.state.projects.filter(p=>p.source==='manual'&&p.workflow&&!ids.has(p.id)&&!c.state.hiddenProjects?.includes(p.id))].map(p=>M.read(p,c.C,c.BoardTaskBoard));
  }
  const data=(p,esc,more='')=>'data-id="'+esc(p.id)+'" '+more;
  function select(name,values,value,esc,attrs=''){return '<select name="'+name+'" '+attrs+'>'+values.map(v=>{const [key,label]=Array.isArray(v)?v:[v,v];return '<option value="'+esc(key)+'"'+(key===value?' selected':'')+'>'+esc(label)+'</option>';}).join('')+'</select>';}
@@ -29,7 +29,7 @@
    const people=c.P.orderNames(c.state,[...new Set(entries.flatMap(p=>p.tasks.filter(t=>t.role===lane).flatMap(t=>t.assignees)))]);
    return '<section class="workflow-column ux-column"><header class="ux-column-head"><h3>'+({dashboard:'요청관리 대시보드'}[lane]||lane)+' <small>'+items.length+'</small></h3><div>'+select('status',statusOptions,status,esc,'data-uiux-filter="status" data-lane="'+lane+'" aria-label="'+lane+' 상태"')+(lane==='dashboard'?'':select('worker',[['','작업자 전체'],...people],worker,esc,'data-uiux-filter="worker" data-lane="'+lane+'" aria-label="'+lane+' 작업자"'))+'</div></header><div class="workflow-scroll ux-scroll">'+(items.map(({p,t})=>card(p,t,c)).join('')||'<p class="ux-empty">표시할 '+(lane==='dashboard'?'과업':'작업')+'이 없습니다.</p>')+'</div>'+(lane==='dashboard'?button('new','신규 등록','ux-new'):'')+'</section>';
   });
-  return '<div class="ux-schedule-tabs">'+button('uiuxSchedule','주간 일정','','data-page="schedule"')+button('uiuxSchedule','월간 일정','','data-page="deadlines"')+'</div><div class="workflow-board ux-board">'+panels.join('')+'</div>';
+  return '<div class="ux-schedule-tabs">'+button('uiuxSchedule','주간 일정',uiuxUi.period==='week'?'active':'','data-period="week" aria-pressed="'+(uiuxUi.period==='week')+'"')+button('uiuxSchedule','월간 일정',uiuxUi.period==='month'?'active':'','data-period="month" aria-pressed="'+(uiuxUi.period==='month')+'"')+'</div><div class="workflow-board ux-board">'+panels.join('')+'</div>';
  }
  function field(label,name,value,esc,type='text',extra=''){return '<label class="ux-field">'+label+'<input name="'+name+'" type="'+type+'" value="'+esc(value||'')+'" '+extra+'></label>';}
  function textarea(label,name,value,esc){return '<label class="ux-field ux-full">'+label+'<textarea name="'+name+'" rows="3">'+esc(value||'')+'</textarea></label>';}
