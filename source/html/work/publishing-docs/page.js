@@ -1,8 +1,24 @@
 (function(root){
  'use strict';
- function render(){
-  return '<section class="card" aria-label="퍼블리싱 문서"><p class="empty">등록된 퍼블리싱 문서가 없습니다.</p></section>';
+ const M=typeof module!=='undefined'?require('./model.js'):root.BoardPublishingModel;
+ function rows(c){return M.records(c.relatedRows().map(p=>c.state.projects.find(x=>x.id===p.id)||p),c.C,c.BoardTaskBoard);}
+ const attr=(id,esc)=>'data-id="'+esc(id)+'"';
+ function links(items,esc){return '<div class="pd-links">'+(items||[]).filter(l=>M.safeUrl(l.url)).map((l,i)=>'<a href="'+esc(M.safeUrl(l.url))+'" target="_blank" rel="noopener">'+esc(l.name||'link#'+(i+1))+'</a>').join('')+'</div>';}
+ function taskTable(items,c){const {esc,button,P,state}=c;return '<table class="pd-table pd-tasks"><colgroup><col class="pd-task-col"><col><col><col><col><col><col></colgroup><thead><tr>'+['과업명','디자인','퍼블','마감일','개발배포','산출물','LINK'].map(label=>'<th scope="col"'+(label==='산출물'?' class="pd-output-heading"':'')+'>'+label+'</th>').join('')+'</tr></thead><tbody>'+items.map(p=>'<tr'+(c.publishingUi.selected===p.id?' class="pd-selected"':'')+'><th scope="row">'+esc(p.title)+'</th>'+['디자인','퍼블'].map(role=>'<td>'+esc(P.orderNames(state,[...new Set(p.tasks.filter(t=>t.role===role).flatMap(t=>t.assignees))]).join(', ')||'—')+'</td>').join('')+'<td><time>'+esc(p.requestedDue||'—')+'</time></td><td>'+(M.safeUrl(p.development)?'<a class="pd-link-button" href="'+esc(M.safeUrl(p.development))+'" target="_blank" rel="noopener">LINK</a>':'')+'</td><td>'+button('publishingRegister',p.publication?'○':'등록','pd-register',attr(p.id,esc)+' aria-label="'+esc(p.title)+(p.publication?' 산출물 수정':' 산출물 등록')+'"'+(p.readOnlySample?' disabled':''))+'</td><td>'+links(p.links,esc)+'</td></tr>').join('')+(items.length?'':'<tr><td colspan="7" class="pd-empty">표시할 과업이 없습니다.</td></tr>')+'</tbody></table>';}
+ function allTable(items,c){const {esc}=c,list=M.allRows(items),span=(index,level)=>{
+  const prefix=p=>p.path.slice(0,level+1).join('\u0000');if(index&&prefix(list[index-1])===prefix(list[index]))return 0;
+  let count=1;while(index+count<list.length&&prefix(list[index+count])===prefix(list[index]))count++;return count;
+ };return '<table class="pd-table pd-all"><colgroup><col><col><col><col class="pd-all-title"><col></colgroup><thead><tr>'+['1뎁스','2뎁스','3뎁스','과업명','LINK'].map(label=>'<th scope="col">'+label+'</th>').join('')+'</tr></thead><tbody>'+list.map((p,index)=>'<tr>'+[0,1,2].map(level=>{const size=span(index,level);return size?'<td rowspan="'+size+'" class="pd-menu">'+esc(p.path[level]||(level===0?'메뉴없음':''))+'</td>':'';}).join('')+'<th scope="row">'+esc(p.title)+'</th><td>'+links(p.links,esc)+'</td></tr>').join('')+(list.length?'':'<tr><td colspan="5" class="pd-empty">등록된 퍼블리싱 문서가 없습니다.</td></tr>')+'</tbody></table>';}
+ function registration(p,c){
+  const {esc,button,publishingUi:ui}=c,draft=ui.draft||{path:M.pathOf(p),links:p.links},all=rows(c),catalog=c.publishingCatalog||[];
+  const depth=[0,1,2].map(level=>{
+   const value=draft.path[level]??(level===0?'__choose__':''),custom=ui.custom?.[level],disabled=level>0&&(!draft.path[level-1]||draft.path[level-1].startsWith('__'));
+   const values=[...new Set([...M.choices(all,draft.path,level,catalog),...(value&&!value.startsWith('__')?[value]:[])])];
+   return '<label class="pd-depth">'+(level+1)+'뎁스<select name="depth'+(level+1)+'" data-publishing-depth="'+level+'"'+(disabled?' disabled':'')+'><option value="__choose__"'+(value==='__choose__'?' selected':'')+' disabled>선택</option><option value=""'+(!custom&&value===''?' selected':'')+'>메뉴없음</option>'+values.map(v=>'<option value="'+esc(v)+'"'+(!custom&&value===v?' selected':'')+'>'+esc(v)+'</option>').join('')+'<option value="__new__"'+(custom?' selected':'')+'>직접 입력</option></select>'+(custom?'<input name="newDepth'+(level+1)+'" value="'+esc(value.startsWith('__')?'':value)+'" placeholder="'+(level+1)+'뎁스 메뉴명" maxlength="100" required>':'')+'</label>';
+  }).join('');
+  return '<form id="publishingForm" data-id="'+esc(p.id)+'"><div class="pd-registration-head"><h3>산출물 등록</h3><strong>'+esc(p.title)+'</strong>'+button('publishingCancel','닫기')+'</div><div class="pd-registration-body"><div class="pd-depths">'+depth+'<button type="submit" class="primary">등록</button></div>'+draft.links.map(l=>'<input type="hidden" name="linkName" value="'+esc(l.name)+'"><input type="hidden" name="linkUrl" value="'+esc(l.url)+'">').join('')+'<p class="pd-error" id="publishingError" role="alert"></p></div></form>';
  }
- const api={render};
+ function render(c){const {button,publishingUi:ui}=c,items=rows(c),selected=items.find(p=>p.id===ui.selected);return '<section class="card publishing-documents" aria-label="퍼블리싱 문서"><div class="pd-tabs" role="group" aria-label="문서 보기">'+button('publishingView','과업별',ui.view==='all'?'':'active','data-view="tasks" aria-pressed="'+(ui.view!=='all')+'"')+button('publishingView','전체목록',ui.view==='all'?'active':'','data-view="all" aria-pressed="'+(ui.view==='all')+'"')+'</div><div class="pd-table-scroll">'+(ui.view==='all'?allTable(items,c):taskTable(items,c))+'</div><div id="publishingRegistration">'+(selected?registration(selected,c):'')+'</div></section>';}
+ const api={M,rows,render,registration,taskTable,allTable};
  if(typeof module!=='undefined')module.exports=api;else(root.BoardFeaturePages??={})['work/publishing-docs']=api;
 })(typeof window!=='undefined'?window:globalThis);

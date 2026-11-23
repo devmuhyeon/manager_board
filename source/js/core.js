@@ -1,6 +1,7 @@
 (function (root) {
   'use strict';
  const Toys=typeof module!=='undefined'?require('../html/toys/model.js'):root.BoardToys;
+ const Publishing=typeof module!=='undefined'?require('../html/work/publishing-docs/model.js'):root.BoardPublishingModel;
  const UIUX=typeof module!=='undefined'?require('../html/work/uiux/model.js'):root.BoardUIUXModel;
  const Avatars=typeof module!=='undefined'?require('./avatar-catalog.js'):root.BoardAvatars;
   const CardExpenses=typeof module!=='undefined'?require('./card-expenses.js'):root.BoardCardExpenses;
@@ -170,7 +171,7 @@
       const e=effective(p);
       if(typeof p.id!=='string'||ids.has(p.id)||typeof e.title!=='string'||!Array.isArray(e.assignees)||!Array.isArray(e.logs)||!STATUSES.includes(e.status)||!['sample','import','manual'].includes(p.source))throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.');
       ids.add(p.id);
-      UIUX.validate(e.workflow);
+      UIUX.validate(e.workflow);Publishing.validate(e.workflow?.publication);
       if(e.workflow?.attachments){const Attachments=typeof module!=='undefined'?require('../html/organization/board/attachments.js'):root.BoardAttachments;Attachments.validate(e.workflow.attachments);}
       if(e.tasks && (!Array.isArray(e.tasks)||e.tasks.some(t=>typeof t.id!=='string'||!Array.isArray(t.assignees)||!STATUSES.includes(t.status))))throw new Error('담당 업무 형식이 올바르지 않습니다.');
       for(const task of [e,...(e.tasks||[])])if(['progress','revisionProgress'].some(key=>task[key]!==undefined&&(!Number.isInteger(task[key])||task[key]<0||task[key]>100)))throw new Error('진행률은 0~100 사이의 정수여야 합니다.');

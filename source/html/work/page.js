@@ -6,7 +6,7 @@
     const rows=projects();
     const isBoard=page==='work'&&view==='board';
     const showDone=boardIncludesDone();
-    const boardControls=isBoard?'<div class="board-control-row">'+boardLayoutToggle()+'<div class="task-board-controls">'
+    const boardControls=isBoard&&boardMode==='workflow'?'<div class="board-control-row ux-board-controls">'+boardLayoutToggle()+UIUX.scheduleControls(context)+'</div>':isBoard?'<div class="board-control-row">'+boardLayoutToggle()+'<div class="task-board-controls">'
       +'<div class="board-period" role="group" aria-label="마감일 기간 조회"><input id="boardFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="from" aria-label="마감일 시작 날짜" value="'+esc(filters.from)+'" max="'+esc(filters.to)+'"><span>~</span><input id="boardTo" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" maxlength="10" data-board-date="to" aria-label="마감일 종료 날짜" value="'+esc(filters.to)+'" min="'+esc(filters.from)+'">'+button('resetBoardDates','날짜 초기화','','')+'</div><label class="sr-only" for="boardName">과업명 또는 담당자</label><input type="search" id="boardName" list="boardPeople" placeholder="과업명 · 담당자 검색" value="'+esc(boardName)+'">'
       +'<datalist id="boardPeople">'+activeMembers().map(person=>'<option value="'+esc(person.name)+'"></option>').join('')+'</datalist>'
       +button('boardMine','내 과업',boardName===user.name?'primary':'','aria-pressed="'+(boardName===user.name)+'"')

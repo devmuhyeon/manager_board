@@ -1,5 +1,6 @@
 (function(root){
  'use strict';
+ const Publishing=typeof module!=='undefined'?require('./publishing-docs-samples.js'):root.BoardPublishingSamples;
  const Avatars=typeof module!=='undefined'?require('../source/js/avatar-catalog.js'):root.BoardAvatars;
  const CardExpenses=typeof module!=='undefined'?require('../source/js/card-expenses.js'):root.BoardCardExpenses;
  const representativeAvatars={성아미:'sailor-moon',정윤정:'quokka',임정규:'young-goku',김무현:'penguin-new',홍소영:'powerpuff',김민재:'frog',최완이:'kitty',김아영:'terriermon',김다솔:'hamtaro',최지안:'bbiyak'};
@@ -43,7 +44,7 @@
   ].map(row=>({...row,마감일:row.완료요청일||'',시작일:row.완료요청일?day(-9):''}));
   const baseline=C.importRows(C.emptyState(),rows,day(-2)).state;
   const updated=rows.map(row=>row.id==='uiux-history'?{...row,완료요청일:day(3),마감일:day(3),작업내용_디자인:'작성자: 홍소영\n입력 오류 안내를 필드 아래에 표시하도록 시안을 수정했습니다.',작업내용_퍼블:'수정자: 김무현\n오류가 발생하면 키보드 초점이 첫 오류 필드로 이동하도록 반영했습니다.',처리결과:{진행상태:'진행중',담당자_디자인:'홍소영, 김민재'}}:row);
-  return C.importRows(baseline,updated,day(0)).state.projects.map(project=>({...project,sampleFixture:true,workflowFixture:true}));
+  return Publishing.decorate(C.importRows(baseline,updated,day(0)).state.projects.map(project=>({...project,sampleFixture:true,workflowFixture:true})),C);
  }
  function create(C,P){
   const state=P.upgrade({...C.emptyState(),projects:[],demo:false});

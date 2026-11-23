@@ -30,7 +30,7 @@ try{
     else{
      if($name -in @('/','/index.html','/html/index.html')){$name='/source/html/index.html'}
      $parts=$name.Split('/');$file=[IO.Path]::GetFullPath((Join-Path $projectRoot $name.TrimStart('/')));$ext=[IO.Path]::GetExtension($file).ToLowerInvariant()
-     $safe=($parts[1] -eq 'source' -or $name -in @('/test/preview-data.js','/test/kpi-samples.js','/test/request-samples.js','/test/legacy-samples.js')) -and !($parts | Where-Object {$_ -eq '..' -or $_.StartsWith('.')}) -and !$name.Contains('\') -and !$name.Contains(':') -and $file.StartsWith($projectRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)
+     $safe=($parts[1] -eq 'source' -or $name -in @('/test/publishing-docs-samples.js','/test/preview-data.js','/test/kpi-samples.js','/test/request-samples.js','/test/legacy-samples.js')) -and !($parts | Where-Object {$_ -eq '..' -or $_.StartsWith('.')}) -and !$name.Contains('\') -and !$name.Contains(':') -and $file.StartsWith($projectRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)
      if($safe -and $types.ContainsKey($ext) -and (Test-Path -LiteralPath $file -PathType Leaf)){
       $probe=Get-Item -LiteralPath $file
       while($probe.FullName -ne $projectRoot){if($probe.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Linked resources are not served'};$probe=$probe.Parent;if(!$probe){$probe=(Get-Item -LiteralPath $file).Directory}}

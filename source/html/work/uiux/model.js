@@ -12,10 +12,14 @@
    return list.map(t=>{const d=Board.sourceDetails(p,role),local=w.taskStates?w.taskStates[t.id]:original.overrides?.tasks?.find(x=>x.id===t.id);return {...t,...local,role,status:local?.status||C.STATUSES.find(s=>s.replace(/\s/g,'')===String(raw['상태_'+role]||raw['진행상태_'+role]||t.status||'진행중').replace(/\s/g,''))||t.status||'진행중',started:w.starts?.[t.id]||t.started||d.start||(p.sourceAssignments?.[role]||[]).map(x=>x.started).filter(Boolean).sort()[0]||'',notes:local?.notes??t.notes??d.notes??''};});
   });
   const requestedRoles=[...new Set([...(w.roles||String(raw.요청구분||'').split(/[,/·\s]+/).filter(r=>roles.includes(r))),...tasks.map(t=>t.role)])];
-  const release=w.release||{};
+  const sourceUrl=(...keys)=>keys.map(key=>safeUrl(typeof raw[key]==='object'?raw[key]?.url:raw[key])).find(Boolean);
+  const dev=sourceUrl('개발반영URL','개발배포URL','개발반영','개발배포'),prod=sourceUrl('운영반영URL','운영배포URL','운영반영','운영배포');
+  const release={...(!w.suppressSourceRelease?{...(dev?{development:{url:dev}}:{}),...(prod?{production:{url:prod}}:{})}:{}),...w.release};
   const complete=requestedRoles.length?requestedRoles.every(role=>tasks.some(t=>t.role===role)&&tasks.filter(t=>t.role===role).every(done)):done(p);
   const status=release.production||p.status==='운영반영완료'?'운영반영완료':release.development?'개발반영':complete?'완료':tasks.some(t=>t.status==='반려')||!tasks.length&&p.status==='반려'?'반려':tasks.some(t=>t.status==='보류')||!tasks.length&&p.status==='보류'?'보류':'진행중';
-  return {...p,workflow:w,tasks,requestedRoles,release,complete,status,title:p.title||detail.title,requester:p.requester||raw.요청자||detail.customer,customer:p.customer||raw.요청팀||detail.customer,requested:p.requested||raw.요청일자||raw.요청일||'',requestedDue:p.requestedDue||detail.requestedDue||'',background:w.background??raw.요청배경??'',requirements:w.requirements??raw.요청사항??raw.요청내용??p.description??'',folder:w.folder??raw.산출물결과폴더??raw.산출물폴더??'',handoff:w.handoff??raw.작성기연동링크??'',links:w.links||[p.link,raw.퍼블링크,raw.작업링크].filter(Boolean).map(url=>({name:'작업 링크',url})),readOnlySample:original.readOnlySample};
+  const deploymentRoles=requestedRoles.filter(role=>role==='디자인'||role==='퍼블');
+  const readyToRelease=deploymentRoles.length>0&&deploymentRoles.every(role=>tasks.some(t=>t.role===role&&t.assignees.length)&&tasks.filter(t=>t.role===role).every(done));
+  return {...p,workflow:w,tasks,requestedRoles,release,complete,readyToRelease,status,title:p.title||detail.title,requester:p.requester||raw.요청자||detail.customer,customer:p.customer||raw.요청팀||detail.customer,requested:p.requested||raw.요청일자||raw.요청일||'',requestedDue:p.requestedDue||detail.requestedDue||'',background:w.background??raw.요청배경??'',requirements:w.requirements??raw.요청사항??raw.요청내용??p.description??'',folder:w.folder??raw.산출물결과폴더??raw.산출물폴더??'',handoff:w.handoff??raw.작성기연동링크??'',links:w.links||[p.link,raw.퍼블링크,raw.작업링크].filter(Boolean).map(url=>({name:'작업 링크',url})),readOnlySample:original.readOnlySample};
  }
  function write(original,values,event,C,actor){
   if(original.readOnlySample)throw Error('연결 전 샘플은 보기 전용입니다. 샘플 검토 모드에서 확인해 주세요.');
@@ -27,14 +31,14 @@
   const p=read(original,C,Board),target=p.tasks.find(t=>t.id===taskId);own(target,actor);
   const tasks=p.tasks.map(t=>t.id!==taskId?t:{...t,status:done(t)?'완료 후 수정':'완료',progress:100,completedOn:done(t)?t.completedOn:C.today()});
   const updated=tasks.find(t=>t.id===taskId),taskStates={...(p.workflow.taskStates||Object.fromEntries((original.overrides?.tasks||[]).map(t=>[t.id,{status:t.status,progress:t.progress,completedOn:t.completedOn}]))),[taskId]:{status:updated.status,progress:updated.progress,completedOn:updated.completedOn}};
-  return write(original,{tasks,workflow:{...p.workflow,taskStates,...(done(target)?{release:{}}:{})}},target.role+' '+(done(target)?'수정 처리':'완료 처리'),C,actor);
+  return write(original,{tasks,workflow:{...p.workflow,taskStates,...(done(target)?{release:{},suppressSourceRelease:true}:{})}},target.role+' '+(done(target)?'수정 처리':'완료 처리'),C,actor);
  }
  function release(original,stage,url,C,Board,actor){
   const p=read(original,C,Board);if(!p.tasks.some(t=>t.assignees.includes(actor)))throw Error('본인 참여 과업만 반영할 수 있습니다.');
-  if(!p.complete)throw Error('요청된 담당 업무가 모두 완료된 후 반영할 수 있습니다.');
+  if(!p.readyToRelease)throw Error('요청된 디자인·퍼블 담당 업무가 모두 완료된 후 반영할 수 있습니다.');
   if(!['development','production'].includes(stage)||!safeUrl(url))throw Error('올바른 반영 주소를 입력해 주세요.');
   if(stage==='production'&&!p.release.development)throw Error('개발 반영 후 운영 반영해 주세요.');
-  const workflow={...p.workflow,release:{...p.release,[stage]:{url:safeUrl(url),by:actor,at:new Date().toISOString()}}};
+  const workflow={...p.workflow,release:{...p.workflow.release,[stage]:{url:safeUrl(url),by:actor,at:new Date().toISOString()}}};
   return write(original,{workflow},(stage==='development'?'개발 반영':'운영 반영 완료')+' · '+safeUrl(url),C,actor);
  }
  function save(original,input,C,Board,actor,members){

@@ -12,6 +12,25 @@ function harness(){
  vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,change:async target=>{for(const fn of events.change||[])await fn({target});},windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
+test('퍼블리싱 문서는 지정 탭에서만 등록하고 원본을 보존하며 저장·복원한다',async()=>{
+ const raw={id:'publication',과업명:'산출물 연결 과업',담당자_디자인:'홍소영',담당자_퍼블:'김무현',진행상태:'완료',완료요청일:'2026-11-25',작업링크:'https://example.com/output',개발반영:'https://example.com/dev'},source=handle(JSON.stringify([raw]));
+ const h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
+ const out=handle(JSON.stringify(h.api.read().state),true);h.api.connect(source,out,out.text);h.api.render();
+ let html=h.element('#app').innerHTML;assert.match(html,/pd-table pd-tasks/);assert.doesNotMatch(html,/workflow-board/);
+ const labels=['과업명','디자인','퍼블','마감일','개발배포','산출물','LINK'].map(label=>html.indexOf('>'+label+'</th>'));assert.ok(labels.every((v,i)=>v>=0&&(!i||v>labels[i-1])));assert.match(html,/href="https:\/\/example.com\/dev"/);
+ await h.api.act({dataset:{action:'publishingRegister',id:'source:publication'}});assert.match(h.element('#app').innerHTML,/id="publishingForm"/);
+ h.submit({id:'publishingForm',dataset:{id:'source:publication'},fields:{depth1:'고객센터',depth2:'홈',depth3:'',linkName:['결과물'],linkUrl:['https://example.com/output']}});
+ assert.deepEqual(Array.from(C.effective(h.api.read().state.projects[0]).workflow.publication.path),['고객센터','홈','']);assert.match(h.element('#app').innerHTML,/>○<\/button>/);
+ await h.api.act({dataset:{action:'publishingView',view:'all'}});assert.match(h.element('#app').innerHTML,/pd-table pd-all/);assert.match(h.element('#app').innerHTML,/고객센터/);
+ await h.api.act({dataset:{action:'save'}});assert.equal(source.writes,0);const restored=C.validateState(JSON.parse(out.text));assert.deepEqual(restored.projects[0].raw,raw);assert.deepEqual(C.effective(restored.projects[0]).workflow.publication.path,['고객센터','홈','']);
+ const updated={...raw,과업명:'고객이 갱신한 과업명'};const refreshed=C.importRows(restored,[updated]).state;assert.ok(C.effective(refreshed.projects[0]).workflow.publication);h.api.seed(refreshed);h.api.render();assert.match(h.element('#app').innerHTML,/고객이 갱신한 과업명/);
+ await h.api.act({dataset:{action:'page',page:'work'}});assert.doesNotMatch(h.element('#app').innerHTML,/pd-table|publishingForm/);
+});
+test('UIUX 일정은 토글 옆에 있고 상세 타임라인은 댓글 뒤에 한 열로 둔다',async()=>{
+ const h=harness();h.api.seed(C.importRows(fixture(),[{id:'detail-layout',과업명:'상세 레이아웃',담당자_퍼블:'김무현',진행상태:'진행중'}]).state);h.api.session('김무현','work');h.api.render();
+ const html=h.element('#app').innerHTML,toolbar=html.match(/<div class="board-control-row ux-board-controls">[^]*?<\/div><\/div>/)[0];assert.match(toolbar,/boardLayout[^]*?uiuxSchedule[^]*?주간 일정[^]*?월간 일정/);assert.doesNotMatch(toolbar,/boardName|boardFrom|boardMine|새 과업/);
+ await h.api.act({dataset:{action:'workflowDetail',id:'source:detail-layout',role:'퍼블'}});const detail=h.element('#editor').innerHTML;assert.ok(detail.indexOf('ux-comments')<detail.indexOf('ux-timeline'));assert.doesNotMatch(detail,/<aside|정보 수정/);assert.equal((detail.match(/data-uiux-form="starts"/g)||[]).length,1);
+});
 test('내 아바타 선택은 다른 사용자를 바꾸지 않고 공용 저장 후에도 유지된다',async()=>{const h=harness(),s=fixture(),out=handle(JSON.stringify(s),true);h.api.seed(s);h.api.session('김무현');h.api.connect(handle('[]'),out,out.text);await h.api.act({dataset:{action:'avatarSettings'}});assert.match(h.element('#editor').innerHTML,/용용이/);assert.match(h.element('#editor').innerHTML,/삐약이/);await h.api.act({dataset:{action:'setAvatar',avatar:'bbiyak'}});assert.equal(h.api.read().state.members.find(m=>m.name==='김무현').avatar,'bbiyak');assert.equal(h.api.read().state.members.find(m=>m.name==='정윤정').avatar,undefined);assert.match(h.element('#app').innerHTML,/내 캐릭터 변경: 삐약이/);await h.api.act({dataset:{action:'save'}});assert.equal(C.validateState(JSON.parse(out.text)).members.find(m=>m.name==='김무현').avatar,'bbiyak');await assert.rejects(h.api.act({dataset:{action:'setAvatar',avatar:'unknown'}}));});
 test('상단 한 줄에 원본·저장 연결 상태와 재연결을 두고 바로가기·사이드바 중복을 제거한다',()=>{const h=harness();h.api.seed(fixture());h.api.session('김무현');h.api.render();const html=h.element('#app').innerHTML,header=html.match(/<header class="topbar">[\s\S]*?<\/header>/)[0];assert.equal((html.match(/class="topbar"/g)||[]).length,1);assert.match(header,/원본 연결안됨/);assert.match(header,/저장 연결안됨/);assert.match(header,/data-action="connections"/);assert.match(header,/data-connection="source"/);assert.match(header,/data-connection="target"/);assert.ok(!header.includes('folder-icon'));assert.ok(!header.includes('pending-dot'));assert.ok(!html.includes('W24DG'));assert.equal((html.match(/data-action="connections"/g)||[]).length,2);assert.ok(!html.split('</aside>')[0].includes('workspace-tools'));});
 test('새 메뉴와 연도·퍼블리싱 표시, 휴가 상세 표에는 D-day가 없다',async()=>{const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현');for(const page of ['board','today','users','leaves']){await h.api.act({dataset:{action:'page',page}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('undefined'));assert.match(html,/202\d년/);assert.match(html,/퍼블리싱 팀/);if(page==='leaves'){await h.api.act({dataset:{action:'leaveView',view:'table'}});const html=h.element('#app').innerHTML;assert.ok(!html.includes('week-countdown'));for(const label of ['날짜','팀','이름','직급','연차구분','비고','편집'])assert.ok(html.includes('>'+label+'</th>'));}}});
@@ -302,15 +321,15 @@ test('화면 이벤트에서도 타인의 완료 체크를 차단하고 원본 �
  await h.api.act({dataset:{action:'boardMode',mode:'project'}});assert.match(h.element('#app').innerHTML,/disabled title="담당자 본인만 진행률을 변경할 수 있습니다"/);
 });
 
-test('UIUX의 도표 토글과 등록 버튼은 업무관리 내부에 있고 콘텐츠는 별도 메뉴다',async()=>{
+test('UIUX의 일정은 보기 토글 옆이고 신규 등록은 대시보드 안이며 다른 업무 탭과 분리된다',async()=>{
  const h=harness(),original={id:'toggle',과업명:'카드와 도표 공통 과업',담당자_퍼블:'김무현'};
  h.api.seed(C.importRows(fixture(),[original]).state);h.api.session('김무현','work');h.api.render();
  let html=h.element('#app').innerHTML;
  assert.match(html,/data-section="work"[^>]*aria-controls="nav-work"/);
  assert.match(html,/data-page="work" aria-label="UI·UX"/);assert.match(html,/data-page="workContent" aria-label="콘텐츠"/);
  assert.doesNotMatch(html,/requestNotice|data-page="requests"/);
- assert.match(html,/board-control-row"><button[^>]+data-action="boardLayout"/);
- assert.match(html,/data-action="boardMine"[^>]*>내 과업<\/button><button[^>]+data-action="new"/);
+ assert.match(html,/board-control-row ux-board-controls"><button[^>]+data-action="boardLayout"/);
+ assert.match(html,/data-action="boardLayout"[^]*?data-action="uiuxSchedule"[^]*?주간 일정[^]*?월간 일정/);assert.doesNotMatch(html,/id="boardName"|id="boardFrom"|data-action="boardMine"/);assert.match(html,/data-action="new"[^]*?신규 등록/);
  assert.match(html,/카드와 도표 공통 과업/);
  await h.api.act({dataset:{action:'boardLayout'}});html=h.element('#app').innerHTML;
  assert.match(html,/class="board-table-view"/);assert.match(html,/<table\b/);assert.match(html,/카드와 도표 공통 과업/);
@@ -318,13 +337,14 @@ test('UIUX의 도표 토글과 등록 버튼은 업무관리 내부에 있고 �
  assert.match(html,/등록된 콘텐츠 업무가 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
  await h.api.act({dataset:{action:'page',page:'publishingDocs'}});html=h.element('#app').innerHTML;
  assert.match(html,/data-page="workContent"[^]*?data-page="publishingDocs"/);assert.match(html,/aria-current="page"[^>]*><span[^]*?퍼블리싱 문서/);
- assert.match(html,/등록된 퍼블리싱 문서가 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
+ assert.match(html,/pd-table pd-tasks/);assert.match(html,/>과업별<\/button>/);assert.match(html,/>전체목록<\/button>/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
  await h.api.act({dataset:{action:'page',page:'errorImprovements'}});html=h.element('#app').innerHTML;
  assert.match(html,/data-page="publishingDocs"[^]*?data-page="errorImprovements"/);assert.match(html,/등록된 오류개선 내용이 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
 });
 
-test('날짜 초기화는 담당자와 도표형 선택을 유지한다',async()=>{
+test('기존 보드의 날짜 초기화는 담당자와 도표형 선택을 유지한다',async()=>{
  const h=harness();h.api.seed(P.addSamples(fixture()));h.api.session('김무현','work');
+ await h.api.act({dataset:{action:'boardMode',mode:'project'}});
  await h.api.act({dataset:{action:'boardMine'}});await h.api.act({dataset:{action:'boardLayout'}});
  await h.change({id:'boardFrom',dataset:{boardDate:'from'},value:'2026-11-01'});
  await h.change({id:'boardTo',dataset:{boardDate:'to'},value:'2026-11-30'});
@@ -404,7 +424,7 @@ test('the normal work page opens the customer workflow and its read-only detail 
  assert.match(html,/class="workflow-board(?: ux-board)?"/);
  assert.doesNotMatch(html,/data-action="boardMode"/);
  assert.match(html,/고객 원문 과업/);
- assert.match(html,/완료요청: <time[^>]*>2026-11-20/);
+ assert.match(html,/완료요청: <time[^>]*>2026\.11\.20/);
  await h.api.act({dataset:{action:'workflowDetail',id:'source:workflow-source',role:'퍼블'}});
  assert.equal(h.element('#editor').open,true);
  assert.match(h.element('#editor').innerHTML,/고객이 작성한 원문/);
@@ -426,7 +446,7 @@ test('주간 업무는 고객 원본을 주차별 표로 표시하고 상세에�
 
 test('같은 원본 ID로 UIUX, 주간 업무, 고객별, 과업별을 오간다',async()=>{
  const h=harness();h.api.seed(C.importRows(fixture(),[{id:'shared',과업명:'연결 대상',요청팀:'고객 A',담당자_퍼블:'김무현'},{id:'neighbor',과업명:'다른 과업',요청팀:'고객 A'}]).state);h.api.session('김무현','work');
- await h.api.act({dataset:{action:'workflowDetail',id:'source:shared'}});assert.match(h.element('#editor').innerHTML,/data-action="relatedProject"[^>]*data-page="report"[^>]*data-id="source:shared"/);
+ await h.api.act({dataset:{action:'workflowDetail',id:'source:shared'}});assert.match(h.element('#editor').innerHTML,/data-id="source:shared"/);assert.doesNotMatch(h.element('#editor').innerHTML,/data-action="relatedProject"/);
  for(const page of ['report','customers','projects','work']){
   await h.api.act({dataset:{action:'relatedProject',page,id:'source:shared'}});
   const html=h.element('#app').innerHTML;

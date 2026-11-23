@@ -92,3 +92,44 @@ dialog#editor:has(.ux-dialog){max-height:calc(100dvh - 48px);overflow:hidden}
 .ux-form-grid>.ux-choice:nth-of-type(3){grid-column:1/-1}
 .ux-detail-dialog>#uiuxError{margin:0 24px}
 html[data-workplace-theme][data-style] .ux-board .ux-scroll{height:calc(100dvh - 380px)}
+/* Specification amendments: controls share one row; history follows comments. */
+.ux-board-controls{justify-content:flex-start!important;align-items:center;gap:12px!important}
+.ux-board-controls .ux-schedule-tabs{padding:0;margin:0}
+.ux-detail-layout{display:block}
+.ux-detail-layout>.ux-timeline,.ux-detail-layout>main>.ux-timeline{border-left:0;border-top:1px solid #dfe5ed;margin-top:24px;padding:20px 0 0}
+.ux-timeline>article{max-width:none}.ux-timeline time{font-size:12px}
+html[data-workplace-theme][data-style] .ux-board .ux-scroll{height:calc(100dvh - 320px)}
+html[data-workplace-theme][data-style] .ux-board :is(.ux-column,.ux-card){border-radius:0}
+.ux-badges>span{border:1px solid #c5cad1;border-radius:0;background:transparent;color:inherit;padding:0 4px}
+.ux-badges>.ux-status{background:transparent;color:inherit}
+.ux-work-notes{border-radius:0;padding:0}
+.ux-work-notes>section{padding:12px 16px}
+.ux-work-notes h4{display:inline-block;background:#292d34;color:#fff;min-width:112px;min-height:28px;padding:4px 16px;margin:0 0 12px}
+.ux-role-add{display:flex;align-items:center;gap:12px;margin:0 0 24px;font-size:13px;flex-wrap:wrap}
+.ux-role-add label{display:flex;gap:8px;align-items:center}.ux-role-add select{width:144px}
+.ux-assignment-part{padding:16px 0;border-bottom:1px solid #dfe5ed}.ux-assignment-part[hidden]{display:none}
+.ux-assignment-head{display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.ux-assignment-head h3{margin:0!important;width:64px}
+.ux-assignment-head>label{display:flex;gap:8px;align-items:center;font-size:12px}
+.ux-assignment-head select{width:144px}
+.ux-assignment-part textarea{min-height:120px;border-radius:0}
+.ux-assignee-select{position:relative;min-width:176px;font-size:12px}
+.ux-assignee-select summary{border:1px solid #ccd3dd;padding:8px 12px;cursor:pointer}
+.ux-assignee-select>div{position:absolute;top:100%;left:0;z-index:10;width:256px;max-height:224px;overflow:auto;background:#fff;border:1px solid #cbd3df;padding:12px;box-shadow:0 8px 20px #1a253422}
+.ux-assignee-select .ux-choice{display:flex;flex-direction:column}.ux-assignee-select .ux-choice legend{display:none}
+.ux-detail-dates{display:flex;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px}
+.ux-start-fields{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
+.ux-start-fields>span{grid-row:1/4}.ux-start-fields label{display:flex;align-items:center;justify-content:flex-end;gap:8px;grid-column:2}
+.ux-completion-dates{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}.ux-completion-dates>span{grid-row:1/4}.ux-completion-dates p{grid-column:2;margin:0}
+.ux-start-fields input{width:160px}.ux-completion-dates time{padding-left:8px}
+.ux-assignee-select summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ux-assignee-select summary::-webkit-details-marker{display:none}
+.ux-assignee-select summary svg{width:16px;height:16px;flex:none}
+.ux-dialog button{border-radius:0}
+.ux-dialog :is(input,textarea,select){border-radius:0}
+.ux-badges>.ux-self{background:#1c77b5;color:#fff;border-color:#1c77b5}
+html[data-workplace-theme][data-style] .ux-board .ux-column{background:#f9f9f9;border-color:#b8b8b8}
+html[data-workplace-theme][data-style] .ux-board .ux-card{border-color:#bdbdbd}
+html[data-workplace-theme][data-style] .ux-board .ux-card.ux-completed{background:#e2e2e2}
+html[data-workplace-theme][data-style] .ux-board .ux-card.ux-released{background:#303136}
+html[data-workplace-theme][data-style] .ux-release-actions>button,.ux-release-link{background:#303136}
