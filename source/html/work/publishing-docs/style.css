@@ -29,4 +29,6 @@ html[data-workplace-theme][data-style] .pd-register,.pd-link-button{display:inli
 .pd-error{font-size:12px;color:#b33d45;margin:8px 0 0}
 .pd-tasks tbody td{text-align:center!important}
 .pd-table .pd-links{align-items:center}
+html[data-workplace-theme][data-style] .pd-table tbody th{background:#fff!important}
+.pd-depth :is(select,input){border-radius:0}
 @media(max-width:800px){.publishing-documents{padding:16px!important}.pd-depths{gap:12px}.pd-depth{max-width:none}.pd-depth select{width:160px}.pd-registration-head{flex-wrap:wrap}.pd-registration-head strong{flex-basis:100%}}
