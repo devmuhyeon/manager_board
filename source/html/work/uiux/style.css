@@ -133,3 +133,6 @@ html[data-workplace-theme][data-style] .ux-board .ux-card{border-color:#bdbdbd}
 html[data-workplace-theme][data-style] .ux-board .ux-card.ux-completed{background:#e2e2e2}
 html[data-workplace-theme][data-style] .ux-board .ux-card.ux-released{background:#303136}
 html[data-workplace-theme][data-style] .ux-release-actions>button,.ux-release-link{background:#303136}
+html[data-workplace-theme][data-style] .ux-dialog :is(input,textarea,select){border-radius:0!important}
+.ux-start-fields>span,.ux-completion-dates>span{align-self:start;padding-top:12px}
+html[data-workplace-theme][data-style] .ux-detail-dates>button{background:#292d34!important;color:#fff!important;border:0;border-radius:0!important;min-height:64px;min-width:64px}
