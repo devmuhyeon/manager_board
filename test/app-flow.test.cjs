@@ -316,6 +316,11 @@ test('UIUX의 도표 토글과 등록 버튼은 업무관리 내부에 있고 �
  assert.match(html,/class="board-table-view"/);assert.match(html,/<table\b/);assert.match(html,/카드와 도표 공통 과업/);
  await h.api.act({dataset:{action:'page',page:'workContent'}});html=h.element('#app').innerHTML;
  assert.match(html,/등록된 콘텐츠 업무가 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
+ await h.api.act({dataset:{action:'page',page:'publishingDocs'}});html=h.element('#app').innerHTML;
+ assert.match(html,/data-page="workContent"[^]*?data-page="publishingDocs"/);assert.match(html,/aria-current="page"[^>]*><span[^]*?퍼블리싱 문서/);
+ assert.match(html,/등록된 퍼블리싱 문서가 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
+ await h.api.act({dataset:{action:'page',page:'errorImprovements'}});html=h.element('#app').innerHTML;
+ assert.match(html,/data-page="publishingDocs"[^]*?data-page="errorImprovements"/);assert.match(html,/등록된 오류개선 내용이 없습니다/);assert.doesNotMatch(html,/workflow-board|board-control-row/);
 });
 
 test('날짜 초기화는 담당자와 도표형 선택을 유지한다',async()=>{
