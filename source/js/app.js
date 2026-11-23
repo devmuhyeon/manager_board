@@ -322,7 +322,7 @@
       if(action==='wordForfeit'){
         const last=BoardFeaturePages.toys.Model.wordGame(state.toys).entries.at(-1);
         if(!last)throw Error('단어가 나온 뒤에 포기할 수 있습니다.');
-        if(!confirm('포기 횟수가 1회 추가됩니다.'+(last.author!==user.name?' '+last.author+'님의 kill도 1 올라갑니다.':'')+' 기록을 보관하고 워크로그에서 새 판을 시작할까요?'))return;
+        if(!confirm('포기 횟수가 1회 추가되고 총점이 갱신됩니다. 기록을 보관하고 워크로그에서 새 판을 시작할까요?'))return;
       }
       if(action==='pollDelete'&&!confirm('이 투표와 참여 내역을 삭제하시겠습니까?'))return;
       state.toys=BoardFeaturePages.toys.Model.apply(state.toys,action,el.dataset,{user:user.name,admin:P.isOverallAdmin(state,user.name)});
