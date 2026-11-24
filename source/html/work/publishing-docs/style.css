@@ -68,3 +68,8 @@ html[data-workplace-theme][data-style] .pd-table tbody th{background:#fff!import
 .pd-document-dialog .pd-link-heading small{color:#747d89;font-weight:400}
 .pd-document-dialog .pd-link-heading>button{margin-left:auto}
 @media(max-width:600px){.pd-document-people,.pd-document-depths{grid-template-columns:1fr}.pd-document-dialog .modal-body{padding:16px}.pd-document-dialog .pd-link-row{flex-wrap:wrap}.pd-document-dialog .pd-link-row input:first-child{width:100%}}
+
+.pd-document-name{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pd-document-name .pd-title-button{min-width:0;flex:1}
+html[data-workplace-theme][data-style] .pd-document-edit{flex:none;min-width:40px;min-height:24px;padding:4px 8px;border:0;background:transparent;color:#657187;font-size:12px}
+html[data-workplace-theme][data-style] .pd-document-edit:hover{background:#f1f4f8;color:#273854}
