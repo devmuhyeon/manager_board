@@ -6,6 +6,12 @@ function directory(name='root'){
 }
 const read=async h=>(await h.getFile()).text();
 const save=async(h,state)=>{const w=await h.createWritable();await w.write(JSON.stringify(state));await w.close();};
+test('퍼블리셔 등록 문서는 전용 publishing 모듈에 저장하고 다른 업무 변경과 분리한다',async()=>{
+ const dir=directory(),handle=await M.open(dir),state={projects:[{id:'customer-work'}],publishingDocuments:[{id:'manual-document',title:'직접 등록',workflow:{}}]};
+ await save(handle,state);const store=dir.children.get('save'),publishing=store.children.get('publishing');assert.ok(publishing);assert.equal(publishing.children.size,1);assert.deepEqual(JSON.parse(await read(handle)),state);
+ state.projects[0].title='업무만 수정';await save(handle,state);assert.equal(publishing.children.size,1);
+ state.publishingDocuments[0].title='문서 수정';await save(handle,state);assert.equal(publishing.children.size,2);assert.deepEqual(JSON.parse(await read(handle)),state);
+});
 
 test('게시글·댓글 첨부를 별도 에셋으로 저장하고 다시 열어 복원한다',async()=>{
  const image={id:'img',name:'test.png',type:'image/png',size:1,data:'data:image/png;base64,YQ=='};

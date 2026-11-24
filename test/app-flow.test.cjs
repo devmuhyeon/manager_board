@@ -12,6 +12,22 @@ function harness(){
  vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,change:async target=>{for(const fn of events.change||[])await fn({target});},windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
+test('퍼블리싱 문서는 고객 목록 자동 생성 없이 탭 안에서 직접 등록하고 독립 저장한다',async()=>{
+ const raw={id:'not-a-document',과업명:'문서로 자동 생성하면 안 되는 고객 과업',담당자_퍼블:'김무현'},h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');h.api.render();
+ assert.doesNotMatch(h.element('#app').innerHTML,/문서로 자동 생성하면 안 되는 고객 과업/);assert.match(h.element('#app').innerHTML,/data-action="publishingNewDocument"/);
+ const source=handle(JSON.stringify([raw])),out=handle(JSON.stringify(h.api.read().state),true);h.api.connect(source,out,out.text);
+ await h.api.act({dataset:{action:'publishingNewDocument'}});assert.match(h.element('#app').innerHTML,/id="publishingDocumentForm"/);
+ h.submit({id:'publishingDocumentForm',dataset:{id:''},fields:{title:'직접 등록한 퍼블리싱 문서',due:'2026-12-01','디자인':['홍소영'],'퍼블':['김무현']}});
+ const doc=h.api.read().state.publishingDocuments[0];assert.equal(doc.source,'manual');assert.equal(doc.createdBy,'김무현');assert.equal(h.api.read().state.projects.length,1);assert.match(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
+ await h.api.act({dataset:{action:'publishingRegister',id:doc.id,section:'development'}});
+ h.submit({id:'publishingForm',dataset:{id:doc.id,section:'development'},fields:{section:'development',developmentName:['개발'],developmentUrl:['https://example.com/manual-dev']}});
+ assert.equal(C.effective(h.api.read().state.publishingDocuments[0]).workflow.publication.developmentLinks.length,1);
+ await h.api.act({dataset:{action:'save'}});assert.equal(source.writes,0);const loaded=C.validateState(JSON.parse(out.text));assert.equal(loaded.publishingDocuments[0].title,'직접 등록한 퍼블리싱 문서');assert.deepEqual(loaded.projects[0].raw,raw);
+ await h.api.act({dataset:{action:'page',page:'work'}});assert.doesNotMatch(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
+ await h.api.act({dataset:{action:'page',page:'publishingDocs'}});assert.match(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
+});
+const legacyPublication=state=>{for(const p of state.projects)p.workflow={...p.workflow,publication:{path:['','',''],links:[],outputRegistered:false,author:'김무현',registeredAt:'2026-11-24T09:00:00Z',updatedAt:'2026-11-24T09:00:00Z'}};return state;};
+
 test('산출물 파일 선택부터 비동기 읽기·등록·JSON 복원까지 원본과 분리한다',async()=>{
  const fs=require('node:fs'),{File}=require('node:buffer'),Attachments=require('../source/html/organization/board/attachments.js'),previous=globalThis.FileReader;
  // Bridge the browser FileReader API to a real File in the headless app harness.
@@ -27,7 +43,7 @@ test('산출물 파일 선택부터 비동기 읽기·등록·JSON 복원까지 
  }finally{if(previous===undefined)delete globalThis.FileReader;else globalThis.FileReader=previous;}
 });
 test('퍼블리싱 열마다 별도로 등록하며 메뉴 선택을 링크 등록에 강제하지 않는다',async()=>{
- const raw={id:'edit-columns',과업명:'독립 등록',담당자_퍼블:'김무현',진행상태:'진행중'},h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
+ const raw={id:'edit-columns',과업명:'독립 등록',담당자_퍼블:'김무현',진행상태:'진행중'},h=harness();h.api.seed(legacyPublication(C.importRows(fixture(),[raw]).state));h.api.session('김무현','publishingDocs');
  await h.api.act({dataset:{action:'publishingRegister',id:'source:edit-columns',section:'development'}});assert.match(h.element('#app').innerHTML,/개발배포 링크 등록/);
  h.submit({id:'publishingForm',dataset:{id:'source:edit-columns',section:'development'},fields:{section:'development',developmentName:['개발1','개발2'],developmentUrl:['https://example.com/dev1','https://example.com/dev2']}});
  let publication=C.effective(h.api.read().state.projects[0]).workflow.publication;assert.equal(publication.developmentLinks.length,2);assert.equal(publication.outputRegistered,false);
@@ -40,7 +56,7 @@ test('퍼블리싱 열마다 별도로 등록하며 메뉴 선택을 링크 등�
 });
 test('퍼블리싱 문서는 지정 탭에서만 등록하고 원본을 보존하며 저장·복원한다',async()=>{
  const raw={id:'publication',과업명:'산출물 연결 과업',담당자_디자인:'홍소영',담당자_퍼블:'김무현',진행상태:'완료',완료요청일:'2026-11-25',작업링크:'https://example.com/output',개발반영:'https://example.com/dev'},source=handle(JSON.stringify([raw]));
- const h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
+ const h=harness();h.api.seed(legacyPublication(C.importRows(fixture(),[raw]).state));h.api.session('김무현','publishingDocs');
  const out=handle(JSON.stringify(h.api.read().state),true);h.api.connect(source,out,out.text);h.api.render();
  let html=h.element('#app').innerHTML;assert.match(html,/pd-table pd-tasks/);assert.doesNotMatch(html,/workflow-board/);
  const labels=['과업명','디자인','퍼블','마감일','개발배포','산출물','LINK'].map(label=>html.indexOf('>'+label+'</th>'));assert.ok(labels.every((v,i)=>v>=0&&(!i||v>labels[i-1])));assert.match(html,/href="https:\/\/example.com\/dev"/);

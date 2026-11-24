@@ -50,7 +50,7 @@ test('전체목록은 동일한 상위 메뉴를 합치고 메뉴없음은 마�
  assert.throws(()=>Docs.M.save(entries[0],{path:['고객센터','',''],links:[{name:'오류',url:'javascript:alert(1)'}]},C,B,'김무현'),/주소/);
 });
 test('고객의 개발반영 주소와 운영배포완료 표기를 원문 변경 없이 읽는다',()=>{
- const original=fixture('완료',['퍼블'],'raw-deploy');original.raw.개발반영='https://example.com/dev';assert.equal(Docs.rows(context(original))[0].development,'https://example.com/dev');
+ const original=fixture('완료',['퍼블'],'raw-deploy');original.raw.개발반영='https://example.com/dev';assert.equal(Docs.M.records([original],C,B)[0].development,'https://example.com/dev');
  original.raw.진행상태='운영배포완료';assert.equal(Docs.rows(context(original)).length,0);
 });
 test('부분 완료는 회색으로 표시하고 디자인·퍼블이 끝나야 반영 입력을 제공한다',()=>{
@@ -60,7 +60,7 @@ test('부분 완료는 회색으로 표시하고 디자인·퍼블이 끝나야 
  p=Work.M.release(p,'development','https://example.com/dev',C,B,'김무현');C.validateState({...C.emptyState(),projects:[p]});assert.match(Work.render(context(p)),/href="https:\/\/example.com\/dev"/);
 });
 test('고객 개발 URL에 이어 운영 반영을 기록하고 수정하면 이전 반영을 해제한다',()=>{
- let p=fixture('완료',['퍼블'],'raw-release');p.raw.개발반영='https://example.com/customer-dev';
+ let p=fixture('완료',['퍼블'],'raw-release');p=Docs.M.save(p,{path:['','',''],links:[]},C,B,'김무현');p.raw.개발반영='https://example.com/customer-dev';
  p=Work.M.release(p,'production','https://example.com/customer-live',C,B,'김무현');C.validateState({...C.emptyState(),projects:[p]});assert.equal(Docs.rows(context(p)).length,0);
  p=Work.M.toggle(p,'source-task:퍼블',C,B,'김무현');assert.equal(Docs.rows(context(p)).length,1);assert.equal(Docs.rows(context(p))[0].development,'');assert.equal(Work.M.read(p,C,B).status,'진행중');
 });
@@ -83,7 +83,7 @@ test('파일 산출물은 메뉴 미선택 상태에서도 등록하고 잘못�
  const saved=Docs.M.save(p,{section:'outputs',path:['__choose__','',''],artifacts:[],attachments:[file]},C,B,'김무현');assert.deepEqual(saved.overrides.workflow.publication.path,['','','']);
  assert.throws(()=>Docs.M.save(p,{section:'development',developmentLinks:[{name:'위험',url:'javascript:alert(1)'}]},C,B,'김무현'),/주소/);
  assert.throws(()=>Docs.M.save(p,{section:'outputs',path:['','',''],attachments:[{...file,name:'실행.exe'}]},C,B,'김무현'),/지원/);
- const html=Docs.render(context(p));for(const label of ['개발배포 링크 추가','산출물 등록','일반 링크 추가'])assert.ok(html.includes(label));
+ const html=Docs.render(context(saved));for(const label of ['개발배포 링크 추가','산출물 수정','일반 링크 추가'])assert.ok(html.includes(label));
 });
 test('UIUX 첫 화면의 담당자 이름은 프로필 아이콘을 렌더하지 않는다',()=>{
  const c=context(fixture('진행중',['디자인','퍼블'],'text-only'));c.D.avatar=()=>{throw Error('첫 화면에서 아바타 호출 금지');};

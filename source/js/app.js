@@ -209,6 +209,8 @@
   function uiuxOriginal(id){return state.projects.find(p=>p.id===id)||disconnectedWorkflowRows().find(p=>p.id===id);}
   function uiuxDetail(id){const p=uiuxOriginal(id);if(p)showDialog(UIUX.detail(p,featureContext()));}
   function uiuxUpdate(id,operation){const index=state.projects.findIndex(p=>p.id===id);if(index<0)throw Error('연결 전 샘플은 보기 전용입니다.');state.projects[index]=operation(state.projects[index]);changed();render();}
+  function publishingOriginal(id){return (state.publishingDocuments||[]).find(p=>p.id===id)||uiuxOriginal(id);}
+  function publishingUpdate(id,operation){const index=(state.publishingDocuments||[]).findIndex(p=>p.id===id);if(index<0){uiuxUpdate(id,operation);return;}state.publishingDocuments[index]=operation(state.publishingDocuments[index]);changed();render();}
   function publishingInput(form){const fd=new FormData(form),list=prefix=>{const names=fd.getAll(prefix+'Name');return fd.getAll(prefix+'Url').map((url,i)=>({name:String(names[i]||''),url:String(url||'')})).filter(l=>l.name||l.url);};return {section:fd.get('section')||form.dataset?.section||'',path:[1,2,3].map(n=>fd.get('depth'+n)==='__new__'?String(fd.get('newDepth'+n)||'').trim()||'__choose__':String(fd.get('depth'+n)??(n===1?'__choose__':''))),links:list('link'),developmentLinks:list('development'),artifacts:list('artifact')};}
 
   function openWorkflowDetail(id,role=''){
@@ -343,13 +345,14 @@
     if(demoSession&&['connect','reload','restore','import','sourceFolder','sourceFile','targetFolder','permitFolders','refreshAll','refreshSource','logout','save'].includes(a)){toast('샘플 검토 모드입니다. 변경은 이 화면에서만 유지되며 새로고침하면 초기화됩니다.');return;}
     if(a==='uiuxSchedule'){uiuxUi.period=uiuxUi.period===el.dataset.period?'':el.dataset.period;Object.assign(filters,uiuxUi.period?UIUX.M.period(uiuxUi.period,C.today()):{from:'',to:''});render();return;}
     if(a==='publishingView'){const form=$('#publishingForm');if(form)publishingUi.draft=publishingInput(form);publishingUi.view=el.dataset.view==='all'?'all':'tasks';render();return;}
+    if(a==='publishingNewDocument'||a==='publishingEditDocument'){publishingUi.creatingDocument=true;publishingUi.editingDocument=a==='publishingEditDocument'?el.dataset.id:'';publishingUi.selected='';publishingUi.files=[];render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;}
     if(a==='publishingRegister'){
       const p=Publishing.rows(featureContext()).find(p=>p.id===el.dataset.id);if(!p||p.readOnlySample)return;
-      publishingUi.selected=p.id;publishingUi.section=['outputs','development','links'].includes(el.dataset.section)?el.dataset.section:'outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:p.outputRegistered?p.path:p.path.some(Boolean)?p.path:[null,'',''],links:p.links,developmentLinks:p.developmentLinks,artifacts:p.publication?.artifacts||[]};render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;
+      publishingUi.creatingDocument=false;publishingUi.selected=p.id;publishingUi.section=['outputs','development','links'].includes(el.dataset.section)?el.dataset.section:'outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:p.outputRegistered?p.path:p.path.some(Boolean)?p.path:[null,'',''],links:p.links,developmentLinks:p.developmentLinks,artifacts:p.publication?.artifacts||[]};render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;
     }
     if(a==='publishingAddLink'){$('#publishingLinkRows').insertAdjacentHTML('beforeend',Publishing.linkRow({},el.dataset.kind,featureContext()));return;}
     if(a==='publishingRemoveLink'){el.closest('.pd-link-row').remove();return;}
-    if(a==='publishingCancel'){publishingUi.selected='';publishingUi.files=[];publishingUi.draft=null;render();return;}
+    if(a==='publishingCancel'){publishingUi.creatingDocument=false;publishingUi.selected='';publishingUi.files=[];publishingUi.draft=null;render();return;}
     if(a==='uiuxEdit'){showDialog(UIUX.editor(uiuxOriginal(el.dataset.id),featureContext()));return;}
     if(a==='uiuxAddRole'){const role=$('#uiuxProjectForm').querySelector('[name="additionalRole"]').value;document.querySelectorAll('[data-uiux-assignment-part]').forEach(part=>{if(part.dataset.uiuxAssignmentPart===role){part.hidden=false;part.querySelector('[name="roles"]').disabled=false;}});return;}
     if(a==='uiuxSubmitStarts'){el.closest('form').requestSubmit();return;}
@@ -824,16 +827,23 @@
   document.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
   document.addEventListener('submit',e=>{
     const formId=e.target.getAttribute?.('id')??e.target.id;
+    if(formId==='publishingDocumentForm'){
+      e.preventDefault();try{const fd=new FormData(e.target),id=e.target.dataset.id,original=id?(state.publishingDocuments||[]).find(p=>p.id===id):null;if(id&&!original)throw Error('문서를 찾을 수 없습니다.');
+        const saved=Publishing.M.saveDocument(original,{title:fd.get('title'),due:fd.get('due'),'디자인':fd.getAll('디자인'),'퍼블':fd.getAll('퍼블')},C,user.name,P.orderedMembers(state));
+        state.publishingDocuments||=[];if(original)state.publishingDocuments[state.publishingDocuments.findIndex(p=>p.id===id)]=saved;else state.publishingDocuments.push(saved);
+        publishingUi.creatingDocument=false;publishingUi.selected=saved.id;publishingUi.section='outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:saved.workflow.publication?.path||[null,'',''],links:saved.workflow.publication?.links||[],developmentLinks:saved.workflow.publication?.developmentLinks||[],artifacts:saved.workflow.publication?.artifacts||[]};changed();render();toast('퍼블리싱 문서를 등록했습니다.');
+      }catch(error){$('#publishingDocumentError').textContent=error.message;}return;
+    }
     if(formId==='publishingForm'){
       e.preventDefault();const form=e.target;if(form.dataset?.saving)return;const input=publishingInput(form),id=form.dataset.id,actor=user.name;form.dataset.saving='true';
       (async()=>{
         if(input.section==='outputs'){
-          const fd=new FormData(form),p=UIUX.M.read(uiuxOriginal(id),C,BoardTaskBoard),kept=new Set(fd.getAll('keepAttachment'));
+          const fd=new FormData(form),p=UIUX.M.read(publishingOriginal(id),C,BoardTaskBoard),kept=new Set(fd.getAll('keepAttachment'));
           const existing=(p.workflow.publication?.attachments||[]).filter(item=>kept.has(item.id)),picked=Array.from(form.querySelector?.('[name="outputFiles"]')?.files||[]),files=picked.length?picked:publishingUi.files;
           input.attachments=files.length?await BoardAttachments.readFiles(files,existing):existing;
         }
         if(!user||user.name!==actor)throw Error('로그인 사용자가 변경되어 등록하지 않았습니다.');
-        const saved=Publishing.M.save(uiuxOriginal(id),input,C,BoardTaskBoard,actor);publishingUi.selected='';publishingUi.draft=null;publishingUi.files=[];uiuxUpdate(id,()=>saved);toast('등록했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
+        const saved=Publishing.M.save(publishingOriginal(id),input,C,BoardTaskBoard,actor);publishingUi.selected='';publishingUi.draft=null;publishingUi.files=[];publishingUpdate(id,()=>saved);toast('등록했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
       })().catch(error=>{const field=$('#publishingError');if(field)field.textContent=error.message;}).finally(()=>{delete form.dataset.saving;});return;
     }
     if(formId==='uiuxProjectForm'||e.target.dataset?.uiuxForm){

@@ -24,9 +24,17 @@
    Object.assign(publication,{path,artifacts,attachments,outputRegistered:true});
    if(!input.section)publication.links=cleanLinks(input.links||[],'링크');
   }else throw Error('등록 항목을 확인해 주세요.');
-  return Workflow.write(original,{workflow:{...p.workflow,publication}},({outputs:'산출물 등록',development:'개발배포 링크 등록',links:'일반 링크 등록'})[section],C,actor);
+  return Workflow.write(original,{workflow:{...p.workflow,publication},...(original.publishingDocument?{updatedAt:publication.updatedAt,updatedBy:actor}:{})},({outputs:'산출물 등록',development:'개발배포 링크 등록',links:'일반 링크 등록'})[section],C,actor);
  }
  function validate(value){if(value===undefined)return;if(!value||!Array.isArray(value.path)||value.path.length!==3||value.path.some(v=>typeof v!=='string'||v.length>100)||!Array.isArray(value.links)||typeof value.author!=='string'||!Number.isFinite(Date.parse(value.registeredAt))||!Number.isFinite(Date.parse(value.updatedAt))||value.outputRegistered!==undefined&&typeof value.outputRegistered!=='boolean')throw Error('퍼블리싱 산출물 저장 형식이 올바르지 않습니다.');cleanLinks(value.links,'링크');for(const key of ['developmentLinks','artifacts'])if(value[key]!==undefined)cleanLinks(value[key],key==='artifacts'?'산출물':'개발배포 링크');Attachments.validate(value.attachments);}
  function allRows(rows){return rows.filter(p=>p.publication&&p.publication.outputRegistered!==false).slice().sort((a,b)=>{for(let i=0;i<3;i++){const x=a.path[i],y=b.path[i];if(x!==y)return !x?1:!y?-1:x.localeCompare(y,'ko');}return a.title.localeCompare(b.title,'ko');});}
- const api={pathOf,records,choices,save,validate,allRows,development,deployed,safeUrl:Workflow.safeUrl};if(typeof module!=='undefined')module.exports=api;else root.BoardPublishingModel=api;
+ function saveDocument(original,input,C,actor,members){
+  if(original&&(original.source!=='manual'||!original.publishingDocument||original.raw))throw Error('직접 등록한 퍼블리싱 문서만 수정할 수 있습니다.');
+  if(!members.some(m=>m.name===actor&&m.active!==false))throw Error('로그인한 재직자만 등록할 수 있습니다.');
+  const title=String(input.title||'').trim(),due=String(input.due||'');if(!title||title.length>300)throw Error('과업명을 1~300자로 입력해 주세요.');if(due&&!Workflow.date(due))throw Error('마감일을 확인해 주세요.');
+  const tasks=['디자인','퍼블'].flatMap(role=>{const names=[...new Set(input[role]||[])];if(role==='퍼블'&&!names.length)throw Error('퍼블리셔를 선택해 주세요.');if(names.some(n=>!members.some(m=>m.name===n&&m.active!==false&&m.team===role)&&!original?.tasks?.some(t=>t.role===role&&t.assignees.includes(n))))throw Error('담당자를 확인해 주세요.');return names.length?[{id:original?.tasks?.find(t=>t.role===role)?.id||C.uid(),role,assignees:names,status:'진행중',progress:0,notes:'',due}]:[];});
+  const at=new Date().toISOString(),log={id:C.uid(),date:C.today(),at,author:actor,kind:'퍼블리싱 문서',content:original?'퍼블리싱 문서 수정':'퍼블리싱 문서 등록'};
+  return {...original,id:original?.id||'publishing:'+C.uid(),source:'manual',publishingDocument:true,title,requestedDue:due,due,requested:original?.requested||C.today(),requester:original?.requester||actor,createdBy:original?.createdBy||actor,createdAt:original?.createdAt||at,updatedBy:actor,updatedAt:at,status:original?.status||'진행중',assignees:[...new Set(tasks.flatMap(t=>t.assignees))],tasks,workflow:original?.workflow||{},logs:[...(original?.logs||[]),log]};
+ }
+ const api={pathOf,records,choices,save,saveDocument,validate,allRows,development,deployed,safeUrl:Workflow.safeUrl};if(typeof module!=='undefined')module.exports=api;else root.BoardPublishingModel=api;
 })(typeof window!=='undefined'?window:globalThis);

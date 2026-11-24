@@ -167,6 +167,10 @@
     if(!s||s.schemaVersion!==1||!Array.isArray(s.projects)||!s.accounts||typeof s.accounts!=='object'||Array.isArray(s.accounts))throw new Error('통합관리 JSON 형식이 올바르지 않습니다.');
     if(!Number.isSafeInteger(s.revision)||s.revision<0)throw new Error('저장 버전이 올바르지 않습니다.');
     const ids=new Set();
+    if(s.publishingDocuments!==undefined){
+      if(!Array.isArray(s.publishingDocuments)||s.publishingDocuments.some(p=>p?.source!=='manual'||p.publishingDocument!==true||p.raw!==undefined||typeof p.title!=='string'||!p.title.trim()))throw Error('퍼블리싱 문서 형식을 확인하세요.');
+      validateState({...emptyState(),projects:s.publishingDocuments});
+    }
     for(const p of s.projects){
       const e=effective(p);
       if(typeof p.id!=='string'||ids.has(p.id)||typeof e.title!=='string'||!Array.isArray(e.assignees)||!Array.isArray(e.logs)||!STATUSES.includes(e.status)||!['sample','import','manual'].includes(p.source))throw new Error('프로젝트 데이터 형식이 올바르지 않습니다.');
