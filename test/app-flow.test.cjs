@@ -12,6 +12,20 @@ function harness(){
  vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,change:async target=>{for(const fn of events.change||[])await fn({target});},windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
+test('산출물 파일 선택부터 비동기 읽기·등록·JSON 복원까지 원본과 분리한다',async()=>{
+ const fs=require('node:fs'),{File}=require('node:buffer'),Attachments=require('../source/html/organization/board/attachments.js'),previous=globalThis.FileReader;
+ // Bridge the browser FileReader API to a real File in the headless app harness.
+ globalThis.FileReader=class{readAsDataURL(file){file.arrayBuffer().then(data=>{this.result='data:'+file.type+';base64,'+Buffer.from(data).toString('base64');this.onload();},error=>{this.error=error;this.onerror();});}};
+ try{
+  const raw={id:'file-output',과업명:'파일 산출물',담당자_퍼블:'김무현',진행상태:'진행중'},h=harness();h.context.BoardAttachments=Attachments;h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
+  await h.api.act({dataset:{action:'publishingRegister',id:'source:file-output',section:'outputs'}});
+  const bytes=fs.readFileSync(require.resolve('./fixtures/publishing-output.txt')),file=new File([bytes],'publishing-output.txt',{type:'text/plain'});
+  h.submit({id:'publishingForm',dataset:{id:'source:file-output',section:'outputs'},fields:{section:'outputs',depth1:'__choose__',depth2:'',depth3:''},querySelector:()=>({files:[file]})});
+  for(let i=0;i<20&&!C.effective(h.api.read().state.projects[0]).workflow?.publication;i++)await new Promise(resolve=>setImmediate(resolve));
+  const saved=C.validateState(JSON.parse(JSON.stringify(h.api.read().state))),publication=C.effective(saved.projects[0]).workflow.publication;
+  assert.equal(publication.outputRegistered,true);assert.equal(publication.attachments.length,1);assert.equal(publication.attachments[0].data,'data:text/plain;base64,'+bytes.toString('base64'));assert.deepEqual(publication.path,['','','']);assert.deepEqual(saved.projects[0].raw,raw);assert.match(h.element('#app').innerHTML,/publishing-output\.txt/);
+ }finally{if(previous===undefined)delete globalThis.FileReader;else globalThis.FileReader=previous;}
+});
 test('퍼블리싱 열마다 별도로 등록하며 메뉴 선택을 링크 등록에 강제하지 않는다',async()=>{
  const raw={id:'edit-columns',과업명:'독립 등록',담당자_퍼블:'김무현',진행상태:'진행중'},h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
  await h.api.act({dataset:{action:'publishingRegister',id:'source:edit-columns',section:'development'}});assert.match(h.element('#app').innerHTML,/개발배포 링크 등록/);
