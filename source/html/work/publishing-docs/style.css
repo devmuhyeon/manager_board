@@ -31,4 +31,16 @@ html[data-workplace-theme][data-style] .pd-register,.pd-link-button{display:inli
 .pd-table .pd-links{align-items:center}
 html[data-workplace-theme][data-style] .pd-table tbody th{background:#fff!important}
 .pd-depth :is(select,input){border-radius:0}
+.pd-table td>.pd-register{margin-top:8px}
+.pd-links:empty{display:none}
+.pd-link-row button{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:4px;border:0;background:transparent}
+.pd-submit{display:flex;justify-content:flex-end;margin-top:16px}
+.pd-submit button{min-width:72px;border-radius:0}
+.pd-upload{display:flex;flex-direction:column;gap:12px;margin-top:16px;padding:20px;border:1px dashed #b6c1d0;font-size:12px;background:#fafbfc}
+.pd-upload span{color:#677386}.pd-upload input{width:100%}
+.pd-existing-files{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px}
+.pd-existing-files label{display:flex;align-items:center;gap:4px}
+.pd-existing-files input{width:16px!important;height:16px!important;min-height:0!important;margin:0}
+.pd-registration-body>.pd-link-fields:first-child{margin-top:0;padding-top:0;border:0}
+.pd-kind{display:block;margin-top:8px;font-size:10px;color:#747d89}
 @media(max-width:800px){.publishing-documents{padding:16px!important}.pd-depths{gap:12px}.pd-depth{max-width:none}.pd-depth select{width:160px}.pd-registration-head{flex-wrap:wrap}.pd-registration-head strong{flex-basis:100%}}

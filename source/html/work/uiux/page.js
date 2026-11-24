@@ -10,10 +10,10 @@
  function badges(p,status,esc){const raw={...p.raw,...(p.raw?.처리결과||p.raw?.처리정보||{})},review=[raw.담당자검토완료,raw.담당자_검토완료,raw.검토완료,raw.검토상태,raw.담당자검토상태].some(v=>v===true||v===1||['true','Y','완료','담당자 검토 완료'].includes(v));return '<div class="ux-badges">'+(!p.raw?'<span class="ux-self">자체등록</span>':'')+'<span class="ux-status">'+esc(status)+'</span>'+p.requestedRoles.map(r=>'<span>'+r+'</span>').join('')+(p.workflow.etc?'<span class="ux-self">기타</span>':'')+(review?'<span>담당자 검토 완료</span>':'')+'</div>';}
  function links(p,esc){return '<div class="ux-links">'+p.links.filter(l=>M.safeUrl(l.url)).map((l,i)=>'<a href="'+esc(M.safeUrl(l.url))+'" target="_blank" rel="noopener">'+esc(l.name||'링크 '+(i+1))+'</a>').join('')+'</div>';}
  function card(p,t,c){
-  const {esc,button,user,C,D,member,displayProfile}=c,status=p.status,visual=t&&M.done(t)&&status!=='운영반영완료'?'완료':status;
+  const {esc,button,user,C}=c,status=p.status,visual=t&&M.done(t)&&status!=='운영반영완료'?'완료':status;
   const attrs=data(p,esc,t?'data-task-id="'+esc(t.id)+'" data-role="'+t.role+'"':''),own=!p.readOnlySample&&t?.assignees.includes(user.name);
   const deadline=M.date(p.requestedDue)||p.requestedDue;
-  const person=(t?c.P.orderNames(c.state,t.assignees):[]).map(name=>'<span class="ux-worker">'+D.avatar(displayProfile(member(name)))+'<span>'+esc(name)+'</span></span>').join('');
+  const person=(t?c.P.orderNames(c.state,t.assignees):[]).map(name=>'<span class="ux-worker">'+esc(name)+'</span>').join('');
   return '<article class="ux-card '+(visual==='운영반영완료'?'ux-released':visual==='완료'?'ux-completed':'')+'" data-card-id="'+esc(p.id)+'">'+badges(p,status,esc)
    +button('workflowDetail','<strong>'+esc(p.title)+'</strong>',t?'ux-title':'workflow-dashboard-row',attrs)
    +(t?'<p class="ux-dates">'+esc(p.requester||p.customer||'—')+' | 완료요청: ':'<p class="ux-customer">'+esc(p.requester||p.customer||'—')+' · '+esc(p.customer||'—')+'</p><p class="ux-dates">요청: '+esc(displayDate(p.requested))+' | 완료요청: ')+'<time class="'+(deadline&&deadline<C.today()&&visual!=='완료'&&visual!=='운영반영완료'?'ux-overdue':'')+'">'+esc(displayDate(p.requestedDue))+'</time></p>'

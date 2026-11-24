@@ -40,7 +40,7 @@
   const uiuxUi={};
   const UIUX=BoardFeaturePages.work.UIUX;
   const Publishing=BoardFeaturePages['work/publishing-docs'];
-  const publishingUi={view:'tasks',selected:'',draft:null,custom:[]};
+  const publishingUi={view:'tasks',selected:'',section:'outputs',draft:null,custom:[],files:[]};
   let boardTeam='all',boardPostId='',userWork='',calendarMonth=C.today().slice(0,7),calendarDay=C.today(),calendarFilter='all';
   const peopleSections={org:'조직도 관리',roles:'직책 관리',members:'멤버 관리'};
   const personnelActions=new Set([
@@ -150,7 +150,7 @@
   }
   function featureContext(){return {state,user,C,P,W,B,N,O,D,T,Icons,esc,button,options,member,displayProfile,uiuxUi,publishingUi,projectLinks,publishingCatalog:demoSession&&typeof BoardPublishingSamples!=='undefined'?BoardPublishingSamples.catalog:[],activeMembers,showDialog,sourceRows,relatedRows,projects,f,filters,scope,customerMode,view,boardLayout,boardAssignee,selectedProject,statsQuery,targetHandle,demoSession,peopleSection,peopleSections,readOrganization,leaveOwner,leaveYear,leaveMonth,leaveWeekDate,leaveSelectedDay,leaveView,leaveSearch,annualLeavePanel,leaveTypeCards,vacationRows,leaveTypeEditor,weekBlocks,leaveItems,deadlineItems,scheduleWeekOffset,scopeTabs,filterBar,categorizedTable,projectTable,reportRows,customerCards,boardLayoutToggle,page,boardName,boardMode,boardIncludesDone,closedWeeks,closedLanes,expandedCards,calendarMonth,calendarDay,calendarFilter,userWork,viewTabs,taskRows,sheetTable,connectionCards,expenseService,expenseCardId,expenseMonth,heroRows,heroDesign,personalPanel,organizationChart,peopleRoles,personnelPanel,BoardBriefingCalendar,BoardBriefingDashboard,BoardBriefingHero,BoardTaskBoard,BoardProjectReport,BoardCardExpenses,BoardLeaveTypes,BoardLeavePolicy,BoardLeaveCalendar,BoardMemoCarousel,BoardPreviewData:typeof BoardPreviewData!=='undefined'?BoardPreviewData:undefined};}
   function render(){
-    const oldPublication=$('#publishingForm');if(page==='publishingDocs'&&publishingUi.selected&&oldPublication?.dataset?.id===publishingUi.selected)publishingUi.draft=publishingInput(oldPublication);
+    const oldPublication=$('#publishingForm');if(page==='publishingDocs'&&publishingUi.selected&&oldPublication?.dataset?.id===publishingUi.selected&&oldPublication.dataset.section===publishingUi.section)publishingUi.draft=publishingInput(oldPublication);
     const oldToy=$('.toy-page');
     if(oldToy?.dataset?.toyPage)toyDrafts[oldToy.dataset.toyPage]=BoardFeaturePages.toys.rememberDrafts(oldToy);
     const navScroll=['.sidebar','.sidebar .nav'].map(selector=>({selector,top:$(selector)?.scrollTop||0,left:$(selector)?.scrollLeft||0}));
@@ -209,7 +209,8 @@
   function uiuxOriginal(id){return state.projects.find(p=>p.id===id)||disconnectedWorkflowRows().find(p=>p.id===id);}
   function uiuxDetail(id){const p=uiuxOriginal(id);if(p)showDialog(UIUX.detail(p,featureContext()));}
   function uiuxUpdate(id,operation){const index=state.projects.findIndex(p=>p.id===id);if(index<0)throw Error('연결 전 샘플은 보기 전용입니다.');state.projects[index]=operation(state.projects[index]);changed();render();}
-  function publishingInput(form){const fd=new FormData(form),names=fd.getAll('linkName');return {path:[1,2,3].map(n=>fd.get('depth'+n)==='__new__'?String(fd.get('newDepth'+n)||'').trim()||'__choose__':String(fd.get('depth'+n)??(n===1?'__choose__':''))),links:fd.getAll('linkUrl').map((url,i)=>({name:String(names[i]||''),url:String(url||'')})).filter(l=>l.name||l.url)};}
+  function publishingInput(form){const fd=new FormData(form),list=prefix=>{const names=fd.getAll(prefix+'Name');return fd.getAll(prefix+'Url').map((url,i)=>({name:String(names[i]||''),url:String(url||'')})).filter(l=>l.name||l.url);};return {section:fd.get('section')||form.dataset?.section||'',path:[1,2,3].map(n=>fd.get('depth'+n)==='__new__'?String(fd.get('newDepth'+n)||'').trim()||'__choose__':String(fd.get('depth'+n)??(n===1?'__choose__':''))),links:list('link'),developmentLinks:list('development'),artifacts:list('artifact')};}
+
   function openWorkflowDetail(id,role=''){
     if(page==='work'){const original=uiuxOriginal(id);if(original&&!original.raw&&!role&&!original.readOnlySample)showDialog(UIUX.editor(original,featureContext()));else uiuxDetail(id);return;}
     const original=state.projects.find(project=>project.id===id)||disconnectedWorkflowRows().find(project=>project.id===id);
@@ -344,9 +345,11 @@
     if(a==='publishingView'){const form=$('#publishingForm');if(form)publishingUi.draft=publishingInput(form);publishingUi.view=el.dataset.view==='all'?'all':'tasks';render();return;}
     if(a==='publishingRegister'){
       const p=Publishing.rows(featureContext()).find(p=>p.id===el.dataset.id);if(!p||p.readOnlySample)return;
-      publishingUi.selected=p.id;publishingUi.custom=[];publishingUi.draft={path:p.publication?p.path:p.path.some(Boolean)?p.path:[null,'',''],links:p.links};render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;
+      publishingUi.selected=p.id;publishingUi.section=['outputs','development','links'].includes(el.dataset.section)?el.dataset.section:'outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:p.outputRegistered?p.path:p.path.some(Boolean)?p.path:[null,'',''],links:p.links,developmentLinks:p.developmentLinks,artifacts:p.publication?.artifacts||[]};render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;
     }
-    if(a==='publishingCancel'){publishingUi.selected='';publishingUi.draft=null;render();return;}
+    if(a==='publishingAddLink'){$('#publishingLinkRows').insertAdjacentHTML('beforeend',Publishing.linkRow({},el.dataset.kind,featureContext()));return;}
+    if(a==='publishingRemoveLink'){el.closest('.pd-link-row').remove();return;}
+    if(a==='publishingCancel'){publishingUi.selected='';publishingUi.files=[];publishingUi.draft=null;render();return;}
     if(a==='uiuxEdit'){showDialog(UIUX.editor(uiuxOriginal(el.dataset.id),featureContext()));return;}
     if(a==='uiuxAddRole'){const role=$('#uiuxProjectForm').querySelector('[name="additionalRole"]').value;document.querySelectorAll('[data-uiux-assignment-part]').forEach(part=>{if(part.dataset.uiuxAssignmentPart===role){part.hidden=false;part.querySelector('[name="roles"]').disabled=false;}});return;}
     if(a==='uiuxSubmitStarts'){el.closest('form').requestSubmit();return;}
@@ -813,18 +816,25 @@
   document.addEventListener('input',e=>{const el=e.target;if(!heroDraft||!el.closest?.('#heroDesignForm'))return;const config=heroDraft[heroDraft.mode];if(el.dataset.heroColor){config[el.dataset.heroColor]=el.value;const check=document.querySelector('[data-hero-transparent="'+el.dataset.heroColor+'"]');if(check)check.checked=false;}else if(el.dataset.heroTransparent){const key=el.dataset.heroTransparent;config[key]=el.checked?'transparent':document.querySelector('[data-hero-color="'+key+'"]').value;}else if(el.hasAttribute('data-hero-flip')){config.flip=el.checked;}else if(el.dataset.heroPosition){config[el.dataset.heroPosition]=Number(el.value);const output=document.querySelector('[data-hero-output="'+el.dataset.heroPosition+'"]');if(output)output.textContent=el.value+(BoardBriefingHero.positions.find(p=>p[0]===el.dataset.heroPosition)?.[4]||'');}else return;heroDraft[heroDraft.mode]=BoardBriefingHero.clean(config,BoardBriefingHero.defaults(displayProfile(user),heroDraft.mode));$('#heroPreview').innerHTML=BoardBriefingHero.render({user:displayProfile(user),rows:heroRows(),C,N,esc,record:heroDraft,preview:true});BoardBriefingHero.mount(document);});
   document.addEventListener('change',e=>{const select=e.target.closest?.('.ux-assignee-select');if(select)select.querySelector('[data-uiux-assignee-label]').textContent=Array.from(select.querySelectorAll('input:checked')).map(i=>i.value).join(', ')||'작업자';});
   document.addEventListener('input',e=>{const match=e.target.name?.match(/^newDepth([12])$/);if(!match)return;const next=e.target.closest('form')?.querySelector('[name="depth'+(Number(match[1])+1)+'"]');if(next)next.disabled=!e.target.value.trim();});
+  document.addEventListener('change',e=>{const el=e.target;if(!el.hasAttribute?.('data-publishing-files'))return;publishingUi.files=Array.from(el.files||[]);const label=el.closest('.pd-upload')?.querySelector('span');if(label)label.textContent='선택한 파일 '+publishingUi.files.length+'개';});
   document.addEventListener('change',e=>{const el=e.target;if(el.dataset?.publishingDepth===undefined)return;const level=Number(el.dataset.publishingDepth),form=el.closest('form');publishingUi.draft=publishingInput(form);publishingUi.custom[level]=el.value==='__new__';for(let i=level+1;i<3;i++){publishingUi.draft.path[i]='';publishingUi.custom[i]=false;}const p=Publishing.rows(featureContext()).find(p=>p.id===publishingUi.selected);if(p)$('#publishingRegistration').innerHTML=Publishing.registration(p,featureContext());});
   document.addEventListener('change',e=>{const el=e.target;if(!el.dataset?.uiuxFilter)return;const lane=el.dataset.lane;uiuxUi[lane]={...uiuxUi[lane],[el.dataset.uiuxFilter]:el.value};render();});
-  document.addEventListener('dragover',e=>{if(e.target.closest?.('.ux-upload'))e.preventDefault();});
-  document.addEventListener('drop',e=>{const box=e.target.closest?.('.ux-upload');if(!box)return;e.preventDefault();if(e.dataTransfer?.files?.length)box.querySelector('input[type="file"]').files=e.dataTransfer.files;});
+  document.addEventListener('dragover',e=>{if(e.target.closest?.('.ux-upload,.pd-upload'))e.preventDefault();});
+  document.addEventListener('drop',e=>{const box=e.target.closest?.('.ux-upload,.pd-upload');if(!box)return;e.preventDefault();if(e.dataTransfer?.files?.length){const field=box.querySelector('input[type="file"]');field.files=e.dataTransfer.files;field.dispatchEvent(new Event('change',{bubbles:true}));}});
   document.addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
   document.addEventListener('submit',e=>{
     const formId=e.target.getAttribute?.('id')??e.target.id;
     if(formId==='publishingForm'){
-      e.preventDefault();try{const form=e.target,input=publishingInput(form),id=form.dataset.id;
-        if(new FormData(form).get('depth1')==='__choose__')throw Error('1뎁스를 선택해 주세요.');
-        const saved=Publishing.M.save(uiuxOriginal(id),input,C,BoardTaskBoard,user.name);publishingUi.selected='';publishingUi.draft=null;uiuxUpdate(id,()=>saved);toast('산출물을 등록했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
-      }catch(error){$('#publishingError').textContent=error.message;}return;
+      e.preventDefault();const form=e.target;if(form.dataset?.saving)return;const input=publishingInput(form),id=form.dataset.id,actor=user.name;form.dataset.saving='true';
+      (async()=>{
+        if(input.section==='outputs'){
+          const fd=new FormData(form),p=UIUX.M.read(uiuxOriginal(id),C,BoardTaskBoard),kept=new Set(fd.getAll('keepAttachment'));
+          const existing=(p.workflow.publication?.attachments||[]).filter(item=>kept.has(item.id)),picked=Array.from(form.querySelector?.('[name="outputFiles"]')?.files||[]),files=picked.length?picked:publishingUi.files;
+          input.attachments=files.length?await BoardAttachments.readFiles(files,existing):existing;
+        }
+        if(!user||user.name!==actor)throw Error('로그인 사용자가 변경되어 등록하지 않았습니다.');
+        const saved=Publishing.M.save(uiuxOriginal(id),input,C,BoardTaskBoard,actor);publishingUi.selected='';publishingUi.draft=null;publishingUi.files=[];uiuxUpdate(id,()=>saved);toast('등록했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
+      })().catch(error=>{const field=$('#publishingError');if(field)field.textContent=error.message;}).finally(()=>{delete form.dataset.saving;});return;
     }
     if(formId==='uiuxProjectForm'||e.target.dataset?.uiuxForm){
       e.preventDefault();const form=e.target;if(form.dataset.saving)return;const fd=new FormData(form),id=form.dataset.id;form.dataset.saving='true';

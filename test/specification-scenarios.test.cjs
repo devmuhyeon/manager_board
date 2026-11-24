@@ -64,3 +64,28 @@ test('고객 개발 URL에 이어 운영 반영을 기록하고 수정하면 이
  p=Work.M.release(p,'production','https://example.com/customer-live',C,B,'김무현');C.validateState({...C.emptyState(),projects:[p]});assert.equal(Docs.rows(context(p)).length,0);
  p=Work.M.toggle(p,'source-task:퍼블',C,B,'김무현');assert.equal(Docs.rows(context(p)).length,1);assert.equal(Docs.rows(context(p))[0].development,'');assert.equal(Work.M.read(p,C,B).status,'진행중');
 });
+test('퍼블리싱의 일반 링크·개발배포 링크·산출물은 각각 추가하고 저장할 수 있다',()=>{
+ const original=fixture('진행중',['퍼블'],'independent'),before=JSON.stringify(original.raw);original.link='https://example.com/original';
+ let p=Docs.M.save(original,{section:'links',links:[{name:'PC 화면',url:'https://example.com/pc'},{name:'MO 화면',url:'https://example.com/mo'}]},C,B,'김무현');
+ let row=Docs.rows(context(p))[0];assert.equal(row.links.length,2);assert.equal(row.outputRegistered,false);assert.equal(Docs.M.allRows([row]).length,0);assert.doesNotMatch(Docs.render(context(p)),/>○<\/button>/);
+ p=Docs.M.save(p,{section:'development',developmentLinks:[{name:'개발 PC',url:'https://dev.example.com/pc'},{name:'개발 MO',url:'https://dev.example.com/mo'}]},C,B,'김무현');
+ row=Docs.rows(context(p))[0];assert.equal(row.developmentLinks.length,2);assert.equal(row.links.length,2);assert.equal(row.status,'진행중');assert.equal(row.outputRegistered,false);
+ const attachments=['a','b'].map((name,i)=>({id:'file-'+name,name:name+'.txt',type:'text/plain',size:1,data:'data:text/plain;base64,'+(i?'Yg==':'YQ==')}));
+ p=Docs.M.save(p,{section:'outputs',path:['고객센터','홈',''],artifacts:[{name:'디자인 원본',url:'Z:\\산출물\\design.zip'},{name:'퍼블 결과',url:'https://example.com/result'}],attachments},C,B,'김무현');
+ const restored=C.validateState(JSON.parse(JSON.stringify({...C.emptyState(),projects:[p]}))).projects[0];row=Docs.rows(context(restored))[0];
+ assert.equal(row.outputRegistered,true);assert.equal(row.publication.artifacts.length,2);assert.equal(row.publication.attachments.length,2);assert.equal(row.developmentLinks.length,2);assert.equal(row.links.length,2);assert.match(Docs.render(context(restored)),/a\.txt/);assert.match(Docs.render(context(restored)),/>○<\/button>/);
+ assert.equal(JSON.stringify(p.raw),before);assert.equal(Work.M.read(p,C,B).tasks[0].status,'진행중');
+ p=Docs.M.save(p,{section:'links',links:[]},C,B,'김무현');assert.equal(Docs.rows(context(p))[0].links.length,0);assert.equal(Docs.rows(context(p))[0].publication.attachments.length,2);
+ p=Docs.M.save(p,{section:'development',developmentLinks:[]},C,B,'김무현');assert.equal(Docs.rows(context(p))[0].developmentLinks.length,0);assert.equal(Docs.rows(context(p))[0].outputRegistered,true);
+});
+test('파일 산출물은 메뉴 미선택 상태에서도 등록하고 잘못된 주소·파일은 거부한다',()=>{
+ const p=fixture('진행중',['퍼블'],'artifact-validation'),file={id:'text',name:'결과.txt',type:'text/plain',size:1,data:'data:text/plain;base64,YQ=='};
+ const saved=Docs.M.save(p,{section:'outputs',path:['__choose__','',''],artifacts:[],attachments:[file]},C,B,'김무현');assert.deepEqual(saved.overrides.workflow.publication.path,['','','']);
+ assert.throws(()=>Docs.M.save(p,{section:'development',developmentLinks:[{name:'위험',url:'javascript:alert(1)'}]},C,B,'김무현'),/주소/);
+ assert.throws(()=>Docs.M.save(p,{section:'outputs',path:['','',''],attachments:[{...file,name:'실행.exe'}]},C,B,'김무현'),/지원/);
+ const html=Docs.render(context(p));for(const label of ['개발배포 링크 추가','산출물 등록','일반 링크 추가'])assert.ok(html.includes(label));
+});
+test('UIUX 첫 화면의 담당자 이름은 프로필 아이콘을 렌더하지 않는다',()=>{
+ const c=context(fixture('진행중',['디자인','퍼블'],'text-only'));c.D.avatar=()=>{throw Error('첫 화면에서 아바타 호출 금지');};
+ const html=Work.render(c);assert.match(html,/홍소영/);assert.match(html,/김무현/);assert.doesNotMatch(html,/<img|test-avatar|character-avatar/);
+});

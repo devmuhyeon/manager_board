@@ -12,6 +12,18 @@ function harness(){
  vm.runInContext(instrumented,context);return {api:context.testApp,element,vault,context,change:async target=>{for(const fn of events.change||[])await fn({target});},windowEvent:(type,event)=>events['window:'+type]?.forEach(fn=>fn(event)),submit:form=>events.submit.forEach(fn=>fn({target:form,preventDefault(){}}))};
 }
 const fixture=()=>P.upgrade({...C.sampleState(),demo:false,projects:[]});
+test('퍼블리싱 열마다 별도로 등록하며 메뉴 선택을 링크 등록에 강제하지 않는다',async()=>{
+ const raw={id:'edit-columns',과업명:'독립 등록',담당자_퍼블:'김무현',진행상태:'진행중'},h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
+ await h.api.act({dataset:{action:'publishingRegister',id:'source:edit-columns',section:'development'}});assert.match(h.element('#app').innerHTML,/개발배포 링크 등록/);
+ h.submit({id:'publishingForm',dataset:{id:'source:edit-columns',section:'development'},fields:{section:'development',developmentName:['개발1','개발2'],developmentUrl:['https://example.com/dev1','https://example.com/dev2']}});
+ let publication=C.effective(h.api.read().state.projects[0]).workflow.publication;assert.equal(publication.developmentLinks.length,2);assert.equal(publication.outputRegistered,false);
+ await h.api.act({dataset:{action:'publishingRegister',id:'source:edit-columns',section:'links'}});
+ h.submit({id:'publishingForm',dataset:{id:'source:edit-columns',section:'links'},fields:{section:'links',linkName:['화면1','화면2'],linkUrl:['https://example.com/1','https://example.com/2']}});
+ publication=C.effective(h.api.read().state.projects[0]).workflow.publication;assert.equal(publication.links.length,2);assert.equal(publication.developmentLinks.length,2);assert.equal(publication.outputRegistered,false);
+ await h.api.act({dataset:{action:'publishingRegister',id:'source:edit-columns',section:'outputs'}});
+ h.submit({id:'publishingForm',dataset:{id:'source:edit-columns',section:'outputs'},fields:{section:'outputs',depth1:'',depth2:'',depth3:'',artifactName:['파일 경로'],artifactUrl:['Z:\\산출물\\index.html']}});
+ publication=C.effective(h.api.read().state.projects[0]).workflow.publication;assert.equal(publication.outputRegistered,true);assert.equal(publication.artifacts.length,1);assert.equal(publication.links.length,2);assert.deepEqual(h.api.read().state.projects[0].raw,raw);
+});
 test('퍼블리싱 문서는 지정 탭에서만 등록하고 원본을 보존하며 저장·복원한다',async()=>{
  const raw={id:'publication',과업명:'산출물 연결 과업',담당자_디자인:'홍소영',담당자_퍼블:'김무현',진행상태:'완료',완료요청일:'2026-11-25',작업링크:'https://example.com/output',개발반영:'https://example.com/dev'},source=handle(JSON.stringify([raw]));
  const h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');
