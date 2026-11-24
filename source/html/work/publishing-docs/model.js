@@ -36,5 +36,13 @@
   const at=new Date().toISOString(),log={id:C.uid(),date:C.today(),at,author:actor,kind:'퍼블리싱 문서',content:original?'퍼블리싱 문서 수정':'퍼블리싱 문서 등록'};
   return {...original,id:original?.id||'publishing:'+C.uid(),source:'manual',publishingDocument:true,title,requestedDue:due,due,requested:original?.requested||C.today(),requester:original?.requester||actor,createdBy:original?.createdBy||actor,createdAt:original?.createdAt||at,updatedBy:actor,updatedAt:at,status:original?.status||'진행중',assignees:[...new Set(tasks.flatMap(t=>t.assignees))],tasks,workflow:original?.workflow||{},logs:[...(original?.logs||[]),log]};
  }
- const api={pathOf,records,choices,save,saveDocument,validate,allRows,development,deployed,safeUrl:Workflow.safeUrl};if(typeof module!=='undefined')module.exports=api;else root.BoardPublishingModel=api;
+ function saveComplete(original,input,C,Board,actor,members){
+ let saved=saveDocument(original,input,C,actor,members);
+ const old=Workflow.read(saved,C,Board).workflow.publication;
+ const hasOutputs=Boolean(input.path?.some(Boolean)||input.artifacts?.length||input.attachments?.length||old?.outputRegistered);
+ if(hasOutputs)saved=save(saved,{...input,section:'outputs'},C,Board,actor);
+ saved=save(saved,{section:'development',developmentLinks:input.developmentLinks||[]},C,Board,actor);
+ return save(saved,{section:'links',links:input.links||[]},C,Board,actor);
+ }
+ const api={pathOf,records,choices,save,saveDocument,saveComplete,validate,allRows,development,deployed,safeUrl:Workflow.safeUrl};if(typeof module!=='undefined')module.exports=api;else root.BoardPublishingModel=api;
 })(typeof window!=='undefined'?window:globalThis);

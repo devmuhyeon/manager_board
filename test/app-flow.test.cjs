@@ -16,7 +16,7 @@ test('퍼블리싱 문서는 고객 목록 자동 생성 없이 탭 안에서 �
  const raw={id:'not-a-document',과업명:'문서로 자동 생성하면 안 되는 고객 과업',담당자_퍼블:'김무현'},h=harness();h.api.seed(C.importRows(fixture(),[raw]).state);h.api.session('김무현','publishingDocs');h.api.render();
  assert.doesNotMatch(h.element('#app').innerHTML,/문서로 자동 생성하면 안 되는 고객 과업/);assert.match(h.element('#app').innerHTML,/data-action="publishingNewDocument"/);
  const source=handle(JSON.stringify([raw])),out=handle(JSON.stringify(h.api.read().state),true);h.api.connect(source,out,out.text);
- await h.api.act({dataset:{action:'publishingNewDocument'}});assert.match(h.element('#app').innerHTML,/id="publishingDocumentForm"/);
+ await h.api.act({dataset:{action:'publishingNewDocument'}});assert.equal(h.element('#editor').open,true);assert.match(h.element('#editor').innerHTML,/id="publishingDocumentForm"/);assert.doesNotMatch(h.element('#app').innerHTML,/id="publishingDocumentForm"/);
  h.submit({id:'publishingDocumentForm',dataset:{id:''},fields:{title:'직접 등록한 퍼블리싱 문서',due:'2026-12-01','디자인':['홍소영'],'퍼블':['김무현']}});
  const doc=h.api.read().state.publishingDocuments[0];assert.equal(doc.source,'manual');assert.equal(doc.createdBy,'김무현');assert.equal(h.api.read().state.projects.length,1);assert.match(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
  await h.api.act({dataset:{action:'publishingRegister',id:doc.id,section:'development'}});
@@ -25,6 +25,20 @@ test('퍼블리싱 문서는 고객 목록 자동 생성 없이 탭 안에서 �
  await h.api.act({dataset:{action:'save'}});assert.equal(source.writes,0);const loaded=C.validateState(JSON.parse(out.text));assert.equal(loaded.publishingDocuments[0].title,'직접 등록한 퍼블리싱 문서');assert.deepEqual(loaded.projects[0].raw,raw);
  await h.api.act({dataset:{action:'page',page:'work'}});assert.doesNotMatch(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
  await h.api.act({dataset:{action:'page',page:'publishingDocs'}});assert.match(h.element('#app').innerHTML,/직접 등록한 퍼블리싱 문서/);
+});
+test('퍼블리싱 등록 팝업에서 전체 항목을 한 번에 저장하고 수정한다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','publishingDocs');await h.api.act({dataset:{action:'publishingNewDocument'}});
+ for(const name of ['title','due','depth1','depth2','depth3','artifactName','artifactUrl','developmentName','developmentUrl','linkName','linkUrl','outputFiles'])assert.ok(h.element('#editor').innerHTML.includes('name="'+name+'"'),name);
+ const fields={title:'팝업 통합 문서',due:'2026-12-01','디자인':['홍소영'],'퍼블':['김무현'],depth1:'고객센터',depth2:'홈',depth3:'안내',artifactName:['결과물'],artifactUrl:['https://example.com/output.zip'],developmentName:['PC','MO'],developmentUrl:['https://example.com/pc','https://example.com/mo'],linkName:['참고'],linkUrl:['https://example.com/reference']};
+ h.submit({id:'publishingDocumentForm',dataset:{id:''},fields});
+ const doc=h.api.read().state.publishingDocuments[0],pub=doc.workflow.publication;assert.equal(h.element('#editor').open,false);assert.deepEqual(Array.from(pub.path),['고객센터','홈','안내']);assert.equal(pub.developmentLinks.length,2);assert.equal(pub.links[0].name,'참고');assert.equal(pub.artifacts[0].name,'결과물');assert.equal(pub.outputRegistered,true);assert.equal(h.api.read().state.projects.length,0);
+ await h.api.act({dataset:{action:'publishingEditDocument',id:doc.id}});assert.match(h.element('#editor').innerHTML,/value="결과물"/);assert.ok(h.element('#editor').innerHTML.includes('value="https://example.com/mo"'));
+ h.submit({id:'publishingDocumentForm',dataset:{id:doc.id},fields:{...fields,title:'수정한 문서'}});assert.equal(h.api.read().state.publishingDocuments.length,1);assert.equal(h.api.read().state.publishingDocuments[0].title,'수정한 문서');C.validateState(JSON.parse(JSON.stringify(h.api.read().state)));
+});
+test('퍼블리싱 팝업 검증 실패 시 문서 일부를 저장하지 않는다',async()=>{
+ const h=harness();h.api.seed(fixture());h.api.session('김무현','publishingDocs');await h.api.act({dataset:{action:'publishingNewDocument'}});
+ h.submit({id:'publishingDocumentForm',dataset:{id:''},fields:{title:'잘못된 링크','퍼블':['김무현'],developmentName:['개발'],developmentUrl:['javascript:alert(1)']}});
+ await new Promise(resolve=>setImmediate(resolve));assert.match(h.element('#publishingDocumentError').textContent,/개발배포/);assert.equal(h.api.read().state.publishingDocuments?.length||0,0);assert.equal(h.element('#editor').open,true);
 });
 const legacyPublication=state=>{for(const p of state.projects)p.workflow={...p.workflow,publication:{path:['','',''],links:[],outputRegistered:false,author:'김무현',registeredAt:'2026-11-24T09:00:00Z',updatedAt:'2026-11-24T09:00:00Z'}};return state;};
 

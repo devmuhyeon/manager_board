@@ -345,12 +345,12 @@
     if(demoSession&&['connect','reload','restore','import','sourceFolder','sourceFile','targetFolder','permitFolders','refreshAll','refreshSource','logout','save'].includes(a)){toast('샘플 검토 모드입니다. 변경은 이 화면에서만 유지되며 새로고침하면 초기화됩니다.');return;}
     if(a==='uiuxSchedule'){uiuxUi.period=uiuxUi.period===el.dataset.period?'':el.dataset.period;Object.assign(filters,uiuxUi.period?UIUX.M.period(uiuxUi.period,C.today()):{from:'',to:''});render();return;}
     if(a==='publishingView'){const form=$('#publishingForm');if(form)publishingUi.draft=publishingInput(form);publishingUi.view=el.dataset.view==='all'?'all':'tasks';render();return;}
-    if(a==='publishingNewDocument'||a==='publishingEditDocument'){publishingUi.creatingDocument=true;publishingUi.editingDocument=a==='publishingEditDocument'?el.dataset.id:'';publishingUi.selected='';publishingUi.files=[];render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;}
+    if(a==='publishingNewDocument'||a==='publishingEditDocument'){publishingUi.creatingDocument=true;publishingUi.editingDocument=a==='publishingEditDocument'?el.dataset.id:'';publishingUi.selected='';publishingUi.files=[];showDialog(Publishing.documentForm(featureContext()));return;}
     if(a==='publishingRegister'){
       const p=Publishing.rows(featureContext()).find(p=>p.id===el.dataset.id);if(!p||p.readOnlySample)return;
       publishingUi.creatingDocument=false;publishingUi.selected=p.id;publishingUi.section=['outputs','development','links'].includes(el.dataset.section)?el.dataset.section:'outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:p.outputRegistered?p.path:p.path.some(Boolean)?p.path:[null,'',''],links:p.links,developmentLinks:p.developmentLinks,artifacts:p.publication?.artifacts||[]};render();$('#publishingRegistration')?.scrollIntoView?.({behavior:'smooth',block:'nearest'});return;
     }
-    if(a==='publishingAddLink'){$('#publishingLinkRows').insertAdjacentHTML('beforeend',Publishing.linkRow({},el.dataset.kind,featureContext()));return;}
+    if(a==='publishingAddLink'){(el.closest?.('.pd-link-fields')?.querySelector('.pd-link-rows')||$('#publishingLinkRows')).insertAdjacentHTML('beforeend',Publishing.linkRow({},el.dataset.kind,featureContext()));return;}
     if(a==='publishingRemoveLink'){el.closest('.pd-link-row').remove();return;}
     if(a==='publishingCancel'){publishingUi.creatingDocument=false;publishingUi.selected='';publishingUi.files=[];publishingUi.draft=null;render();return;}
     if(a==='uiuxEdit'){showDialog(UIUX.editor(uiuxOriginal(el.dataset.id),featureContext()));return;}
@@ -828,12 +828,18 @@
   document.addEventListener('submit',e=>{
     const formId=e.target.getAttribute?.('id')??e.target.id;
     if(formId==='publishingDocumentForm'){
-      e.preventDefault();try{const fd=new FormData(e.target),id=e.target.dataset.id,original=id?(state.publishingDocuments||[]).find(p=>p.id===id):null;if(id&&!original)throw Error('문서를 찾을 수 없습니다.');
-        const saved=Publishing.M.saveDocument(original,{title:fd.get('title'),due:fd.get('due'),'디자인':fd.getAll('디자인'),'퍼블':fd.getAll('퍼블')},C,user.name,P.orderedMembers(state));
-        state.publishingDocuments||=[];if(original)state.publishingDocuments[state.publishingDocuments.findIndex(p=>p.id===id)]=saved;else state.publishingDocuments.push(saved);
-        publishingUi.creatingDocument=false;publishingUi.selected=saved.id;publishingUi.section='outputs';publishingUi.custom=[];publishingUi.files=[];publishingUi.draft={path:saved.workflow.publication?.path||[null,'',''],links:saved.workflow.publication?.links||[],developmentLinks:saved.workflow.publication?.developmentLinks||[],artifacts:saved.workflow.publication?.artifacts||[]};changed();render();toast('퍼블리싱 문서를 등록했습니다.');
-      }catch(error){$('#publishingDocumentError').textContent=error.message;}return;
-    }
+ e.preventDefault();const form=e.target;if(form.dataset.saving)return;form.dataset.saving='true';const actor=user.name;
+ (async()=>{const fd=new FormData(form),id=form.dataset.id,original=id?(state.publishingDocuments||[]).find(p=>p.id===id):null;if(id&&!original)throw Error('문서를 찾을 수 없습니다.');
+ const input={...publishingInput(form),title:fd.get('title'),due:fd.get('due'),'디자인':fd.getAll('디자인'),'퍼블':fd.getAll('퍼블')};input.path=[1,2,3].map(n=>String(fd.get('depth'+n)||'').trim());
+ const kept=new Set(fd.getAll('keepAttachment')),existing=(original?.workflow?.publication?.attachments||[]).filter(file=>kept.has(file.id)),picked=Array.from(form.querySelector?.('[name="outputFiles"]')?.files||[]),files=picked.length?picked:publishingUi.files;
+ input.attachments=files.length?await BoardAttachments.readFiles(files,existing):existing;
+ if(!user||user.name!==actor)throw Error('로그인 사용자가 변경되어 등록하지 않았습니다.');
+ const current=id?(state.publishingDocuments||[]).find(p=>p.id===id):null;if(id&&current!==original)throw Error('문서가 변경되었습니다. 다시 열어 주세요.');
+ const saved=Publishing.M.saveComplete(current,input,C,BoardTaskBoard,actor,P.orderedMembers(state));
+ state.publishingDocuments||=[];if(current)state.publishingDocuments[state.publishingDocuments.findIndex(p=>p.id===id)]=saved;else state.publishingDocuments.push(saved);
+ publishingUi.creatingDocument=false;publishingUi.selected='';publishingUi.files=[];publishingUi.draft=null;$('#editor').close();changed();render();toast('퍼블리싱 문서를 저장했습니다. 내용 저장으로 공용 폴더에 반영하세요.');
+ })().catch(error=>{$('#publishingDocumentError').textContent=error.message;}).finally(()=>{delete form.dataset.saving;});return;
+ }
     if(formId==='publishingForm'){
       e.preventDefault();const form=e.target;if(form.dataset?.saving)return;const input=publishingInput(form),id=form.dataset.id,actor=user.name;form.dataset.saving='true';
       (async()=>{
